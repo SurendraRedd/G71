@@ -75,15 +75,13 @@ def g711(self, **words):
             print "tan=", tan
         except ZeroDivisionError:
             tan = 0 
-        if l*tan < h:
+        if l*tan < float(h):
             try:
                l = h/tan
             except ZeroDivisionError:
                 l = 2l 
         else:
-            l = float(words['e'])   
-         
-        
+            l = float(words['e'])           
         if line_or_arc[n] > 1:
             radius = sqrt((coordK[i])*(coordK[i]) + (coordI[i])*(coordI[i]))
             centreX = coordX[n+1] + coordI[i]
@@ -122,31 +120,23 @@ def g711(self, **words):
                     COORDz0 = COORDz0 + (abs(b2-b1))                                    
                 lengthX = lengthX - d #d - съем за один проход
             except InterpreterException,e:
-                print "execute_ERROR"
-    #заключительный проход по заданному контуру    
-    repeat = 2
-    for e in range(repeat): #возможность повторного прохода
-        w=0 
-        if  e ==88:#TODO
-            self.execute(" G0  Z%f" % (coordZ_start),lineno())# выход в стартовую по Z         
-        while w < len(lines):
-            if  re.search("^\s*[(]\s*N\d", lines[w]):
-                if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", lines[w]):
-                    num2 = int(re.findall("^\s*\d*",(re.split('N',lines[w])[1]))[0])
-                    if num2 >= p and num2 <= q:
-                        try: 
-                            contour=re.split('\)',(re.split('\(',lines[w])[1]))[0]
-                            self.execute(contour,lineno())
-                        except InterpreterException,e:
-                            msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                            self.set_errormsg(msg) 
-                            return INTERP_ERROR
-            w+=1
-        
-        self.execute("G91",lineno())
-        self.execute(" G0  X0.5 Z0.5",lineno())# отход 45гр 
-        self.execute("G90",lineno())
-        self.execute(" G0  Z%f" % (coordZ_start),lineno())# выход в стартовую по Z                              
+                print "execute_ERROR"    
+    for w in lines:
+        if  re.search("^\s*[(]\s*N\d", w):
+            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w)[1]))[0])
+                if num2 >= p and num2 <= q:
+                    try: 
+                        contour=re.split('\)',(re.split('\(',w)[1]))[0]
+                        self.execute(contour,lineno())
+                    except InterpreterException,e:
+                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                        self.set_errormsg(msg) 
+                        return INTERP_ERROR   
+    self.execute("G91",lineno())
+    self.execute(" G0  X0.5 Z0.5",lineno())# отход 45гр 
+    self.execute("G90",lineno())
+    self.execute(" G0  Z%f" % (coordZ_start),lineno())# выход в стартовую по Z                              
     f.close()                 
     return INTERP_OK
 ########################################################################################-------end G71.1
