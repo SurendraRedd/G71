@@ -44,7 +44,6 @@ def g711(self, **words):
     coordI = []
     coordK = []
     s.poll() 
-    coordZ_start = 0
     while x < len(lines):
         if  re.search("^\s*[(]\s*N\d", lines[x]):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", lines[x]):
@@ -56,7 +55,15 @@ def g711(self, **words):
                     x1 = coordX.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('X',lines[x])[1]))[0])))                    
                     if  re.search("[I]", lines[x]):
                         i1 = coordI.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('I',lines[x])[1]))[0])))
-                        k1 = coordK.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('K',lines[x])[1]))[0]))) 
+                        k1 = coordK.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('K',lines[x])[1]))[0])))
+                if num == p : # search Start_point
+                    temp_x = x
+                    a=2
+                    f_line_contour = re.search("^\s*.*G71", lines[temp_x-2])
+                    while not re.search("^\s*.*Z", lines[temp_x-a]):
+                        a+=1
+                    coordZ_start = int(re.findall("^\s*\d*",(re.split('Z',lines[temp_x-a])[1]))[0])
+                    print "coordZ_start=",coordZ_start
         x+=1
     for n in range(v):
         COORDx0 =  coordX[n]
@@ -93,9 +100,10 @@ def g711(self, **words):
                     self.execute(" G1  Z%f" % coordZ_start,lineno())
                 if (COORDz0 + 0.5 +l) <= coordZ_start:
                     self.execute(" G0  X%f Z%f" % ((COORDx0 + 0.5),(COORDz0 + 0.5 + l)),lineno())# отход 45гр
-                else:
-                    self.execute(" G0  X%f Z%f" % ((COORDx0 + 0.5),(coordZ_start)),lineno())# отход 45гр
+               # else:
+                    #self.execute(" G0  X%f Z%f" % ((COORDx0 + 0.5),(coordZ_start)),lineno())# отход 45гр
                 self.execute(" G0  Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
+                print "go=",coordZ_start
                 if lengthX < d:
                     newX = COORDx0 - lengthX
                 else:
@@ -127,8 +135,8 @@ def g711(self, **words):
                     num2 = int(re.findall("^\s*\d*",(re.split('N',lines[w])[1]))[0])
                     if num2 >= p and num2 <= q:
                         try: 
-                            contur=re.split('\)',(re.split('\(',lines[w])[1]))[0]
-                            self.execute(contur,lineno())
+                            contour=re.split('\)',(re.split('\(',lines[w])[1]))[0]
+                            self.execute(contour,lineno())
                         except InterpreterException,e:
                             msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                             self.set_errormsg(msg) 
