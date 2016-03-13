@@ -1,3 +1,3 @@
 # G71
-for Linuxcmc
+for Linuxcnc
 
