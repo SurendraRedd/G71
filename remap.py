@@ -57,7 +57,7 @@ def g711(self, **words):
                     a=2
                     while not re.search("^\s*.*Z", lines[temp_x-a].upper()):
                         a+=1
-                    coordZ_start = int(re.findall("^\s*\d*",(re.split('Z',lines[temp_x-a].upper())[1]))[0])
+                    coordZ_start = float(re.findall("^\s*\-?\d*\.?\d*",(re.split('Z',lines[temp_x-a].upper())[1]))[0])
         x+=1
     for n in range(v):
         COORDx0 =  coordX[n]
@@ -114,12 +114,12 @@ def g711(self, **words):
             except InterpreterException,e:
                 print "execute_ERROR"    
     for w in lines:
-        if  re.search("^\s*[(]\s*N\d", w):
-            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w)[1]))[0])
+        if  re.search("^\s*[(]\s*N\d", w.upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
                 if num2 >= p and num2 <= q:
                     try: 
-                        contour=re.split('\)',(re.split('\(',w)[1]))[0]
+                        contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
                         self.execute(contour,lineno())
                     except InterpreterException,e:
                         msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
