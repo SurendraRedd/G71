@@ -64,17 +64,14 @@ def g711(self, **words):
         COORDz0 =  coordZ[n]
         lengthZ = abs(COORDz0 - coordZ[n+1])
         lengthX = COORDx0 - coordX[n+1]
-        try:
+        if lengthX == 0 :#горизонтальная линия
+            delta = 0
+        elif lengthZ == 0 : #вертикальная линия
+            delta = 0
+        else:  
             tan = lengthX/lengthZ
-        except ZeroDivisionError:
-            tan = 0 
-        if l*tan < float(h):
-            try:
-               l = h/tan  # TODO 
-            except ZeroDivisionError:
-                l = 2l 
-        else:
-            l = float(words['e'])           
+            delta = d/tan
+           
         if line_or_arc[n] > 1:
             radius = sqrt((coordK[i])*(coordK[i]) + (coordI[i])*(coordI[i]))
             centreX = coordX[n+1] + coordI[i]
@@ -103,7 +100,7 @@ def g711(self, **words):
                 #просчитываем новую COORDz0 с учетом L(l) TODO пока без учета H(h):
                 if line_or_arc[n] == 1:
                     try:
-                        COORDz0 = COORDz0 + d/tan  
+                        COORDz0 = COORDz0 + delta  
                     except ZeroDivisionError:
                         COORDz0 = COORDz0
                 elif line_or_arc[n] >1:
