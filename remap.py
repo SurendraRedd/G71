@@ -4,13 +4,9 @@ sys.path.insert(0,'/home/nkp/git/linuxcnc/lib/python/')
 import linuxcnc
 import re
 from math import *
-
 import traceback
-
-
 from interpreter import *
 from emccanon import MESSAGE, SET_MOTION_OUTPUT_BIT, CLEAR_MOTION_OUTPUT_BIT,SET_AUX_OUTPUT_BIT,CLEAR_AUX_OUTPUT_BIT
-
 from util import lineno, call_pydevd
 
 throw_exceptions = 1 # raises InterpreterException if execute() or read() fail
@@ -45,25 +41,23 @@ def g711(self, **words):
     coordK = []
     s.poll() 
     while x < len(lines):
-        if  re.search("^\s*[(]\s*N\d", lines[x]):
-            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", lines[x]):
-                num = int(re.findall("^\s*\d*",(re.split('N',lines[x])[1]))[0])
+        if  re.search("^\s*[(]\s*N\d", lines[x], re.I):
+            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]",lines[x].upper()):
+                num = int(re.findall("^\s*\d*",(re.split('N',lines[x].upper())[1]))[0])
                 if num >= p and num <= q:
                     v+=1
-                    g1 = line_or_arc.insert(0,(int(re.findall("^\s*\d*",(re.split('G',lines[x])[1]))[0])))
-                    z1 = coordZ.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('Z',lines[x])[1]))[0])))
-                    x1 = coordX.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('X',lines[x])[1]))[0])))                    
+                    g1 = line_or_arc.insert(0,(int(re.findall("^\s*\d*",(re.split('G',lines[x].upper())[1]))[0])))
+                    z1 = coordZ.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('Z',lines[x].upper())[1]))[0])))
+                    x1=coordX.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('X',lines[x].upper())[1]))[0])))                    
                     if  re.search("[I]", lines[x]):
-                        i1 = coordI.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('I',lines[x])[1]))[0])))
-                        k1 = coordK.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('K',lines[x])[1]))[0])))
+                        i1 = coordI.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('I',lines[x].upper())[1]))[0])))
+                        k1 = coordK.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('K',lines[x].upper())[1]))[0])))
                 if num == p : # search Start_point
                     temp_x = x
                     a=2
-                    f_line_contour = re.search("^\s*.*G71", lines[temp_x-2])
-                    while not re.search("^\s*.*Z", lines[temp_x-a]):
+                    while not re.search("^\s*.*Z", lines[temp_x-a].upper()):
                         a+=1
-                    coordZ_start = int(re.findall("^\s*\d*",(re.split('Z',lines[temp_x-a])[1]))[0])
-                    print "coordZ_start=",coordZ_start
+                    coordZ_start = int(re.findall("^\s*\d*",(re.split('Z',lines[temp_x-a].upper())[1]))[0])
         x+=1
     for n in range(v):
         COORDx0 =  coordX[n]
@@ -72,12 +66,11 @@ def g711(self, **words):
         lengthX = COORDx0 - coordX[n+1]
         try:
             tan = lengthX/lengthZ
-            print "tan=", tan
         except ZeroDivisionError:
             tan = 0 
         if l*tan < float(h):
             try:
-               l = h/tan
+               l = h/tan  # TODO 
             except ZeroDivisionError:
                 l = 2l 
         else:
@@ -101,7 +94,6 @@ def g711(self, **words):
                # else:
                     #self.execute(" G0  X%f Z%f" % ((COORDx0 + 0.5),(coordZ_start)),lineno())# отход 45гр
                 self.execute(" G0  Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
-                print "go=",coordZ_start
                 if lengthX < d:
                     newX = COORDx0 - lengthX
                 else:
