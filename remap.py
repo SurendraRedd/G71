@@ -66,12 +66,19 @@ def g711(self, **words):
         lengthX = COORDx0 - coordX[n+1]
         if lengthX == 0 :#горизонтальная линия
             delta = 0
+            print "l=",l
+            l = lengthZ +l
+            print "l = lengthX +l=",l
         elif lengthZ == 0 : #вертикальная линия
             delta = 0
+            l = float(words['e'])
         else:  
             tan = lengthX/lengthZ
             delta = d/tan
-           
+            haigt_l = l*tan
+            l = float(words['e'])
+            if  haigt_l < h:
+                pass
         if line_or_arc[n] > 1:
             radius = sqrt((coordK[i])*(coordK[i]) + (coordI[i])*(coordI[i]))
             centreX = coordX[n+1] + coordI[i]
