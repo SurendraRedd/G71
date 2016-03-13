@@ -43,21 +43,21 @@ def g711(self, **words):
     while x < len(lines):
         if  re.search("^\s*[(]\s*N\d", lines[x], re.I):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]",lines[x].upper()):
-                num = int(re.findall("^\s*\d*",(re.split('N',lines[x].upper())[1]))[0])
+                num = int(re.search("N\s*([0-9.]+)",lines[x], re.I).group(1))
                 if num >= p and num <= q:
                     v+=1
-                    g1 = line_or_arc.insert(0,(int(re.findall("^\s*\d*",(re.split('G',lines[x].upper())[1]))[0])))
-                    z1 = coordZ.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('Z',lines[x].upper())[1]))[0])))
-                    x1=coordX.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('X',lines[x].upper())[1]))[0])))                    
+                    g1 = line_or_arc.insert(0,(int(re.search("G\s*([0-4.]+)",lines[x], re.I).group(1))))
+                    z1 = coordZ.insert(0,(float(re.search("Z\s*([-0-9.]+)",lines[x], re.I).group(1))))
+                    x1 = coordX.insert(0,(float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))))                    
                     if  re.search("[I]", lines[x]):
-                        i1 = coordI.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('I',lines[x].upper())[1]))[0])))
-                        k1 = coordK.insert(0,(float(re.findall("^\s*\-?\d*\.?\d*",(re.split('K',lines[x].upper())[1]))[0])))
+                        i1 = coordI.insert(0,(float(re.search("I\s*([-0-9.]+)",lines[x], re.I).group(1))))
+                        k1 = coordK.insert(0,(float(re.search("K\s*([-0-9.]+)",lines[x], re.I).group(1))))
                 if num == p : # search Start_point
                     temp_x = x
                     a=2
                     while not re.search("^\s*.*Z", lines[temp_x-a].upper()):
                         a+=1
-                    coordZ_start = float(re.findall("^\s*\-?\d*\.?\d*",(re.split('Z',lines[temp_x-a].upper())[1]))[0])
+                    coordZ_start = float(re.search("Z\s*([-0-9.]+)",lines[temp_x-a], re.I).group(1))
         x+=1
     for n in range(v):
         COORDx0 =  coordX[n]
