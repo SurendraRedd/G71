@@ -63,22 +63,22 @@ def g711(self, **words):
         COORDx0 =  coordX[n]
         COORDz0 =  coordZ[n]
         lengthZ = abs(COORDz0 - coordZ[n+1])
-        lengthX = COORDx0 - coordX[n+1]
+        lengthX = abs(COORDx0 - coordX[n+1])
         if lengthX == 0 :#горизонтальная линия
             delta = 0
-            print "l=",l
             l = lengthZ +l
-            print "l = lengthX +l=",l
         elif lengthZ == 0 : #вертикальная линия
             delta = 0
             l = float(words['e'])
         else:  
             tan = lengthX/lengthZ
             delta = d/tan
-            haigt_l = l*tan
+            height_l = l*tan
             l = float(words['e'])
-            if  haigt_l < h:
-                pass
+#            if  height_l < h:
+#                l = h/tan
+            if  tan < 0.3:
+                l = 2l                         
         if line_or_arc[n] > 1:
             radius = sqrt((coordK[i])*(coordK[i]) + (coordI[i])*(coordI[i]))
             centreX = coordX[n+1] + coordI[i]
@@ -104,19 +104,18 @@ def g711(self, **words):
                     newX = COORDx0 - d 
                 self.execute(" G1  X%f" % (newX),lineno())# новая позиция по X
                 COORDx0 = newX
-                #просчитываем новую COORDz0 с учетом L(l) TODO пока без учета H(h):
+                #просчитываем новую COORDz0 с учетом E(l) TODO пока без учета H(h):
                 if line_or_arc[n] == 1:
-                    try:
                         COORDz0 = COORDz0 + delta  
-                    except ZeroDivisionError:
-                        COORDz0 = COORDz0
                 elif line_or_arc[n] >1:
                     b2 = sqrt(radius*radius - ((centreX-COORDx0)-d)*((centreX-COORDx0)-d))
                     b1 = sqrt(radius*radius - (centreX-COORDx0)*(centreX-COORDx0))
                     COORDz0 = COORDz0 + (abs(b2-b1))                                    
                 lengthX = lengthX - d #d - съем за один проход
             except InterpreterException,e:
-                print "execute_ERROR"    
+                msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                self.set_errormsg(msg) 
+                return INTERP_ERROR    
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
