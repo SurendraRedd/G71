@@ -19,7 +19,7 @@ import dxf2gcode_v01_tsp_opt as tsp
 import webbrowser
 from Tkconstants import END, INSERT, ALL, N, S, E, W, RAISED, RIDGE, GROOVE, FLAT, DISABLED, NORMAL, ACTIVE, LEFT
 from tkMessageBox import showwarning, showerror
-from Tkinter import Tk, Canvas, Menu, Frame, Grid, DoubleVar, IntVar, Radiobutton, Label, Entry, Text, Scrollbar, Toplevel,Button
+from Tkinter import Tk, Canvas, Menu, Frame, Grid, DoubleVar, StringVar , IntVar, Radiobutton, Label, Entry, Text, Scrollbar, Toplevel,Button
 from tkFileDialog import askopenfile, asksaveasfilename
 from tkSimpleDialog import askfloat
 from Canvas import Rectangle, Line, Oval, Arc
@@ -341,14 +341,15 @@ class Erstelle_Fenster:
         lines = f.readlines()
         f.close()
         ch = ''
+        ch1 = ''
+        program = ''
         p , q , d , e , i , f = 1 , 15 , 1 , 1 , 1 , 433 ,
-        p_old = 0
         N_start_end = []
         for l in lines:
             if  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
                 l=str(re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I))
-                ch +=l
-                ch +='\n'
+                ch1 +=l
+                ch1 +='\n'
             elif  re.search("G\s*([0-3.]+)", l.upper() ,re.I):
                 if not  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
                     l=re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I)
@@ -361,18 +362,18 @@ class Erstelle_Fenster:
                         
         p = N_start_end[0]
         q = N_start_end[-1]
-        z0 = 0
-        g1_xmax1 = 'G1 X%s  Z%s \n' % (x_max, z0)
-        g1_xmax =str(g1_xmax1)
-
-        st = 'G71.2 P%s Q%s  D%s E%s I%s F%s \n' % (p , q , d , e , i , f )
+        z0 = 2
+        d = float(self.ExportParas.d_D.get())
+        program += ch1
+        pm = str('G1 X%s  Z%s \n' % (x_max, z0))
+        program += pm
+        stt = str('G71.2 P%s Q%s  D%s E%s I%s F%s \n' % (p , q , d , e , i , f ))
+        program += stt
+        program += ch
+        program += 'M2'
         
-        stt = str(st)
-        g1_xmax += stt
-        g1_xmax += ch
-        g1_xmax += 'M2'
 
-        print(g1_xmax)
+        print(program)
         self.ende()          
             
 
@@ -497,8 +498,8 @@ class ExportParasClass:
         self.nb_f2 = Frame(self.nb())
 
         # keeps the reference to the radiobutton (optional)
-        self.nb.add_screen(self.nb_f1, "Coordinates")
-        self.nb.add_screen(self.nb_f2, "File Beg. & End")
+        self.nb.add_screen(self.nb_f1, "Parameter")
+        self.nb.add_screen(self.nb_f2, "File")
 
         self.nb_f1.columnconfigure(0,weight=1)
         self.nb_f2.columnconfigure(0,weight=1)        
@@ -522,55 +523,56 @@ class ExportParasClass:
         f1.columnconfigure(0,weight=1)
         f2.columnconfigure(0,weight=1)
         f3.columnconfigure(0,weight=1)        
-   
-        Label(f1, text="Tool diameter [mm]:")\
-                .grid(row=0,column=0,sticky=N+W,padx=4)
-        Entry(f1,width=7,textvariable=config.tool_dia)\
-                .grid(row=0,column=1,sticky=N+E)
 
-        Label(f1, text="Start radius (for tool comp.) [mm]:")\
+        Label(f1, text="Depth of cut         [D]:")\
+                .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.d_D = Entry(f1,width=7,textvariable=config.depth_D)
+        self.d_D.grid(row=0,column=1,sticky=N+E)
+
+ 
+        Label(f1, text="X-axis size [E]:")\
                 .grid(row=1,column=0,sticky=N+W,padx=4)
-        Entry(f1,width=7,textvariable=config.start_rad)\
+        Entry(f1,width=7,textvariable='')\
                 .grid(row=1,column=1,sticky=N+E)        
 
-        Label(f2, text=("Start at %s [mm]:" %config.ax1_letter))\
+        Label(f2, text=("Z-axis size [I]:" ))\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable=config.axis1_st_en)\
+        Entry(f2,width=7,textvariable='')\
                 .grid(row=0,column=1,sticky=N+E)
 
-        Label(f2, text=("Start at %s [mm]:" %config.ax2_letter))\
+        Label(f2, text=("Feedrate mm/min  [F]:"))\
                 .grid(row=1,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable=config.axis2_st_en)\
+        Entry(f2,width=7,textvariable='')\
                 .grid(row=1,column=1,sticky=N+E)
 
-        Label(f2, text=("%s retraction area [mm]:" %config.ax3_letter))\
+        Label(f2, text=("Ending Block number [Q]:"))\
                 .grid(row=2,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable=config.axis3_retract)\
+        Entry(f2,width=7,textvariable='')\
                 .grid(row=2,column=1,sticky=N+E)
 
-        Label(f2, text=("%s safety margin [mm]:" %config.ax3_letter))\
+        Label(f2, text=("empty[]:"))\
                 .grid(row=3,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable=config.axis3_safe_margin)\
+        Entry(f2,width=7,textvariable='')\
                 .grid(row=3,column=1,sticky=N+E)
 
-        Label(f2, text=("%s infeed depth [mm]:" %config.ax3_letter))\
+        Label(f2, text=("empty[]:" ))\
                 .grid(row=4,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable=config.axis3_slice_depth)\
+        Entry(f2,width=7,textvariable='')\
                 .grid(row=4,column=1,sticky=N+E)
 
-        Label(f2, text=("%s mill depth [mm]:" %config.ax3_letter))\
+        Label(f2, text=("empty []:" ))\
                 .grid(row=5,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable=config.axis3_mill_depth)\
+        Entry(f2,width=7,textvariable='')\
                 .grid(row=5,column=1,sticky=N+E)
 
-        Label(f3, text=("G1 feed %s-direction [mm/min]:" %config.ax3_letter))\
+        Label(f3, text=("empty[]:" ))\
                 .grid(row=1,column=0,sticky=N+W,padx=4)
-        Entry(f3,width=7,textvariable=config.F_G1_Depth)\
+        Entry(f3,width=7,textvariable='')\
                 .grid(row=1,column=1,sticky=N+E)
 
-        Label(f3, text=("G1 feed %s%s-direction [mm/min]:" %(config.ax1_letter,config.ax2_letter)))\
+        Label(f3, text=("empty[]:" ))\
                 .grid(row=2,column=0,sticky=N+W,padx=4)
-        Entry(f3,width=7,textvariable=config.F_G1_Plane)\
+        Entry(f3,width=7,textvariable='')\
                 .grid(row=2,column=1,sticky=N+E)
 
     def erstelle_textfelder(self,config):
@@ -578,7 +580,7 @@ class ExportParasClass:
         f22.grid(row=0,column=0,padx=2,pady=2,sticky=N+W+E)
         f22.columnconfigure(0,weight=1)        
 
-        Label(f22 , text="G-Code at the begin of file")\
+        Label(f22 , text="G-Code")\
                 .grid(row=0,column=0,columnspan=2,sticky=N+W,padx=2)
         self.gcode_be = Text(f22,width=10,height=8)
         self.gcode_be_sc = Scrollbar(f22)
@@ -587,7 +589,7 @@ class ExportParasClass:
         self.gcode_be_sc.config(command=self.gcode_be.yview)
         self.gcode_be.config(yscrollcommand=self.gcode_be_sc.set)
 
-        Label(f22, text="G-Code at the end of file")\
+        Label(f22, text="G-Code")\
                 .grid(row=2,column=0,columnspan=2,sticky=N+W,padx=2)
         self.gcode_en = Text(f22,width=10,height=5)
         self.gcode_en_sc = Scrollbar(f22)
@@ -1291,57 +1293,18 @@ class ConfigClass:
         return folder 
 
     def make_new_Config_file(self):
-        self.parser.add_section('Paths') 
-        self.parser.set('Paths', 'load_path', 'C:\Users\Christian Kohlöffel\Documents\DXF2GCODE\trunk\dxf')
-        self.parser.set('Paths', 'save_path', 'C:\Users\Christian Kohlöffel\Documents')
-
-        self.parser.add_section('Import Parameters') 
-        self.parser.set('Import Parameters', 'point_tolerance', 0.01)
-        self.parser.set('Import Parameters', 'fitting_tolerance', 0.01)   
-                   
-        self.parser.add_section('Tool Parameters') 
-        self.parser.set('Tool Parameters', 'diameter', 2.0)
-        self.parser.set('Tool Parameters', 'start_radius', 0.2)
-
-        self.parser.add_section('Plane Coordinates') 
-        self.parser.set('Plane Coordinates', 'axis1_start_end', 0)
-        self.parser.set('Plane Coordinates', 'axis2_start_end', 0)
-
-        self.parser.add_section('Depth Coordinates') 
-        self.parser.set('Depth Coordinates', 'axis3_retract', 15)
-        self.parser.set('Depth Coordinates', 'axis3_safe_margin', 3.0)
-        self.parser.set('Depth Coordinates', 'axis3_mill_depth', -3.0)
-        self.parser.set('Depth Coordinates', 'axis3_slice_depth', -1.5)
-
-        self.parser.add_section('Feed Rates')
-        self.parser.set('Feed Rates', 'f_g1_depth', 150)
-        self.parser.set('Feed Rates', 'f_g1_plane', 400)
-
-        self.parser.add_section('Axis letters')
-        self.parser.set('Axis letters', 'ax1_letter', 'X')
-        self.parser.set('Axis letters', 'ax2_letter', 'Y')
-        self.parser.set('Axis letters', 'ax3_letter', 'Z')                  
-
-        self.parser.add_section('Route Optimisation')
-        self.parser.set('Route Optimisation', 'Begin art','heurestic')
-        self.parser.set('Route Optimisation', 'Max. population', 20)
-        self.parser.set('Route Optimisation', 'Max. iterations', 300)  
-        self.parser.set('Route Optimisation', 'Mutation Rate', 0.95)
-                     
-        self.parser.add_section('Debug')
-        self.parser.set('Debug', 'global_debug_level', 0)         
-                
-        open_file = open(os.path.join(self.folder,self.cfg_file_name), "w") 
-        self.parser.write(open_file) 
-        open_file.close()
+        pass
             
     def get_all_vars(self):
         try:               
             self.tool_dia=DoubleVar()
-            self.tool_dia.set(float(self.parser.get('Tool Parameters','diameter')))
-
+            self.tool_dia.set(float(2.333))
+            
+            self.depth_D = DoubleVar()
+            self.depth_D.set(float(self.parser.get('Parameters','depth_D')))
+            
             self.start_rad=DoubleVar()
-            self.start_rad.set(float(self.parser.get('Tool Parameters','start_radius')))        
+            self.start_rad.set(float(self.parser.get('Parameters','start_radius')))        
            
             self.axis1_st_en=DoubleVar()
             self.axis1_st_en.set(float(self.parser.get('Plane Coordinates','axis1_start_end')))
@@ -1492,61 +1455,7 @@ class PostprocessorClass:
 ##            raise Exception, "Problem during import from INI File" 
 
     def make_new_postpro_file(self):
-            
-        self.parser.add_section('General')
-        self.parser.set('General', 'abs_export', 1)
-        self.parser.set('General', 'write_to_stdout', 1)
-        self.parser.set('General', 'code_begin',\
-                        'G21 (Unit in mm) \nG90 (Absolute distance mode)'\
-                        +'\nG64 P0.01 (Exact Path 0.001 tol.)'\
-                        +'\nG17'
-                        +'\nG40 (Cancel diameter comp.) \nG49 (Cancel length comp.)'\
-                        +'\nT1M6 (Tool change to T1)\nM8 (Coolant flood on)'\
-                        +'\nS5000M03 (Spindle 5000rpm cw)')
-        self.parser.set('General', 'code_end','M9 (Coolant off)\nM5 (Spindle off)\nM2 (Prgram end)')    
-
-        self.parser.add_section('Number format')
-        self.parser.set('Number format','pre_decimals',4)
-        self.parser.set('Number format','post_decimals',3)
-        self.parser.set('Number format','decimal_seperator','.')
-        self.parser.set('Number format','pre_decimal_zero_padding',0)
-        self.parser.set('Number format','post_decimal_zero_padding',1)
-        self.parser.set('Number format','signed_values',0)
-
-        self.parser.add_section('Line numbers')
-        self.parser.set('Line numbers','use_line_nrs',0)
-        self.parser.set('Line numbers','line_nrs_begin',10)
-        self.parser.set('Line numbers','line_nrs_step',10)
-
-        self.parser.add_section('Program')
-        self.parser.set('Program','tool_change',\
-                        ('T%tool_nr M6%nl S%speed M3%nl'))
-        self.parser.set('Program','feed_change',\
-                        ('F%feed%nl'))
-        self.parser.set('Program','rap_pos_plane',\
-                        ('G0 X%X Y%Y%nl'))
-        self.parser.set('Program','rap_pos_depth',\
-                        ('G0 Z%Z %nl'))
-        self.parser.set('Program','lin_mov_plane',\
-                        ('G1 X%X Y%Y%nl'))
-        self.parser.set('Program','lin_mov_depth',\
-                        ('G1 Z%Z%nl'))
-        self.parser.set('Program','arc_int_cw',\
-                        ('G2 X%X Y%Y I%I J%J%nl'))
-        self.parser.set('Program','arc_int_ccw',\
-                        ('G3 X%X Y%Y I%I J%J%nl'))
-        self.parser.set('Program','cutter_comp_off',\
-                        ('G40%nl'))
-        self.parser.set('Program','cutter_comp_left',\
-                        ('G41%nl'))
-        self.parser.set('Program','cutter_comp_right',\
-                        ('G42%nl'))                      
-                        
-                
-        open_file = open(os.path.join(self.config.folder,self.postpro_file_name), "w") 
-        self.parser.write(open_file) 
-        open_file.close()
-
+        pass
 
     def write_gcode_be(self,ExportParas,load_filename):
         #Schreiben in einen String
