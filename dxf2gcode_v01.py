@@ -26,7 +26,7 @@ from Canvas import Rectangle, Line, Oval, Arc
 from copy import copy
 
 from math import radians, cos, sin
-
+import re
 # Globale "Konstanten"
 APPNAME = "dxf2gcode_v01"
 
@@ -327,7 +327,10 @@ class Erstelle_Fenster:
             self.textbox.prt(("\nError during G-Code Generation"))
             self.master.update_idletasks()
 
-                    
+##################################################################################change_for_lathe 
+#./dxf2gcode_v01.py /home/nkp/git/qcad.dxf
+
+#####################################################################################change_for_lathe           
         #Drucken in den Stdout, speziell für EMC2 
         if 0:
             print(string)
@@ -341,12 +344,43 @@ class Erstelle_Fenster:
                     #Wenn Cancel gedrückt wurde
                     if not self.save_filename:
                         return
-                    
-                    #Das File öffnen und schreiben    
                     f = open(self.save_filename, "w")
                     f.write(string)
-                    f.close()    
-                      
+                    f.close()
+                    f = open(self.save_filename, "r")  
+                    lines = f.readlines()
+                    f.close()
+                    ff = open(self.save_filename, "w") 
+                    ch = ''
+                    p , q , d , e , i , f = 1 , 15 , 1 , 1 , 1 , 433 ,
+                    p_old = 0
+                    N_start_end = []
+                    for l in lines:
+                        if  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                            l=str(re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I))
+                            ff.write(l+'\n')
+                        elif  re.search("G\s*([0-3.]+)", l.upper() ,re.I):
+                            if not  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                                l=re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I)
+                                ch +='('
+                                ch +=l
+                                ch +=')'
+                                ch +='\n'
+                                p1 = N_start_end.append(int(re.search("N\s*([-0-9.]+)",l.upper(), re.I).group(1))) 
+                                x_max = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                                    
+                    p = N_start_end[0]
+                    q = N_start_end[-1]
+                    z0 = 0
+                    g1_xmax1 = 'G1 X%s  Z%s \n' % (x_max, z0)
+                    g1_xmax =str(g1_xmax1)
+                    ff.write(g1_xmax)
+                    st = 'G71.2 P%s Q%s  D%s E%s I%s F%s \n' % (p , q , d , e , i , f )
+                    stt = str(st)
+                    stt += ch
+                    ff.write(stt)
+                    ff.write('M2')
+                    ff.close()         
                 except IOError:
                     showwarning("Save As", "Cannot save the file.")
             
