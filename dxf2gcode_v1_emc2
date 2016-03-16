@@ -364,6 +364,10 @@ class Erstelle_Fenster:
         q = N_start_end[-1]
         z0 = 2
         d = float(self.ExportParas.d_D.get())
+        e = float(self.ExportParas.d_E.get())
+        i = float(self.ExportParas.d_I.get())
+        f = float(self.ExportParas.d_F.get())
+
         program += ch1
         pm = str('G1 X%s  Z%s \n' % (x_max, z0))
         program += pm
@@ -523,33 +527,32 @@ class ExportParasClass:
         f1.columnconfigure(0,weight=1)
         f2.columnconfigure(0,weight=1)
         f3.columnconfigure(0,weight=1)        
-
+############################################################################################
         Label(f1, text="Depth of cut         [D]:")\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
         self.d_D = Entry(f1,width=7,textvariable=config.depth_D)
         self.d_D.grid(row=0,column=1,sticky=N+E)
-
- 
+             
         Label(f1, text="X-axis size [E]:")\
                 .grid(row=1,column=0,sticky=N+W,padx=4)
-        Entry(f1,width=7,textvariable='')\
-                .grid(row=1,column=1,sticky=N+E)        
+        self.d_E = Entry(f1,width=7,textvariable=config.z_size_Z)
+        self.d_E.grid(row=1,column=1,sticky=N+E)        
 
         Label(f2, text=("Z-axis size [I]:" ))\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable='')\
-                .grid(row=0,column=1,sticky=N+E)
+        self.d_I = Entry(f2,width=7,textvariable=config.x_size_X)
+        self.d_I.grid(row=0,column=1,sticky=N+E)
 
         Label(f2, text=("Feedrate mm/min  [F]:"))\
                 .grid(row=1,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable='')\
-                .grid(row=1,column=1,sticky=N+E)
+        self.d_F = Entry(f2,width=7,textvariable=config.feedrate_F)
+        self.d_F.grid(row=1,column=1,sticky=N+E)
 
         Label(f2, text=("Ending Block number [Q]:"))\
                 .grid(row=2,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable='')\
-                .grid(row=2,column=1,sticky=N+E)
-
+        self.d_Q = Entry(f2,width=7,textvariable=config.ending_block_Q)
+        self.d_Q.grid(row=2,column=1,sticky=N+E)
+#####################################################################################
         Label(f2, text=("empty[]:"))\
                 .grid(row=3,column=0,sticky=N+W,padx=4)
         Entry(f2,width=7,textvariable='')\
@@ -1299,10 +1302,33 @@ class ConfigClass:
         try:               
             self.tool_dia=DoubleVar()
             self.tool_dia.set(float(2.333))
-            
+##########################################################my_par            
             self.depth_D = DoubleVar()
             self.depth_D.set(float(self.parser.get('Parameters','depth_D')))
             
+            self.z_size_Z = DoubleVar()
+            self.z_size_Z.set(float(self.parser.get('Parameters','z_size_Z')))
+                        
+            self.x_size_X = DoubleVar()
+            self.x_size_X.set(float(self.parser.get('Parameters','x_size_X')))
+                       
+            self.feedrate_F = DoubleVar()
+            self.feedrate_F.set(float(self.parser.get('Parameters','feedrate_F'))) 
+                       
+            self.ending_block_Q = DoubleVar()
+            self.ending_block_Q.set(float(self.parser.get('Parameters','ending_block_Q')))
+                        
+           
+            
+            
+            
+            
+            
+            
+            
+            
+            
+##########################################################my_par            
             self.start_rad=DoubleVar()
             self.start_rad.set(float(self.parser.get('Parameters','start_radius')))        
            
