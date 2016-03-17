@@ -288,7 +288,7 @@ class Erstelle_Fenster:
         ch = ''
         ch1 = ''
         program = ''
-        p , q , d , e , i , f = 1 , 15 , 1 , 1 , 1 , 433 ,
+        p , q , d , k , i , f = 1 , 15 , 1 , 1 , 1 , 433 ,
         N_start_end = []
         Z_start = []
         for l in lines:
@@ -311,14 +311,14 @@ class Erstelle_Fenster:
         q = N_start_end[-1]
         z0 = Z_start[0]
         d = float(self.ExportParas.d_D.get())
-        e = float(self.ExportParas.d_E.get())
+        k = float(self.ExportParas.d_K.get())
         i = float(self.ExportParas.d_I.get())
         f = float(self.ExportParas.d_F.get())
 
         program += ch1
         start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
         program += start_point
-        stt = str('G71.2 P%s Q%s  D%s E%s I%s F%s \n' % (p , q , d , e , i , f ))
+        stt = str('G71.2 P%s Q%s  D%s K%s I%s F%s \n' % (p , q , d , k , i , f ))
         program += stt
         program += ch
         program += 'M2'
@@ -466,10 +466,10 @@ class ExportParasClass:
         self.d_D = Entry(f1,width=7,textvariable=config.depth_D)
         self.d_D.grid(row=0,column=1,sticky=N+E)
              
-        Label(f1, text="X-axis size [E]:")\
+        Label(f1, text="X-axis size [K]:")\
                 .grid(row=1,column=0,sticky=N+W,padx=4)
-        self.d_E = Entry(f1,width=7,textvariable=config.z_size_Z)
-        self.d_E.grid(row=1,column=1,sticky=N+E)        
+        self.d_K = Entry(f1,width=7,textvariable=config.z_size_Z)
+        self.d_K.grid(row=1,column=1,sticky=N+E)        
 
         Label(f2, text=("Z-axis size [I]:" ))\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
