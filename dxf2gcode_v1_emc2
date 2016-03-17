@@ -1,5 +1,5 @@
 #!/usr/bin/python
-# -*- coding: cp1252 -*-
+# -*- coding: utf-8 -*-
 
 import sys
 if globals().has_key('init_modules'):
@@ -27,7 +27,6 @@ from copy import copy
 
 from math import radians, cos, sin
 import re
-# Globale "Konstanten"
 APPNAME = "dxf2gcode_v01"
 
 class Erstelle_Fenster:
@@ -35,27 +34,20 @@ class Erstelle_Fenster:
         
         self.master=master     
 
-        #Uebergabe des load_filenames falls von EMC gestartet
         self.load_filename=load_filename
 
-        #Linker Rahmen erstellen, in welchen später die Eingabefelder kommen       
         self.frame_l=Frame(master) 
         self.frame_l.grid(row=0,column=0,rowspan=2,padx=4,pady=4,sticky=N+E+W)
         
-        #Erstellen des Canvas Rahmens
         self.frame_c=Frame(master,relief = RIDGE,bd = 2)
         self.frame_c.grid(row=0,column=1,padx=4,pady=4,sticky=N+E+S+W)
         
-        #Unterer Rahmen erstellen mit der Lisbox + Scrollbar zur Darstellung der Ereignisse.
         self.frame_u=Frame(master) 
         self.frame_u.grid(row=1,column=1,padx=4,sticky=N+E+W+S)
-        #Erstellen des Statusfenster
         self.textbox=TextboxClass(frame=self.frame_u,master=self.master)
 
-        #Voreininstellungen für das Programm laden
         self.config=ConfigClass(self.textbox)
 
-        #PostprocessorClass initialisieren (Voreinstellungen aus Config)
         self.postpro=PostprocessorClass(self.config,self.textbox)
 
         self.master.columnconfigure(0,weight=0)
@@ -64,20 +56,15 @@ class Erstelle_Fenster:
         self.master.rowconfigure(1,weight=0)
             
 
-        #Erstellen de Eingabefelder und des Canvas
         self.ExportParas =ExportParasClass(self.frame_l,self.config,self.postpro)
         self.Canvas =CanvasClass(self.frame_c,self)
 
-        #Erstellen der Canvas Content Klasse & Bezug in Canvas Klasse
         self.CanvasContent=CanvasContentClass(self.Canvas,self.textbox,self.config)
         self.Canvas.Content=self.CanvasContent
 
-        #Erstellen des Fenster Menus
         self.erstelle_menu()        
         
-        #Falls ein load_filename_uebergeben wurde
         if not(self.load_filename==None):
-            #Zuerst alle ausstehenden Events und Callbacks ausführen (sonst klappts beim Laden nicht)
             self.Canvas.canvas.update()
             self.Load_File(self.load_filename)
 
@@ -94,7 +81,6 @@ class Erstelle_Fenster:
         self.exportmenu = Menu(self.menu,tearoff=0)
         self.menu.add_cascade(label="Export", menu=self.exportmenu)
         self.exportmenu.add_command(label="Write G-Code", command=self.Write_GCode)
-        #Disabled bis was gelesen wurde
         self.exportmenu.entryconfig(0,state=DISABLED)
 
         self.viewmenu=Menu(self.menu,tearoff=0)
@@ -112,11 +98,9 @@ class Erstelle_Fenster:
         self.viewmenu.add_separator()
         self.viewmenu.add_command(label='Autoscale',command=self.Canvas.autoscale)
 
-        #Menupunkt einfügen zum löschen der Route
         self.viewmenu.add_separator()
         self.viewmenu.add_command(label='Delete Route',command=self.del_route_and_menuentry)         
 
-        #Disabled bis was gelesen wurde
         self.viewmenu.entryconfig(0,state=DISABLED)
         self.viewmenu.entryconfig(1,state=DISABLED)
         self.viewmenu.entryconfig(2,state=DISABLED)
@@ -137,9 +121,7 @@ class Erstelle_Fenster:
         self.menu.add_cascade(label="Help", menu=self.helpmenu)
         self.helpmenu.add_command(label="About...", command=self.Show_About)
 
-    # Callback des Menu Punkts File Laden
     def Get_Load_File(self):
-        #Auswahl des zu ladenden Files
         myFormats = [('AutoCAD / QCAD Drawing','*.dxf'),\
         ('All File','*.*') ]
         inidir=self.config.load_path
@@ -159,7 +141,6 @@ class Erstelle_Fenster:
         
         self.values=dxf_import.Load_DXF(filename,self.config,self.textbox)
         
-        #Ausgabe der Informationen im Text Fenster
         self.textbox.prt('\nLoaded layers: ' +str(len(self.values.layers)))
         self.textbox.prt('\nLoaded blocks: ' +str(len(self.values.blocks.Entities)))
         for i in range(len(self.values.blocks.Entities)):
@@ -174,35 +155,27 @@ class Erstelle_Fenster:
                              +' Contours, used layers: ' +str(layers)\
                              +' ,Number of inserts: ' +str(insert_nr))
 
-        #Skalierung der Kontur
         self.cont_scale=1.0
         
-        #Verschiebung der Kontur
         self.cont_dx=0.0
         self.cont_dy=0.0
 
-        #Disabled bis was gelesen wurde
         self.viewmenu.entryconfig(0,state=NORMAL)
         self.viewmenu.entryconfig(1,state=NORMAL)
         self.viewmenu.entryconfig(2,state=NORMAL)
         self.viewmenu.entryconfig(4,state=NORMAL)
 
-        #Disabled bis was gelesen wurde
         self.exportmenu.entryconfig(0,state=NORMAL)
 
-        #Disabled bis was gelesen wurde
         self.optionmenu.entryconfig(2,state=NORMAL)
         self.optionmenu.entryconfig(3,state=NORMAL)        
 
-        #Ausdrucken der Werte        
         self.CanvasContent.makeplot(self.values)
 
-        #Löschen alter Route Menues
         self.del_route_and_menuentry()
             
     def Get_Cont_Tol(self):
 
-        #Dialog für die Toleranzvoreinstellungen öffnen      
         title='Contour tolerances'
         label=(("Tolerance for common points [mm]:"),\
                ("Tolerance for curve fitting [mm]:"))
@@ -211,7 +184,6 @@ class Erstelle_Fenster:
         self.config.points_tolerance.set(dialog.result[0])
         self.config.fitting_tolerance.set(dialog.result[1])
         
-        #Falls noch kein File geladen wurde nichts machen
         if self.load_filename==None:
             return
         self.Load_File(self.load_filename)
@@ -219,57 +191,47 @@ class Erstelle_Fenster:
                               %(dialog.result[0],dialog.result[1])))
         
     def Get_Cont_Scale(self):
-        #Abspeichern der alten Werte
         old_scale=self.cont_scale
                 
         value=askfloat('Scale Contours','Set the scale factor',\
                                 initialvalue=self.cont_scale)
-        #Abfrage ob Cancel gedrückt wurde
         if value==None:
             return
         
         self.cont_scale=value
 
-        #Falls noch kein File geladen wurde nichts machen
         self.textbox.prt(("\nScaled Contours by factor %0.3f" %self.cont_scale))
 
         self.Canvas.scale_contours(self.cont_scale/old_scale)        
         
     def Move_WP_zero(self):
-        #Die alten Werte zwischenspeichern für das verschieben des Canvas
         old_dx=self.cont_dx
         old_dy=self.cont_dy
 
-        #Dialog mit den definierten Parametern öffnen       
         title='Workpiece zero offset'
         label=(("Offset %s axis by mm:" %self.config.ax1_letter),\
                ("Offset %s axis by mm:" %self.config.ax2_letter))
         value=(self.cont_dx,self.cont_dy)
         dialog=Tkinter_Variable_Dialog(self.master,title,label,value)
 
-        #Abbruch wenn nicht übergeben wurde
         if dialog.result==False:
             return
         
         self.cont_dx=dialog.result[0]
         self.cont_dy=dialog.result[1]
 
-        #Falls noch kein File geladen wurde nichts machen
         self.textbox.prt(("\nWorpiece zero offset: %s %0.2f; %s %0.2f" \
                               %(self.config.ax1_letter,self.cont_dx,
                                 self.config.ax2_letter,self.cont_dy)))
 
-        #Verschieben des Canvas WP zero
         self.Canvas.move_wp_zero(self.cont_dx-old_dx,self.cont_dy-old_dy)
 
     def Get_Save_File(self):
 
-        #Abbruch falls noch kein File geladen wurde.
         if self.load_filename==None:
             showwarning("Export G-Code", "Nothing to export!")
             return
         
-        #Auswahl des zu ladenden Files
         myFormats = [('G-Code for EMC2','*.ngc'),\
         ('All File','*.*') ]
 
@@ -280,43 +242,29 @@ class Erstelle_Fenster:
         self.save_filename = asksaveasfilename(initialdir=inidir,\
                                initialfile=fileBaseName +'.ngc',filetypes=myFormats)
 
-    # Callback des Menu Punkts Exportieren
     def Write_GCode(self):
 
-        #Funktion zum optimieren des Wegs aufrufen
         self.opt_export_route()
 
-        #Initial Status für den Export
         status=1
 
-        #Config & postpro in einen kurzen Namen speichern
         config=self.config
         postpro=self.postpro
 
-        #Schreiben der Standardwert am Anfang        
         postpro.write_gcode_be(self.ExportParas,self.load_filename)
 
-        #Maschine auf die Anfangshöhe bringen
-     #   postpro.rap_pos_z(config.axis3_retract.get())
 
-        #Bei 1 starten da 0 der Startpunkt ist
         for nr in range(1,len(self.TSP.opt_route)):
             shape=self.shapes_to_write[self.TSP.opt_route[nr]]
             self.textbox.prt(("\nWriting Shape: %s" %shape),1)
                 
 
 
-            #Drucken falls die Shape nicht disabled ist
             if not(shape.nr in self.CanvasContent.Disabled):
-                #Falls sich die Fräserkorrektur verändert hat diese in File schreiben
                 stat =shape.Write_GCode(config,postpro)
                 status=status*stat
 
-        #Maschine auf den Endwert positinieren
-      #  postpro.rap_pos_xy(PointClass(x=config.axis1_st_en.get(),\
-                                            #  y=config.axis2_st_en.get()))
 
-        #Schreiben der Standardwert am Ende        
         string=postpro.write_gcode_en(self.ExportParas)
 
         if status==1:
@@ -327,11 +275,8 @@ class Erstelle_Fenster:
             self.textbox.prt(("\nError during G-Code Generation"))
             self.master.update_idletasks()
 
-##################################################################################change_for_lathe 
-#./dxf2gcode_v01.py /home/nkp/git/qcad.dxf
 
-#####################################################################################change_for_lathe           
-
+################################################################################вывод программы
         save_file = '/home/nkp/.temp_dxf.ngc'
         f = open(save_file, "w")
         f.write(string)
@@ -345,6 +290,7 @@ class Erstelle_Fenster:
         program = ''
         p , q , d , e , i , f = 1 , 15 , 1 , 1 , 1 , 433 ,
         N_start_end = []
+        Z_start = []
         for l in lines:
             if  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
                 l=str(re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I))
@@ -357,20 +303,21 @@ class Erstelle_Fenster:
                     ch +=l
                     ch +=')'
                     ch +='\n'
-                    p1 = N_start_end.append(int(re.search("N\s*([-0-9.]+)",l.upper(), re.I).group(1))) 
+                    p1 = N_start_end.append(int(re.search("N\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
                     x_max = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
                         
         p = N_start_end[0]
         q = N_start_end[-1]
-        z0 = 2
+        z0 = Z_start[0]
         d = float(self.ExportParas.d_D.get())
         e = float(self.ExportParas.d_E.get())
         i = float(self.ExportParas.d_I.get())
         f = float(self.ExportParas.d_F.get())
 
         program += ch1
-        pm = str('G1 X%s  Z%s \n' % (x_max, z0))
-        program += pm
+        start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
+        program += start_point
         stt = str('G71.2 P%s Q%s  D%s E%s I%s F%s \n' % (p , q , d , e , i , f ))
         program += stt
         program += ch
@@ -383,14 +330,11 @@ class Erstelle_Fenster:
 
     def opt_export_route(self):
         
-        #Errechnen der Iterationen
         iter =min(self.config.max_iterations,len(self.CanvasContent.Shapes)*20)
         
-        #Anfangswerte für das Sortieren der Shapes
         self.shapes_to_write=[]
         shapes_st_en_points=[]
         
-        #Alle Shapes die geschrieben werden zusammenfassen
         for shape_nr in range(len(self.CanvasContent.Shapes)):
             shape=self.CanvasContent.Shapes[shape_nr]
             if not(shape.nr in self.CanvasContent.Disabled):
@@ -398,23 +342,18 @@ class Erstelle_Fenster:
                 shapes_st_en_points.append(shape.get_st_en_points())
                 
 
-        #Hinzufügen des Start- Endpunkte ausserhalb der Geometrie
         x_st=self.config.axis1_st_en.get()
         y_st=self.config.axis2_st_en.get()
         start=PointClass(x=x_st,y=y_st)
         ende=PointClass(x=x_st,y=y_st)
         shapes_st_en_points.append([start,ende])
 
-        #Optimieren der Reihenfolge
         self.textbox.prt(("\nTSP Starting"),1)
                 
         self.TSP=tsp.TSPoptimize(shapes_st_en_points,self.textbox,self.master,self.config)
         self.textbox.prt(("\nTSP start values initialised"),1)
-        #self.CanvasContent.path_hdls=[]
-        #self.CanvasContent.plot_opt_route(shapes_st_en_points,self.TSP.opt_route)
 
         for it_nr in range(iter):
-            #Jeden 10ten Schrit rausdrucken
             if (it_nr%10)==0:
                 self.textbox.prt(("\nTSP Iteration nr: %i" %it_nr),1)
                 for hdl in self.CanvasContent.path_hdls:
@@ -458,10 +397,8 @@ class TextboxClass:
         frame.columnconfigure(1,weight=0)
 
         
-        #Binding für Contextmenu
         self.text.bind("<Button-3>", self.text_contextmenu)
 
-        #Anfangstext einfügen
         self.textscr.config(command=self.text.yview)
         self.text.config(yscrollcommand=self.textscr.set)
         self.prt('Program started\nVersion V0.1\nCoded by V. Schulz and C. Kohlöffel')
@@ -479,10 +416,8 @@ class TextboxClass:
             self.master.update_idletasks()
             
 
-    #Contextmenu Text mit Bindings beim Rechtsklick
     def text_contextmenu(self,event):
 
-        #Contextmenu erstellen zu der Geometrie        
         popup = Menu(self.text,tearoff=0)        
         popup.add_command(label='Delete text entries',command=self.text_delete_entries)
         popup.post(event.x_root, event.y_root)
@@ -497,11 +432,9 @@ class ExportParasClass:
   
         self.nb = NotebookClass(self.master,width=240)
 
-        # uses the notebook's frame
         self.nb_f1 = Frame(self.nb())
         self.nb_f2 = Frame(self.nb())
 
-        # keeps the reference to the radiobutton (optional)
         self.nb.add_screen(self.nb_f1, "Parameter")
         self.nb.add_screen(self.nb_f2, "File")
 
@@ -526,8 +459,8 @@ class ExportParasClass:
     
         f1.columnconfigure(0,weight=1)
         f2.columnconfigure(0,weight=1)
-        f3.columnconfigure(0,weight=1)        
-############################################################################################
+        f3.columnconfigure(0,weight=1) 
+#########################################################################################параметры в окне              
         Label(f1, text="Depth of cut         [D]:")\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
         self.d_D = Entry(f1,width=7,textvariable=config.depth_D)
@@ -552,12 +485,11 @@ class ExportParasClass:
                 .grid(row=2,column=0,sticky=N+W,padx=4)
         self.d_Q = Entry(f2,width=7,textvariable=config.ending_block_Q)
         self.d_Q.grid(row=2,column=1,sticky=N+E)
-#####################################################################################
-        Label(f2, text=("empty[]:"))\
-                .grid(row=3,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable='')\
-                .grid(row=3,column=1,sticky=N+E)
 
+        Label(f2, text=("Start_Z  [Z0]:"))\
+                .grid(row=3,column=0,sticky=N+W,padx=4)
+        self.d_Z0 = Entry(f2,width=7,textvariable=config.start_Z0)
+        self.d_Z0.grid(row=3,column=1,sticky=N+E)
         Label(f2, text=("empty[]:" ))\
                 .grid(row=4,column=0,sticky=N+W,padx=4)
         Entry(f2,width=7,textvariable='')\
@@ -605,15 +537,12 @@ class ExportParasClass:
         f22.rowconfigure(1,weight=0)
         f22.rowconfigure(3,weight=0)
          
-#Klasse zum Erstellen des Plots
 class CanvasClass:
     def __init__(self, master = None,text=None):
         
-        #Übergabe der Funktionswerte
         self.master=master
         self.Content=[]
 
-        #Erstellen der Standardwerte
         self.lastevent=[]
         self.sel_rect_hdl=[]
         self.dir_var = IntVar()
@@ -621,34 +550,26 @@ class CanvasClass:
         self.dy=0.0
         self.scale=1.0
 
-        #Wird momentan nicht benötigt, eventuell für Beschreibung von Aktionen im Textfeld #self.text=text
 
-        #Erstellen des Labels am Unteren Rand für Status Leiste        
         self.label=Label(self.master, text="Curser Coordinates: X=0.0, Y=0.0, Scale: 1.00",bg="white",anchor="w")
         self.label.grid(row=1,column=0,sticky=E+W)
 
-        #Canvas Erstellen und Fenster ausfüllen        
         self.canvas=Canvas(self.master,width=650,height=500, bg = "white")
         self.canvas.grid(row=0,column=0,sticky=N+E+S+W)
         self.master.columnconfigure(0,weight=1)
         self.master.rowconfigure(0,weight=1)
 
 
-        #Binding für die Bewegung des Mousezeigers
         self.canvas.bind("<Motion>", self.moving)
 
-        #Bindings für Selektieren
         self.canvas.bind("<Button-1>", self.select_cont)
         
-        #Eventuell mit Abfrage probieren???????????????????????????????????????????
         self.canvas.bind("<Shift-Button-1>", self.multiselect_cont)
         self.canvas.bind("<B1-Motion>", self.select_rectangle)
         self.canvas.bind("<ButtonRelease-1>", self.select_release)
 
-        #Binding für Contextmenu
         self.canvas.bind("<Button-3>", self.make_contextmenu)
 
-        #Bindings für Zoom und Bewegen des Bilds        
         self.canvas.bind("<Control-Button-1>", self.mouse_move)
         self.canvas.bind("<Control-B1-Motion>", self.mouse_move_motion)
         self.canvas.bind("<Control-ButtonRelease-1>", self.mouse_move_release)
@@ -656,7 +577,6 @@ class CanvasClass:
         self.canvas.bind("<Control-B3-Motion>", self.mouse_zoom_motion)
         self.canvas.bind("<Control-ButtonRelease-3>", self.mouse_zoom_release)   
 
-    #Callback für das Bewegen der Mouse mit Darstellung in untere Leiste
     def moving(self,event):
         x=self.dx+(event.x/self.scale)
         y=self.dy+(self.canvas.winfo_height()-event.y)/self.scale
@@ -672,9 +592,7 @@ class CanvasClass:
             self.label['text']=("Curser Coordinates: X= %5.2f Y= %5.2f , Scale: %5.1f" \
                                 %(x,y,self.scale))
         
-    #Callback für das Auswählen von Elementen
     def select_cont(self,event):
-        #Abfrage ob ein Contextfenster offen ist, speziell für Linux
         self.schliesse_contextmenu()
         
         self.moving(event)
@@ -683,7 +601,6 @@ class CanvasClass:
         self.lastevent=event
 
     def multiselect_cont(self,event):
-        #Abfrage ob ein Contextfenster offen ist, speziell für Linux
         self.schliesse_contextmenu()
         
         self.sel_rect_hdl=Rectangle(self.canvas,event.x,event.y,event.x,event.y,outline="grey") 
@@ -700,21 +617,16 @@ class CanvasClass:
         dy=self.lastevent.y-event.y
         self.canvas.delete(self.sel_rect_hdl)
         
-        #Beim Auswählen sollen die Direction Pfeile gelöscht werden!!!!!!!!!!!!!!!!!!        
-        #self.Content.delete_opt_path()   
         
-        #Wenn mehr als 6 Pixel gezogen wurde Enclosed        
         if (abs(dx)+abs(dy))>6:
             items=self.canvas.find_overlapping(event.x,event.y,event.x+dx,event.y+dy)
             mode='multi'
         else:
-            #items=self.canvas.find_closest(event.x, event.y)
             items=self.canvas.find_overlapping(event.x-3,event.y-3,event.x+3,event.y+3)
             mode='single'
             
         self.Content.addselection(items,mode)
 
-    #Callback für Bewegung des Bildes
     def mouse_move(self,event):
         self.master.config(cursor="fleur")
         self.lastevent=event
@@ -731,7 +643,6 @@ class CanvasClass:
     def mouse_move_release(self,event):
         self.master.config(cursor="")      
 
-    #Callback für das Zoomen des Bildes     
     def mouse_zoom(self,event):
         self.canvas.focus_set()
         self.master.config(cursor="sizing")
@@ -757,14 +668,11 @@ class CanvasClass:
     def mouse_zoom_release(self,event):
         self.master.config(cursor="")
                 
-    #Contextmenu mit Bindings beim Rechtsklick
     def make_contextmenu(self,event):
         self.lastevent=event
 
-        #Abfrage ob das Contextfenster schon existiert, speziell für Linux
         self.schliesse_contextmenu()
             
-        #Contextmenu erstellen zu der Geometrie        
         popup = Menu(self.canvas,tearoff=0)
         self.popup=popup
         popup.add_command(label='Invert Selection',command=self.Content.invert_selection)
@@ -774,7 +682,6 @@ class CanvasClass:
         popup.add_separator()
         popup.add_command(label='Switch Direction',command=self.Content.switch_shape_dir)
         
-        #Untermenu für die Fräserkorrektur
         self.dir_var.set(self.Content.calc_dir_var())
         cut_cor_menu = Menu(popup,tearoff=0)
         cut_cor_menu.add_checkbutton(label="G40 No correction",\
@@ -788,7 +695,6 @@ class CanvasClass:
                                      command=lambda:self.Content.set_cut_cor(42))
         popup.add_cascade(label='Set Cutter Correction',menu=cut_cor_menu)
 
-        #Menus Disablen wenn nicht ausgewählt wurde        
         if len(self.Content.Selected)==0:
             popup.entryconfig(0,state=DISABLED)
             popup.entryconfig(1,state=DISABLED)
@@ -798,7 +704,6 @@ class CanvasClass:
 
         popup.post(event.x_root, event.y_root)
         
-    #Speziell für Linux falls das Contextmenu offen ist dann schliessen
     def schliesse_contextmenu(self):
         try:
             self.popup.destroy()
@@ -808,38 +713,31 @@ class CanvasClass:
 
     def autoscale(self):
 
-        #Rand der um die Extreme des Elemente dargestellt wird        
         rand=20
 
-        #Alles auf die 0 Koordinaten verschieben, dass später DX und DY Berechnung richtig erfolgt       
         self.canvas.move(ALL,self.dx*self.scale,-self.canvas.winfo_height()-self.dy*self.scale)
         self.dx=0;
         self.dy=-self.canvas.winfo_height()/self.scale
 
-        #Umriss aller Elemente
         d=self.canvas.bbox(ALL)
         cx=(d[0]+d[2])/2
         cy=(d[1]+d[3])/2
         dx=d[2]-d[0]
         dy=d[3]-d[1]
 
-        #Skalierung des Canvas errechnen
         xs=float(dx)/(self.canvas.winfo_width()-rand)
         ys=float(dy)/(self.canvas.winfo_height()-rand)
         scale=1/max(xs,ys)
         
-        #Skalieren der Elemente        
         self.canvas.scale( ALL,0,0,scale,scale)
         self.scale=self.scale*scale
 
-        #Verschieben der Elemente zum Mittelpunkt        
         dx=self.canvas.winfo_width()/2-cx*scale
         dy=self.canvas.winfo_height()/2-cy*scale
         self.dy=self.dy/scale
         self.dx=self.dx/scale
         self.canvas.move(ALL,dx,dy)
         
-        #Mouse Position errechnen
         self.dx=self.dx-dx/self.scale
         self.dy=self.dy+dy/self.scale
 
@@ -856,11 +754,9 @@ class CanvasClass:
         self.dx=self.dx*delta_scale
         self.dy=self.dy*delta_scale
 
-        #Schreiben der neuen WErte simulierne auf Curser Punkt 0, 0
         event=PointClass(x=0,y=0)
         self.moving(event)
 
-        #Skalieren der Shapes
         for shape in self.Content.Shapes:
             shape.sca[0]=shape.sca[0]*delta_scale
             shape.sca[1]=shape.sca[1]*delta_scale
@@ -872,14 +768,11 @@ class CanvasClass:
         self.dx=self.dx-delta_dx
         self.dy=self.dy-delta_dy
 
-        #Verschieben der Shapes 
         for shape in self.Content.Shapes:
             shape.p0-=PointClass(x=delta_dx,y=delta_dy)
 
-        #Update des Nullpunkts auf neue Koordinaten
         self.Content.plot_wp_zero()
         
-#Klasse mit den Inhalten des Canvas & Verbindung zu den Konturen
 class CanvasContentClass:
     def __init__(self,Canvas,textbox,config):
         self.Canvas=Canvas
@@ -895,7 +788,6 @@ class CanvasContentClass:
         self.path_hdls=[]
         
 
-        #Anfangswert für das Ansicht Toggle Menu
         self.toggle_wp_zero=IntVar()
         self.toggle_wp_zero.set(1)
 
@@ -924,19 +816,15 @@ class CanvasContentClass:
                 return -1   
         return dir-40
                 
-    #Erstellen des Gesamten Ausdrucks      
     def makeplot(self,values):
         self.values=values
 
-        #Löschen des Inhalts
         self.Canvas.canvas.delete(ALL)
         
-        #Standardwerte für scale, dx, dy zuweisen
         self.Canvas.scale=1
         self.Canvas.dx=0
         self.Canvas.dy=-self.Canvas.canvas.winfo_height()
 
-        #Zurücksetzen der Konturen
         self.Shapes=[]
         self.LayerContents=[]
         self.EntitieContents=[]
@@ -946,13 +834,11 @@ class CanvasContentClass:
         self.dir_hdls=[]
         self.path_hdls=[]
 
-        #Start mit () bedeutet zuweisen der Entities -1 = Standard
         self.make_shapes(p0=PointClass(x=0,y=0),sca=[1,1,1])
         self.plot_shapes()
         self.LayerContents.sort()
         self.EntitieContents.sort()
 
-        #Autoscale des Canvas        
         self.Canvas.autoscale()
 
     def make_shapes(self,ent_nr=-1,p0=PointClass(x=0,y=0),sca=[1,1,1]):
@@ -960,17 +846,13 @@ class CanvasContentClass:
             entities=self.values.entities
         else:
             entities=self.values.blocks.Entities[ent_nr]
-        #Zuweisen der Geometrien in die Variable geos & Konturen in cont
         ent_geos=entities.geo
         cont=entities.cont
-        #Schleife für die Anzahl der Konturen 
         for c_nr in range(len(cont)):
-            #Abfrage falls es sich bei der Kontur um ein Insert eines Blocks handelt
             if ent_geos[cont[c_nr].order[0][0]].Typ=="Insert":
                 ent_geo=ent_geos[cont[c_nr].order[0][0]]
                 self.make_shapes(ent_geo.Block,ent_geo.Point,ent_geo.Scale)
             else:
-                #Schleife für die Anzahl der Geometrien
                 self.Shapes.append(ShapeClass(len(self.Shapes),ent_nr,c_nr,cont[c_nr].closed,p0,sca[:],40,cont[c_nr].length*sca[0],[],[]))
                 for ent_geo_nr in range(len(cont[c_nr].order)):
                     ent_geo=ent_geos[cont[c_nr].order[ent_geo_nr][0]]
@@ -993,7 +875,6 @@ class CanvasContentClass:
         for shape in self.Shapes:
             shape.plot2can(self.Canvas.canvas)
             
-    #Drucken des Werkstücknullpunkts
     def plot_wp_zero(self):
         for hdl in self.wp_zero_hdls:
             self.Canvas.canvas.delete(hdl) 
@@ -1027,7 +908,6 @@ class CanvasContentClass:
 
 
     def plot_opt_route(self,shapes_st_en_points,route):
-        #Ausdrucken der optimierten Route
         for en_nr in range(len(route)):
             if en_nr==0:
                 st_nr=-1
@@ -1049,19 +929,15 @@ class CanvasContentClass:
         self.Canvas.canvas.update()
 
 
-    #Hinzufügen der Kontur zum Layer        
     def addtoLayerContents(self,shape_nr,lay_nr):
-        #Abfrage of der gesuchte Layer schon existiert
         for LayCon in self.LayerContents:
             if LayCon.LayerNr==lay_nr:
                 LayCon.Shapes.append(shape_nr)
                 return
 
-        #Falls er nicht gefunden wurde neuen erstellen
         LayerName=self.values.layers[lay_nr].name
         self.LayerContents.append(LayerContentClass(lay_nr,LayerName,[shape_nr]))
         
-    #Hinzufügen der Kontur zu den Entities
     def addtoEntitieContents(self,shape_nr,ent_nr,c_nr):
         
         for EntCon in self.EntitieContents:
@@ -1072,7 +948,6 @@ class CanvasContentClass:
                 EntCon.Shapes[-1].append(shape_nr)
                 return
 
-        #Falls er nicht gefunden wurde neuen erstellen
         if ent_nr==-1:
             EntName='Entities'
         else:
@@ -1251,15 +1126,12 @@ class EntitieContentClass:
 
 class ConfigClass:
     def __init__(self,textbox):
-        # Das Standard App Verzeichniss für das Betriebssystem abfragen
         self.folder=self.get_settings_folder(str(APPNAME))
 
-        # eine ConfigParser Instanz öffnen und evt. vorhandenes Config File Laden        
         self.parser = ConfigParser.ConfigParser()
         self.cfg_file_name=APPNAME+'_config.cfg'
         self.parser.read(os.path.join(self.folder,self.cfg_file_name))
 
-        # Falls kein Config File vorhanden ist oder File leer ist neue File anlegen und neu laden
         if len(self.parser.sections())==0:
             self.make_new_Config_file()
             self.parser.read(os.path.join(self.folder,self.cfg_file_name))
@@ -1269,25 +1141,16 @@ class ConfigClass:
             textbox.prt(('\nLoading config file:%s' \
                              %os.path.join(self.folder,self.cfg_file_name)))
 
-        #Tkinter Variablen erstellen zur späteren Verwendung in den Eingabefeldern        
         self.get_all_vars()
 
-        #DEBUG INFORMATIONEN
-        #Übergeben des geladenen Debug Level
         textbox.set_debuglevel(DEBUG=self.debug)
         textbox.prt('\nDebug Level: ' +str(self.debug),1)
         textbox.prt(str(self),1)
 
     def get_settings_folder(self,appname): 
-        # resolve settings folder 
-        if os.name == 'posix': 
-            folder = os.path.join(os.environ.get('HOME'), "." + appname.lower()) 
-        elif os.name == 'nt': 
-            folder = os.path.join(os.environ.get('APPDATA'), appname.capitalize()) 
-        else: 
-            folder = os.path.join(os.getcwd(), appname) 
+ 
+        folder = os.path.join(os.getcwd(), appname) 
 
-        # create settings folder if necessary 
         try: 
             os.mkdir(folder) 
         except OSError: 
@@ -1302,7 +1165,7 @@ class ConfigClass:
         try:               
             self.tool_dia=DoubleVar()
             self.tool_dia.set(float(2.333))
-##########################################################my_par            
+ #######################################################################настройки по дефолту           
             self.depth_D = DoubleVar()
             self.depth_D.set(float(self.parser.get('Parameters','depth_D')))
             
@@ -1316,9 +1179,10 @@ class ConfigClass:
             self.feedrate_F.set(float(self.parser.get('Parameters','feedrate_F'))) 
                        
             self.ending_block_Q = DoubleVar()
-            self.ending_block_Q.set(float(self.parser.get('Parameters','ending_block_Q')))
-                        
+            self.ending_block_Q.set(float(self.parser.get('Parameters','ending_block_Q')))         
            
+            self.start_Z0  = IntVar()
+            self.start_Z0 .set(float(self.parser.get('Parameters','start_Z0')))            
             
             
             
@@ -1327,8 +1191,6 @@ class ConfigClass:
             
             
             
-            
-##########################################################my_par            
             self.start_rad=DoubleVar()
             self.start_rad.set(float(self.parser.get('Parameters','start_radius')))        
            
@@ -1362,23 +1224,18 @@ class ConfigClass:
             self.fitting_tolerance=DoubleVar()
             self.fitting_tolerance.set(float(self.parser.get('Import Parameters','fitting_tolerance')))
 
-            #Zuweisen der Werte für die TSP Optimierung
             self.begin_art=self.parser.get('Route Optimisation', 'Begin art')
             self.max_population=int((int(self.parser.get('Route Optimisation', 'Max. population'))/4)*4)
             self.max_iterations=int(self.parser.get('Route Optimisation', 'Max. iterations'))  
             self.mutate_rate=float(self.parser.get('Route Optimisation', 'Mutation Rate', 0.95))
 
-            #Zuweisen der Axis Letters
             self.ax1_letter=self.parser.get('Axis letters', 'ax1_letter')
             self.ax2_letter=self.parser.get('Axis letters', 'ax2_letter')
             self.ax3_letter=self.parser.get('Axis letters', 'ax3_letter')
 
-            #Holen der restlichen Variablen
-            #Verzeichnisse
             self.load_path=self.parser.get('Paths','load_path')
             self.save_path=self.parser.get('Paths','save_path')          
 
-            #Setzen des Globalen Debug Levels
             self.debug=int(self.parser.get('Debug', 'global_debug_level'))
             
             
@@ -1402,12 +1259,10 @@ class PostprocessorClass:
         self.textbox=textbox
         self.config=config
 
-        # eine ConfigParser Instanz öffnen und evt. vorhandenes Config File Laden        
         self.parser = ConfigParser.ConfigParser()
         self.postpro_file_name=APPNAME+'_postprocessor.cfg'
         self.parser.read(os.path.join(config.folder,self.postpro_file_name))
 
-        # Falls kein Postprocessor File vorhanden ist oder File leer ist neue File anlegen und neu laden
         if len(self.parser.sections())==0:
             self.make_new_postpro_file()
             self.parser.read(os.path.join(config.folder,self.postpro_file_name))
@@ -1417,13 +1272,11 @@ class PostprocessorClass:
             textbox.prt(('\nLoading postprocessor file: %s' \
                              %os.path.join(self.config.folder,self.postpro_file_name)))
 
-        #Variablen erstellen zur späteren Verwendung im Postprozessor        
         self.get_all_vars()
 
         textbox.prt(str(self),1)        
 
     def get_all_vars(self):
-        #try:
         self.abs_export=int(self.parser.get('General', 'abs_export'))
         self.write_to_stdout=int(self.parser.get('General', 'write_to_stdout'))
         self.gcode_be=self.parser.get('General', 'code_begin')
@@ -1475,24 +1328,17 @@ class PostprocessorClass:
                    "%J":'self.fnprint(self.j)',\
                    "%-J":'self.fnprint(-self.j)'}
 
-##        except:
-##            showerror("Error during reading postprocessor file", "Please delete or correct\n %s"\
-##                      %(os.path.join(self.config.folder,self.postpro_file_name)))
-##            raise Exception, "Problem during import from INI File" 
 
     def make_new_postpro_file(self):
         pass
 
     def write_gcode_be(self,ExportParas,load_filename):
-        #Schreiben in einen String
         str=("(File: %s)\n" %load_filename)
         self.string=(str.encode("utf-8"))
         
-        #Daten aus dem Textfelder an string anhängen
         self.string+=("%s\n" %ExportParas.gcode_be.get(1.0,END).strip())
 
     def write_gcode_en(self,ExportParas):
-        #Daten aus dem Textfelder an string anhängen   
         self.string+=ExportParas.gcode_en.get(1.0,END)
 
         self.make_line_numbers()        
@@ -1518,7 +1364,6 @@ class PostprocessorClass:
             
     def chg_feed_rate(self,feed):
         self.feed=feed
-  #      self.string+=self.make_print_str(self.feed_ch_str) 
         
     def set_cut_cor(self,cut_cor):
         self.cut_cor=cut_cor
@@ -1558,7 +1403,9 @@ class PostprocessorClass:
             self.lx=newpos.x
             self.y=newpos.y-self.ly
             self.ly=newpos.y
-
+        else:
+            self.x=newpos.x
+            self.y=newpos.y
 
         self.string+=self.make_print_str(self.lin_mov_plane_str)        
     
@@ -1589,18 +1436,14 @@ class PostprocessorClass:
                                           eval(self.vars.values()[key_nr]))
         return new_string
 
-    #Funktion welche den Wert als formatierter integer zurück gibt
     def iprint(self,interger):
         return ('%i' %interger)
 
-    #Funktion gibt den String für eine neue Linie zurück
     def nlprint(self):
         return '\n'
 
-    #Funktion welche die Formatierte Number  zurück gibt
     def fnprint(self,number):
         string=''
-        #+ oder - Zeichen Falls nötig/erwünscht und Leading 0er
         if (self.signed_val)and(self.pre_dec_z_pad):
             numstr=(('%+0'+str(self.pre_dec+self.post_dec+1)+\
                      '.'+str(self.post_dec)+'f') %number)
@@ -1614,13 +1457,11 @@ class PostprocessorClass:
             numstr=(('%'+str(self.pre_dec+self.post_dec+1)+\
                     '.'+str(self.post_dec)+'f') %number)
             
-        #Setzen des zugehörigen Dezimal Trennzeichens            
         string+=numstr[0:-(self.post_dec+1)]
         
         string_end=self.dec_sep
         string_end+=numstr[-(self.post_dec):]
 
-        #Falls die 0er am Ende entfernt werden sollen
         if self.post_dec_z_pad==0:
             while (len(string_end)>0)and((string_end[-1]=='0')or(string_end[-1]==self.dec_sep)):
                 string_end=string_end[0:-1]                
@@ -1695,14 +1536,12 @@ class Show_About_Info(Toplevel):
     def body(self, master):
         text = Text(master,width=40,height=8)
         text.pack()
-        # configure text tag
         text.tag_config("a", foreground="blue", underline=1)
         text.tag_bind("a", "<Enter>", self.show_hand_cursor)
         text.tag_bind("a", "<Leave>", self.show_arrow_cursor)
         text.tag_bind("a", "<Button-1>", self.click)
         text.config(cursor="arrow")
 
-        #add a link with data
         href = "http://christian-kohloeffel.homepage.t-online.de/index.html"
         text.insert(END, "You are using DXF2GCODE")
         text.insert(END, "\nVersion v01 from the 27th Juli 2008")
@@ -1712,8 +1551,6 @@ class Show_About_Info(Toplevel):
         text.insert(END, "\nHotfix 1")
 
 class NotebookClass:    
-    # initialization. receives the master widget
-    # reference and the notebook orientation
     def __init__(self, master,width=0,height=0):
 
         self.active_fr = None
@@ -1727,7 +1564,6 @@ class NotebookClass:
         self.dummy_y_fr.grid(row=1,rowspan=2,column=0)
         self.dummy_y_fr.grid_propagate(0)
 
-        # creates notebook's frames structure
         self.rb_fr = Frame(master, borderwidth=0)
         self.rb_fr.grid(row=1,column=1, sticky=N+W)
         
@@ -1737,11 +1573,9 @@ class NotebookClass:
         master.rowconfigure(2,weight=1)
         master.columnconfigure(1,weight=1)
 
-    # return a master frame reference for the external frames (screens)
     def __call__(self):
         return self.screen_fr
 
-    # add a new frame (screen) to the (bottom/left of the) notebook
     def add_screen(self, fr, title):
 
         b = Radiobutton(self.rb_fr,bd=1, text=title, indicatoron=0, \
@@ -1755,21 +1589,15 @@ class NotebookClass:
         self.screen_fr.columnconfigure(0,weight=1)
         fr.grid_remove()
 
-        # ensures the first frame will be
-        # the first selected/enabled
         if not self.active_fr:
             fr.grid()
             self.active_fr = fr
 
         self.count += 1
 
-        # returns a reference to the newly created
-        # radiobutton (allowing its configuration/destruction)
         return b
 
 
-        # hides the former active frame and shows 
-        # another one, keeping its reference
     def display(self, fr):
         self.active_fr.grid_remove()
         fr.grid()
@@ -1780,7 +1608,6 @@ class Tkinter_Variable_Dialog(Toplevel):
         if not(len(label)==len(value)):
             raise Exception, "Number of labels different to number of values"
 
-        #Eingabewerte in self speichern
         self.label=label
         self.value=value
         self.result=False
@@ -1833,7 +1660,6 @@ class Tkinter_Variable_Dialog(Toplevel):
         self.destroy()
 
     def body(self, master):
-        #Die Werte den Tkintervarialben zuweisen
         self.tkintervars=[]
         for row_nr in range(len(self.label)):
             self.tkintervars.append(DoubleVar())
@@ -1846,13 +1672,11 @@ class Tkinter_Variable_Dialog(Toplevel):
         for tkintervar in self.tkintervars:
             self.result.append(tkintervar.get())
 
-#Hauptfunktion zum Aufruf des Fensters und Mainloop     
 if __name__ == "__main__":
    
     master = Tk()
     master.title("DXF 2 G-Code, Version 0.1")
 
-    #Falls das Programm mit Parametern von EMC gestartet wurde
     if len(sys.argv) > 1:
         Erstelle_Fenster(master,sys.argv[1])
     else:
