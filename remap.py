@@ -26,8 +26,8 @@ def g711(self, **words):
     feed_rate = int(words['f'])
     q = int(words['q'])
     d = float(words['d'])
-    l = float(words['e'])
-    h = float(words['h'])
+    l = float(words['k'])
+    h = float(words['i'])
     s = linuxcnc.stat() 
     s.poll() 
     filename = s.file
@@ -69,12 +69,12 @@ def g711(self, **words):
             l = lengthZ +l
         elif lengthZ == 0 : #вертикальная линия
             delta = 0
-            l = float(words['e'])
+            l = float(words['k'])
         else:  
             tan = lengthX/lengthZ
             delta = d/tan
             height_l = l*tan
-            l = float(words['e'])
+            l = float(words['k'])
 #            if  height_l < h:
 #                l = h/tan
             if  tan < 0.3:
@@ -104,7 +104,7 @@ def g711(self, **words):
                     newX = COORDx0 - d 
                 self.execute(" G1  X%f" % (newX),lineno())# новая позиция по X
                 COORDx0 = newX
-                #просчитываем новую COORDz0 с учетом E(l) TODO пока без учета H(h):
+                #просчитываем новую COORDz0 с учетом E(l) TODO пока без учета I(h):
                 if line_or_arc[n] == 1:
                         COORDz0 = COORDz0 + delta  
                 elif line_or_arc[n] >1:
