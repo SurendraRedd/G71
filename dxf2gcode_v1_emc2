@@ -277,7 +277,7 @@ class Erstelle_Fenster:
 
 
 ################################################################################вывод программы
-        save_file = '/home/nkp/.temp_dxf.ngc'
+        save_file = '/home/nkp/.temp_dxf.ngc'#TODO назначается в configs
         f = open(save_file, "w")
         f.write(string)
         f.close()
@@ -331,7 +331,11 @@ class Erstelle_Fenster:
         program += ch
         program += 'M2'
         
-
+        stdoutsav = sys.stdout
+        logfilename = '/home/nkp/git/edit_dxf.ngc'#TODO назначается в configs
+        outlog = open(logfilename, "w")
+        outlog.write(program)
+        outlog.close()
         print(program)
         self.ende()          
             
@@ -469,44 +473,45 @@ class ExportParasClass:
         f2.columnconfigure(0,weight=1)
         f3.columnconfigure(0,weight=1) 
 #########################################################################################параметры в окне              
-        Label(f1, text="Depth of cut         [D]:")\
+        Label(f1, text="Depth of cut   [D]")\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
         self.d_D = Entry(f1,width=7,textvariable=config.depth_D)
         self.d_D.grid(row=0,column=1,sticky=N+E)
              
-        Label(f1, text="X-axis size [K]:")\
+        Label(f1, text="X-axis size      [K]")\
                 .grid(row=1,column=0,sticky=N+W,padx=4)
         self.d_K = Entry(f1,width=7,textvariable=config.z_size_Z)
         self.d_K.grid(row=1,column=1,sticky=N+E)        
 
-        Label(f2, text=("Z-axis size [I]:" ))\
-                .grid(row=0,column=0,sticky=N+W,padx=4)
-        self.d_I = Entry(f2,width=7,textvariable=config.x_size_X)
-        self.d_I.grid(row=0,column=1,sticky=N+E)
-
-        Label(f2, text=("Feedrate mm/min  [F]:"))\
-                .grid(row=1,column=0,sticky=N+W,padx=4)
-        self.d_F = Entry(f2,width=7,textvariable=config.feedrate_F)
-        self.d_F.grid(row=1,column=1,sticky=N+E)
-
-        Label(f2, text=("Ending Block number [Q]:"))\
+        Label(f1, text=("Z-axis size      [I]" ))\
                 .grid(row=2,column=0,sticky=N+W,padx=4)
-        self.d_Q = Entry(f2,width=7,textvariable=config.ending_block_Q)
-        self.d_Q.grid(row=2,column=1,sticky=N+E)
+        self.d_I = Entry(f1,width=7,textvariable=config.x_size_X)
+        self.d_I.grid(row=2,column=1,sticky=N+E)
+        
 
-        Label(f2, text=("Start_Z  [Z0]:"))\
-                .grid(row=3,column=0,sticky=N+W,padx=4)
+        Label(f2, text=("Feedrate mm/min  [F]"))\
+                .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.d_F = Entry(f2,width=7,textvariable=config.feedrate_F)
+        self.d_F.grid(row=0,column=1,sticky=N+E)
+
+        Label(f2, text=("Ending Block  [Q]"))\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.d_Q = Entry(f2,width=7,textvariable=config.ending_block_Q)
+        self.d_Q.grid(row=1,column=1,sticky=N+E)
+
+        Label(f2, text=("Start_Z  [Z0]"))\
+                .grid(row=2,column=0,sticky=N+W,padx=4)
         self.d_Z0 = Entry(f2,width=7,textvariable=config.start_Z0)
-        self.d_Z0.grid(row=3,column=1,sticky=N+E)
+        self.d_Z0.grid(row=2,column=1,sticky=N+E)
         Label(f2, text=("empty[]:" ))\
+                .grid(row=3,column=0,sticky=N+W,padx=4)
+        Entry(f2,width=7,textvariable='')\
+                .grid(row=3,column=1,sticky=N+E)
+
+        Label(f2, text=("empty []:" ))\
                 .grid(row=4,column=0,sticky=N+W,padx=4)
         Entry(f2,width=7,textvariable='')\
                 .grid(row=4,column=1,sticky=N+E)
-
-        Label(f2, text=("empty []:" ))\
-                .grid(row=5,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable='')\
-                .grid(row=5,column=1,sticky=N+E)
 
         Label(f3, text=("empty[]:" ))\
                 .grid(row=1,column=0,sticky=N+W,padx=4)
@@ -522,12 +527,12 @@ class ExportParasClass:
         self.g71_72=IntVar()
         self.g71_72.set(0)
         
-        Label(f3, text=("G71:" ))\
+        Label(f3, text=("G71" ))\
         .grid(row=3,column=0,sticky=N+W,padx=4)
         self.rad0 = Radiobutton(f3,text="G71",variable=self.g71_72,value=0)
         self.rad0.grid(row=3,column=1,sticky=N+E)
         
-        Label(f3, text=("G72:" ))\
+        Label(f3, text=("G72" ))\
         .grid(row=4,column=0,sticky=N+W,padx=4)        
         self.rad1 = Radiobutton(f3,text="G72",variable=self.g71_72,value=1)
         self.rad1.grid(row=4,column=1,sticky=N+E)
