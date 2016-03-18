@@ -119,7 +119,7 @@ def g711(self, **words):
                 elif line_or_arc[n] >1:
                     b2 = sqrt(radius*radius - ((centreX-COORDx0)-d)*((centreX-COORDx0)-d))
                     b1 = sqrt(radius*radius - (centreX-COORDx0)*(centreX-COORDx0))
-                    COORDz0 = COORDz0 + (abs(b2-b1))                                    
+                    COORDz0 = COORDz0 + (abs(b2-b1)) # (abs(b2-b1)) - приращение по Z                              
                 lengthX = lengthX - d #d - съем за один проход
             except InterpreterException,e:
                 msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
@@ -147,6 +147,7 @@ def g711(self, **words):
 #####################################################################################################-----G72.2
 def g722(self, **words):
     """ remap code G72.2 """
+    #TODO edit в меню Axis открывает .ngc 
     p = int(words['p'])
     feed_rate = int(words['f'])
     q = int(words['q'])
@@ -197,10 +198,12 @@ def g722(self, **words):
         lengthX = abs(COORDx0 - coordX[n+1])
         if lengthX == 0 :#горизонтальная линия
             delta = 0
-            l = lengthZ +l
+            #l = lengthZ +l
+            print 'deltaG=' , delta, delta , 'l=' , l
         elif lengthZ == 0 : #вертикальная линия
-            delta = 0
+            delta = h
             l = float(words['k'])
+            print 'deltaV=' , delta , 'l=' , l
         else:  
             tan = lengthX/lengthZ
             delta = d*tan
@@ -208,12 +211,12 @@ def g722(self, **words):
             l = float(words['k'])
 #            if  height_l < h:
 #                l = h/tan
-            if  tan < 0.3:
-                l = 2l                         
+            #if  tan < 0.3:
+                #l = 2l                         
         if line_or_arc[n] > 1:
             if len(coordR) :
                 pass
-                #radius = coordR[i]
+                #radius = coordR[i]TODO востребован ли R ?
             else:
                 radius = sqrt((coordK[i])*(coordK[i]) + (coordI[i])*(coordI[i]))
                 centreX = coordX[n+1] + coordI[i]
@@ -251,9 +254,9 @@ def g722(self, **words):
                 if line_or_arc[n] == 1:
                         COORDx0 = COORDx0 + delta  
                 elif line_or_arc[n] >1:
-                    b2 = sqrt(radius*radius - ((centreX-COORDx0)-d)*((centreX-COORDx0)-d))
-                    b1 = sqrt(radius*radius - (centreX-COORDx0)*(centreX-COORDx0))
-                    COORDz0 = COORDz0 + (abs(b2-b1))                                    
+                    b2 = sqrt(radius*radius - ((centreZ-COORDz0)-d)*((centreZ-COORDz0)-d))
+                    b1 = sqrt(radius*radius - (centreZ-COORDz0)*(centreZ-COORDz0))
+                    COORDx0 = COORDx0 + (abs(b2-b1))                                    
                 lengthZ = lengthZ - d #d - съем за один проход
             except InterpreterException,e:
                 msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
