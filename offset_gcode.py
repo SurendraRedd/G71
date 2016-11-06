@@ -73,17 +73,16 @@ for n in range(len(coordZ)-1):
     print '==========================='
     app = angle.append(atan2(lengthX,lengthZ))
 print 'angle =',angle
-app = coordZoff.append(coordZ[0] + sin(angle[0])*offset)  
-app = coordXoff.append(coordX[0] + cos(angle[0])*offset) 
-
+ser=''
+string=ser.join(['G1',' ','X',str(coordX[0]+cos(angle[0])*offset),' ','Z',str(coordZ[0]+sin(angle[0])*offset),'\n'] )
 
 for m in range(len(coordZ)-2): 
   if angle[m] < angle[m+1]:
     print 'm< =',m
-    app = coordZoff.append(coordZ[m+1] + sin(angle[m])*offset)    
-    app = coordXoff.append(coordX[m+1] + cos(angle[m])*offset)
-    app = coordZoff.append(coordZ[m+1] + sin(angle[m+1])*offset)    
-    app = coordXoff.append(coordX[m+1] + cos(angle[m+1])*offset)    
+    string=ser.join(['G3',' ','X',str(coordX[m+1]+cos(angle[m])*offset),' ','Z',str(coordZ[m+1]+sin(angle[m])*offset),' ','R',str(offset),'\n'])+string
+    
+    
+    string=ser.join(['G1',' ','X',str(coordX[m+1] + cos(angle[m+1])*offset),' ','Z',str(coordZ[m+1] + sin(angle[m+1])*offset),'\n'] )+string   
   else:
     print 'm> =',m
     an = (angle[m] - angle[m+1])/2 
@@ -92,37 +91,24 @@ for m in range(len(coordZ)-2):
     an1 = angle[m] - an
     print 'an =',degrees(an)
     print 'an1 =',degrees(an1)
-    app = coordZoff.append(coordZ[m+1] + sin(an1)*gg)    
-    app = coordXoff.append(coordX[m+1] + cos(an1)*gg) 
-   
-app = coordZoff.append(coordZ[len(coordZ)-1] + sin(angle[len(angle)-1])*offset)    
-app = coordXoff.append(coordX[len(coordX)-1] + cos(angle[len(angle)-1])*offset)     
-    
-    
-    
+    string=ser.join(['G1',' ','X',str(coordX[m+1] + cos(an1)*gg),' ','Z',str(coordZ[m+1] + sin(an1)*gg),'\n'])+string     
+string=ser.join(['G1',' ','X',str(coordX[len(coordX)-1] + cos(angle[len(angle)-1])*offset),' ','Z',str(coordZ[len(coordZ)-1] + sin(angle[len(angle)-1])*offset),'\n'])+string    
+        
 print '++++++++++++++++++++++++++++++'    
 print 'coordZoff =',coordZoff
 print 'coordXoff =',coordXoff   
 print '++++++++++++++++++++++++++++++'    
 
-ser=' '
 f.write('F300') 
-f.write('\n') 
-for n in reversed(range(len(coordZoff))):
-    s=['G1',' ' , 'X', str(coordXoff[n]), ' ' ,'Z',str(coordZoff[n]), '\n'] 
-    j=ser.join(s)
-    f.write(j)
-    
-f.write('G1 Z0') 
+f.write('\n')  
+f.write('G18') 
+f.write('\n')  
+f.write(string)
+ 
 f.write('\n')      
-
-
-
-
-
-
-f.write('F300') 
+f.write('G1 Z0') 
 f.write('\n') 
+
 for n in reversed(range(len(coordZ))):
     s=['G1',' ' , 'X', str(coordX[n]), ' ' ,'Z',str(coordZ[n]), '\n'] 
     j=ser.join(s)
@@ -132,15 +118,3 @@ f.write('G1 Z0')
 f.write('\n')      
 f.write('M2')  
 f.close()
-
-
-
-
-
-
-
-
-
-
-
-
