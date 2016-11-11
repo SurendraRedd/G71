@@ -21,19 +21,24 @@ def g886(self, **words):
     
 def pars(array,reg ,lines):
     a=array.insert(0,(float(re.search(reg,lines, re.I).group(1))))
-
 def cathetus(c,b):
     a = sqrt(abs(c*c - b*b))
-    return a   
+    return a 
+def hip(a,b):
+    c = sqrt(abs(a*a + b*b))
+    return c       
 #################################################-----G71.2
-def g711(self, **words):
-    """ remap code G71.1 """
+def g712(self, **words):
+    """ remap code G71.2 """
     p = int(words['p'])
     feed_rate = int(words['f'])
     q = int(words['q'])
     d = float(words['d'])
     l = float(words['k'])
     h = float(words['i'])
+    offset = float(words['j'])# чистовой проход,мм
+    s = float(words['s'])# величина оборотов шпинделя при чистовой обработке
+    quantity = int(words['l'])# количество чистовых проходов 
     #tool = float(words['t'])
     s = linuxcnc.stat() 
     s.poll()
@@ -42,7 +47,7 @@ def g711(self, **words):
     filename = s.file
     f = open(filename, "r")
     lines = f.readlines()
-    x,v,i = 0,-1,0
+    x,v,KI_iter = 0,-1,0
     line_or_arc = []
     coordZ = []
     coordX = []
@@ -56,14 +61,14 @@ def g711(self, **words):
                 num = int(re.search("N\s*([0-9.]+)",lines[x], re.I).group(1))
                 if num >= p and num <= q:
                     v+=1
-                    g1 = line_or_arc.insert(0,(int(re.search("G\s*([0-4.]+)",lines[x], re.I).group(1))))
-                    z1 = pars(coordZ,"Z\s*([-0-9.]+)",lines[x])
-                    x1 = pars(coordX,"X\s*([-0-9.]+)",lines[x])                    
+                    ins = line_or_arc.insert(0,(int(re.search("G\s*([0-4.]+)",lines[x], re.I).group(1))))
+                    ins = pars(coordZ,"Z\s*([-0-9.]+)",lines[x])
+                    ins = pars(coordX,"X\s*([-0-9.]+)",lines[x])                    
                     if  re.search("[I]", lines[x]):
-                        i1 = pars(coordI,"I\s*([-0-9.]+)",lines[x])
-                        k1 = pars(coordK,"K\s*([-0-9.]+)",lines[x])
+                        ins = pars(coordI,"I\s*([-0-9.]+)",lines[x])
+                        ins = pars(coordK,"K\s*([-0-9.]+)",lines[x])
                     if  re.search("[R]", lines[x]):
-                        r1 = pars(coordR,"R\s*([-0-9.]+)",lines[x])                        
+                        ins = pars(coordR,"R\s*([-0-9.]+)",lines[x])                        
                 if num == p : # вычисляем Start_point по Z
                     temp_x = x
                     a=2
@@ -71,10 +76,16 @@ def g711(self, **words):
                         a+=1
                     coordZ_start = float(re.search("Z\s*([-0-9.]+)",lines[temp_x-a], re.I).group(1))   
         x+=1
-      
+ 
  ######################################################
-    print 'coordZ=' , coordZ
-    print 'coordX=' , coordX              
+    print 'данные массивов +++++++++++++++++++++++++++++++++++++++'
+    print 'coordZ=', coordZ
+    print 'coordX=', coordX
+    print 'line_or_arc=', line_or_arc
+    print 'coordI=', coordI
+    print 'coordK=', coordK
+    print 'coordZ_start=', coordZ_start
+    print 'данные массивов +++++++++++++++++++++++++++++++++++++++'             
     for n in range(v):
         print 'n=' , n
         COORDx0 =  coordX[n]
@@ -83,6 +94,8 @@ def g711(self, **words):
         lengthX = abs(COORDx0 - coordX[n+1])
         if (COORDz0 - coordZ[n+1]) >= 0:# наклон "отрицательный"
             incline = 1   #TODO проверка угла резца
+            print 'angle < 0' , incline
+            self.execute("(MSG,angle < 0)",lineno())
         else: 
             incline = 0
         if lengthX == 0 :#горизонтальная линия
@@ -96,20 +109,19 @@ def g711(self, **words):
             delta = d/tan
             height_l = l*tan
             l = float(words['k'])
-#            if  height_l < h:
-#                l = h/tan
             if  tan < 0.3:
                 l = 2l                         
         if line_or_arc[n] > 1:
             if len(coordR) :
                 pass
-                #radius = coordR[i]
+                #radius = coordR[KI_iter]
             else:
-                radius = cathetus(coordK[i],coordI[i])
-                centreX = coordX[n+1] + coordI[i]
-                centreZ = coordZ[n+1] + coordK[i]               
-            i+=1
- 
+                print ' ARC  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
+                print 'KI_iter=', KI_iter
+                radius = hip(coordK[KI_iter],coordI[KI_iter])
+                centreX = coordX[n+1] + coordI[KI_iter]
+                centreZ = coordZ[n+1] + coordK[KI_iter]               
+            KI_iter+=1                  
         while lengthX >= 0  :
             try:
                 self.execute("F%f" % feed_rate,lineno())
@@ -145,8 +157,131 @@ def g711(self, **words):
                 msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                 self.set_errormsg(msg) 
                 return INTERP_ERROR 
-                
-       
+ ##################################07.11.2016 offset(Ы) по g-коду 
+    program = [] # массив строк g-кода траектории с отступом на чистовую обработку
+    angle = [] #угол участка траектории к оси Z
+    offset_mem=offset
+    angle_deg = [] #TEMP TODO
+    for n in range(len(coordZ)-1):
+        print 'n =',n
+        lengthZ = abs(coordZ[n] - coordZ[n+1])
+        lengthX = abs(coordX[n] - coordX[n+1])
+        if lengthX == 0 :   #горизонтальная линия
+            delta = 0
+        elif lengthZ == 0 : #вертикальная линия
+            delta = 0
+        else:  
+            tangens = lengthX/lengthZ
+            
+        if line_or_arc[n] > 1:
+            print 'ARC   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
+            print 'KI_iter=', KI_iter
+            if len(coordR) :
+                pass
+                #radius = coordR[KI_iter]TODO востребован ли R ?
+            else:
+                radius = sqrt((coordK[KI_iter])*(coordK[KI_iter]) + (coordI[KI_iter])*(coordI[KI_iter]))
+                centreX = coordX[n+1] + coordI[KI_iter]
+                centreZ = coordZ[n+1] + coordK[KI_iter]               
+            KI_iter+=1 
+            print 'letter G', line_or_arc[n]
+            print 'radius=', radius
+            print 'centreX=', centreX
+            print 'centreZ=', centreZ
+            print 'ARC   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'    
+        print 'lengthZ =',lengthZ
+        print 'lengthX =',lengthX
+        print 'angle =',degrees(atan2(lengthX,lengthZ))+180
+        print '==========================='
+        app = angle.append(atan2(lengthX,lengthZ))
+        DEG=int(degrees(atan2(lengthX,lengthZ)))+180
+        app = angle_deg.append(DEG)
+    app = angle.append(0.2914567944778671)
+    print 'angle =',angle
+    print 'angle_deg =',angle_deg
+    print 'line_or_arc=', line_or_arc
+    ser=''
+    self.execute("F%f" % feed_rate,lineno())
+    string=ser.join(['G18 G90 G49 F1000',])
+    ins = program.append(string)
+    mm=len(angle)-1
+    for qq in range(quantity):
+        string=ser.join(['G1','X',str(coordX[mm]+cos(angle[mm])*offset),'Z',str(coordZ[mm]+sin(angle[mm])*offset),])
+        ins = program.append(string)
+        for m in (reversed(range(len(angle)-1))):   
+            print '------------------------------------------------------------'
+            print 'm =', m
+            if (line_or_arc[m] ==1): #если участок "линия"
+                if (line_or_arc[m-1] ==1): #если СЛЕДУЮЩИЙ участок "линия"
+                    if angle[m-1] < angle[m]:#если угол следующего участка ccw
+                        print 'G01:LINE ANGLE:ccw next:LINE'
+                        string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset),])
+                        ins = program.append(string)
+                        if m==0:
+                            break  
+                        string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(offset),])
+                        ins = program.append(string)               
+                    else:       #если угол следующего участка cw
+                        print 'G01:LINE ANGLE:cw next:LINE'
+                        angl = (angle[m] - angle[m-1])/2 
+                        gg =  offset / cos(angl)
+                        angl1 = angle[m] - angl
+                        string=ser.join(['G1','X',str(coordX[m]+cos(angl1)*gg),'Z',str(coordZ[m]+sin(angl1)*gg),])  
+                        ins = program.append(string)
+                else: #если СЛЕДУЮЩИЙ участок "дуга"
+                    if (line_or_arc[m-1] ==2): #если СЛЕДУЮЩИЙ участок "дуга" CW
+                        if angle[m] < angle[m-1]: #угол следующего участка
+                            print 'G01:LINE ANGLE:ccw next:ARC_G02'
+                        else:       #угол следующего участка
+                            print 'G01:LINE ANGLE:cw next:ARC_G02' 
+                    if (line_or_arc[m-1] ==3): #если СЛЕДУЮЩИЙ участок "дуга" CCW
+                        if angle[m] < angle[m-1]:##угол следующего участка
+                            print 'G01:LINE ANGLE:ccw next:ARC_G03'
+                        else:       #угол следующего участка
+                            print 'G01:LINE ANGLE:cw next:ARC_G03'          
+
+            else:  #если участок "дуга"
+                if (line_or_arc[m] ==2): #если участок "дуга" CW
+                    if (line_or_arc[m-1] ==1): #если СЛЕДУЮЩИЙ участок "линия"
+                        if angle[m] < angle[m-1]:#угол следующего участка
+                            print 'G02:ARC ANGLE:ccw next:LINE'
+                        else:       #угол следующего участка
+                            print 'G02:ARC  ANGLE:cw next:LINE'
+                    else:                     #если СЛЕДУЮЩИЙ участок "дуга"
+                        if (line_or_arc[m-1] ==2): #если СЛЕДУЮЩИЙ участок "дуга" CW
+                            if angle[m] < angle[m-1]: #угол следующего участка
+                                print 'G02:ARC  ANGLE:ccw next:ARC_G02'
+                            else:       #угол следующего участка
+                                print 'G02:ARC  ANGLE:cw next:ARC_G02' 
+                        if (line_or_arc[m-1] ==3): #если СЛЕДУЮЩИЙ участок "дуга" CCW
+                            if angle[m] < angle[m-1]:##угол следующего участка
+                                print 'G01:LINE ANGLE:ccw next:ARC_G03'
+                            else:       #угол следующего участка
+                                print 'G01:LINE ANGLE:cw next:ARC_G03' 
+                else: #если участок "дуга" CCW
+                    if (line_or_arc[m-1] ==1): #если СЛЕДУЮЩИЙ участок "линия"
+                        if angle[m] < angle[m-1]:#угол следующего участка
+                            print 'G03:ARC ANGLE:ccw next:LINE'
+                        else:       #угол следующего участка
+                            print 'G03:ARC  ANGLE:cw next:LINE'
+                    else:                     #если СЛЕДУЮЩИЙ участок "дуга"
+                        if (line_or_arc[m-1] ==2): #если СЛЕДУЮЩИЙ участок "дуга" CW
+                            if angle[m] < angle[m-1]: #угол следующего участка
+                                print 'G03:ARC  ANGLE:ccw next:ARC_G02'
+                            else:       #угол следующего участка
+                                print 'G03:ARC  ANGLE:cw next:ARC_G02' 
+                        if (line_or_arc[m-1] ==3): #если СЛЕДУЮЩИЙ участок "дуга" CCW
+                            if angle[m] < angle[m-1]:##угол следующего участка
+                                print 'G03:ARC ANGLE:ccw next:ARC_G03'
+                            else:       #угол следующего участка
+                                print 'G03:ARC ANGLE:cw next:ARC_G03'
+        for w in program: 
+            self.execute(w,lineno())
+        offset-=offset_mem/quantity
+        program = []
+        self.execute("G0  Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
+        
+ ###################################################### непосредственно по контуру         
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
@@ -181,7 +316,7 @@ def g722(self, **words):
     filename = s.file
     f = open(filename, "r")
     lines = f.readlines()
-    x,v,i = 0,-1,0
+    x,v,KI_iter = 0,-1,0
     line_or_arc = []
     coordZ = []
     coordX = []
@@ -195,20 +330,21 @@ def g722(self, **words):
                 num = int(re.search("N\s*([0-9.]+)",lines[x], re.I).group(1))
                 if num >= p and num <= q:
                     v+=1
-                    g1 = line_or_arc.insert(0,(int(re.search("G\s*([0-4.]+)",lines[x], re.I).group(1))))
-                    z1 = coordZ.insert(0,(float(re.search("Z\s*([-0-9.]+)",lines[x], re.I).group(1))))
-                    x1 = coordX.insert(0,(float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))))                   
+                    ins = line_or_arc.insert(0,(int(re.search("G\s*([0-4.]+)",lines[x], re.I).group(1))))
+                    ins = coordZ.insert(0,(float(re.search("Z\s*([-0-9.]+)",lines[x], re.I).group(1))))
+                    ins = coordX.insert(0,(float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))))                   
                     if  re.search("[I]", lines[x]):
-                        i1 = coordI.insert(0,(float(re.search("I\s*([-0-9.]+)",lines[x], re.I).group(1))))
-                        k1 = coordK.insert(0,(float(re.search("K\s*([-0-9.]+)",lines[x], re.I).group(1))))
+                        ins = coordI.insert(0,(float(re.search("I\s*([-0-9.]+)",lines[x], re.I).group(1))))
+                        ins = coordK.insert(0,(float(re.search("K\s*([-0-9.]+)",lines[x], re.I).group(1))))
                     if  re.search("[R]", lines[x]):
-                        r1 = coordR.insert(0,(float(re.search("R\s*([-0-9.]+)",lines[x], re.I).group(1))))                        
+                        ins = coordR.insert(0,(float(re.search("R\s*([-0-9.]+)",lines[x], re.I).group(1))))                        
                 if num == p : # вычисляем Start_point по Z
                     temp_x = x
                     a=2
                     while not re.search("^\s*.*X", lines[temp_x-a].upper()):
                         a+=1
                     coordX_start = float(re.search("X\s*([-0-9.]+)",lines[temp_x-a], re.I).group(1))
+                    coordX_start =coordX_start +2# пробуем сделать безопастный заход(на 2мм ниже контура)
                     print 'coordX_start=' , coordX_start
         x+=1
     print 'coordZ=' , coordZ
@@ -242,15 +378,16 @@ def g722(self, **words):
         if line_or_arc[n] > 1:
             if len(coordR) :
                 pass
-                #radius = coordR[i]TODO востребован ли R ?
+                #radius = coordR[KI_iter]TODO востребован ли R ?
             else:
-                radius = sqrt((coordK[i])*(coordK[i]) + (coordI[i])*(coordI[i]))
-                centreX = coordX[n+1] + coordI[i]
-                centreZ = coordZ[n+1] + coordK[i]               
-            i+=1 
+                radius = sqrt((coordK[KI_iter])*(coordK[KI_iter]) + (coordI[KI_iter])*(coordI[KI_iter]))
+                centreX = coordX[n+1] + coordI[KI_iter]
+                centreZ = coordZ[n+1] + coordK[KI_iter]               
+            KI_iter+=1 
                    
-        while lengthZ >= 0:
+        while lengthZ -3 > 0:#3 - ширина резца для обработки паза
             try:
+
                 self.execute("F%f" % feed_rate,lineno())
                 self.execute("G21 G18",lineno())
                 self.execute("G61",lineno())
@@ -260,7 +397,7 @@ def g722(self, **words):
                     self.execute(" G1  X%f" % (COORDx0 + l),lineno())
                 else:
                     self.execute(" G1  X%f" % coordX_start,lineno())
-   #отходы 45гр 
+   #отходы 45гр -------------------------------------------
                 if pocket: #для карманов
  
                     if(COORDx0 + 0.5 +l) <= 0:
@@ -269,15 +406,15 @@ def g722(self, **words):
                         self.execute(" G0  X%f Z%f" % ((COORDx0 + 0.5 + l),(COORDz0 + 0.5 )),lineno())# отход 45гр
                     else:
                         self.execute(" G0  Z%f X%f" % ((COORDz0 + 0.5),(coordX_start)),lineno())# отход 45гр
-                #else:
+                #else:--------------------------------------
                     
                 
-                self.execute(" G0  X%f" % (coordX_start),lineno())# выход в стартовую по Z
+                self.execute(" G0  X%f" % (coordX_start),lineno())# выход в стартовую по X
                 if lengthZ < d:
                     newZ = COORDz0 - lengthZ
                 else:
-                    newZ = COORDz0 - d 
-                self.execute(" G1  Z%f" % (newZ),lineno())# новая позиция по X
+                    newZ = COORDz0 - 3 #3  - ширина пазового резца
+                self.execute(" G1  Z%f" % (newZ),lineno())# новая позиция по Z
                 COORDz0 = newZ
                 #просчитываем новую COORDx0 с учетом E(l) TODO пока без учета I(h):
                 if line_or_arc[n] == 1:
@@ -286,7 +423,7 @@ def g722(self, **words):
                     b2 = sqrt(radius*radius - ((centreZ-COORDz0)-d)*((centreZ-COORDz0)-d))
                     b1 = sqrt(radius*radius - (centreZ-COORDz0)*(centreZ-COORDz0))
                     COORDx0 = COORDx0 + (abs(b2-b1))                                    
-                lengthZ = lengthZ - d #d - съем за один проход
+                lengthZ = lengthZ - 3 #3  - ширина пазового резца
             except InterpreterException,e:
                 msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                 self.set_errormsg(msg) 
@@ -325,7 +462,7 @@ def g713(self, **words):
     filename = s.file
     f = open(filename, "r")
     lines = f.readlines()
-    x,v,i = 0,-1,0
+    x,v,KI_iter = 0,-1,0
     line_or_arc = []
     coordZ = []
     coordX = []
@@ -379,12 +516,12 @@ def g713(self, **words):
         if line_or_arc[n] > 1:
             if len(coordR) :
                 pass
-                #radius = coordR[i]
+                #radius = coordR[KI_iter]
             else:
-                radius = sqrt((coordK[i])*(coordK[i]) + (coordI[i])*(coordI[i]))
-                centreX = coordX[n+1] + coordI[i]
-                centreZ = coordZ[n+1] + coordK[i]               
-            i+=1                      
+                radius = sqrt((coordK[KI_iter])*(coordK[KI_iter]) + (coordI[KI_iter])*(coordI[KI_iter]))
+                centreX = coordX[n+1] + coordI[KI_iter]
+                centreZ = coordZ[n+1] + coordK[KI_iter]               
+            KI_iter+=1                      
         while lengthX >= 0:
             try:
                 self.execute("F%f" % feed_rate,lineno())
