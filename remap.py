@@ -172,23 +172,7 @@ def g712(self, **words):
             delta = 0
         else:  
             tangens = lengthX/lengthZ
-            
-        if line_or_arc[n] > 1:
-            print 'ARC   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
-            print 'KI_iter=', KI_iter
-            if len(coordR) :
-                pass
-                #radius = coordR[KI_iter]TODO востребован ли R ?
-            else:
-                radius = sqrt((coordK[KI_iter])*(coordK[KI_iter]) + (coordI[KI_iter])*(coordI[KI_iter]))
-                centreX = coordX[n+1] + coordI[KI_iter]
-                centreZ = coordZ[n+1] + coordK[KI_iter]               
-            KI_iter+=1 
-            print 'letter G', line_or_arc[n]
-            print 'radius=', radius
-            print 'centreX=', centreX
-            print 'centreZ=', centreZ
-            print 'ARC   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'    
+               
         print 'lengthZ =',lengthZ
         print 'lengthX =',lengthX
         print 'angle =',degrees(atan2(lengthX,lengthZ))+180
