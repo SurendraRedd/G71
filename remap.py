@@ -157,7 +157,8 @@ def g712(self, **words):
                 msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                 self.set_errormsg(msg) 
                 return INTERP_ERROR 
- ##################################07.11.2016 offset(Ы) по g-коду 
+ ##################################07.11.2016 offset(Ы) по g-коду
+    KI_iter=0
     program = [] # массив строк g-кода траектории с отступом на чистовую обработку
     angle = [] #угол участка траектории к оси Z
     offset_mem=offset
@@ -188,9 +189,19 @@ def g712(self, **words):
     self.execute("F%f" % feed_rate,lineno())
     string=ser.join(['G18 G90 G49 F1000',])
     ins = program.append(string)
-    mm=len(angle)-1
+    mm=int(len(angle)-2)
+    print '+++++++++++++++++++++++++++++'
+    print 'str(coordX[mm]+(cos(angle[mm]))*offset) =', str(coordX[mm]+(cos(angle[mm]))*offset)
+    print 'str(coordZ[mm]+(sin(angle[mm]))*offset) =', str(coordZ[mm]+(sin(angle[mm]))*offset)
+    print 'coordX[mm] =', coordX[mm]
+    print 'coordZ[mm]=', coordZ[mm]
+    print 'offset =', offset
+    print 'cos(angle[mm] =', cos(angle[mm])
+    print 'sin(angle[mm] =', sin(angle[mm])
+    print 'angle[mm] =', angle[mm]
+    print '+++++++++++++++++++++++++++++'
     for qq in range(quantity):
-        string=ser.join(['G1','X',str(coordX[mm]+cos(angle[mm])*offset),'Z',str(coordZ[mm]+sin(angle[mm])*offset),])
+        string=ser.join(['G1','x',str(coordX[mm+1]+(cos(angle[mm]))*offset),'z',str(coordZ[mm+1]+(sin(angle[mm]))*offset),])
         ins = program.append(string)
         for m in (reversed(range(len(angle)-1))):   
             print '------------------------------------------------------------'
@@ -213,16 +224,30 @@ def g712(self, **words):
                         string=ser.join(['G1','X',str(coordX[m]+cos(angl1)*gg),'Z',str(coordZ[m]+sin(angl1)*gg),])  
                         ins = program.append(string)
                 else: #если СЛЕДУЮЩИЙ участок "дуга"
-                    if (line_or_arc[m-1] ==2): #если СЛЕДУЮЩИЙ участок "дуга" CW
+                    radius = sqrt((coordK[KI_iter])*(coordK[KI_iter]) + (coordI[KI_iter])*(coordI[KI_iter]))
+                    centreX = coordX[m] + coordI[KI_iter]
+                    centreZ = coordZ[m] + coordK[KI_iter] 
+                    lengthZ = abs(centreZ - coordZ[m-1])
+                    lengthX = abs(centreX - coordX[m-1]) 
+                    alfa = atan2(lengthX,lengthZ)
+                    zz= (radius-offset)*sin(alfa)
+                    xx= (radius-offset)*cos(alfa)
+                    pointX=centreX-xx
+                    pointZ=centreZ-zz 
+                    if (line_or_arc[m-1] ==3): #если СЛЕДУЮЩИЙ участок "дуга" CW
                         if angle[m] < angle[m-1]: #угол следующего участка
-                            print 'G01:LINE ANGLE:ccw next:ARC_G02'
-                        else:       #угол следующего участка
-                            print 'G01:LINE ANGLE:cw next:ARC_G02' 
-                    if (line_or_arc[m-1] ==3): #если СЛЕДУЮЩИЙ участок "дуга" CCW
-                        if angle[m] < angle[m-1]:##угол следующего участка
                             print 'G01:LINE ANGLE:ccw next:ARC_G03'
                         else:       #угол следующего участка
-                            print 'G01:LINE ANGLE:cw next:ARC_G03'          
+                            print 'G01:LINE ANGLE:cw next:ARC_G03' 
+                    if (line_or_arc[m-1] ==2): #если СЛЕДУЮЩИЙ участок "дуга" CCW
+                        if angle[m] < angle[m-1]:##угол следующего участка
+                            print 'G01:LINE ANGLE:ccw next:ARC_G02'
+                        else:       #угол следующего участка
+                            print 'G01:LINE ANGLE:cw next:ARC_G02'
+                            string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset)])
+                            ins = program.append(string)
+                            string=ser.join(['G3','X',str(pointX),'Z',str(pointZ),'R',str(offset)])
+                            ins = program.append(string)          
 
             else:  #если участок "дуга"
                 if (line_or_arc[m] ==2): #если участок "дуга" CW
