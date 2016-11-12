@@ -166,7 +166,6 @@ def g712(self, **words):
                 self.set_errormsg(msg) 
                 return INTERP_ERROR 
  ##################################07.11.2016 offset(Ы) по g-коду
-    KI_iter=0
     program = [] # массив строк g-кода траектории с отступом на чистовую обработку
     angle = [] #угол участка траектории к оси Z
     offset_mem=offset
@@ -233,16 +232,37 @@ def g712(self, **words):
                         string=ser.join(['G1','X',str(coordX[m]+cos(angl1)*gg),'Z',str(coordZ[m]+sin(angl1)*gg),])  
                         ins = program.append(string)
                 else: #если СЛЕДУЮЩИЙ участок "дуга"
-                    radius = sqrt((coordK[m-1])*(coordK[m-1]) + (coordI[m-1])*(coordI[m-1]))
-                    centreX = coordX[m] + coordI[m-1]
-                    centreZ = coordZ[m] + coordK[m-1] 
-                    lengthZ = abs(centreZ - coordZ[m-1])
-                    lengthX = abs(centreX - coordX[m-1]) 
-                    alfa = atan2(lengthX,lengthZ)
-                    zz= (radius-offset)*sin(alfa)
-                    xx= (radius-offset)*cos(alfa)
-                    pointX=centreX-xx
-                    pointZ=centreZ-zz 
+                    NEXT_radius = sqrt((coordK[m-1])*(coordK[m-1]) + (coordI[m-1])*(coordI[m-1]))
+                    NEXT_centreX = coordX[m] + coordI[m-1]
+                    NEXT_centreZ = coordZ[m] + coordK[m-1] 
+                    NEXT_lengthZ = abs(NEXT_centreZ - coordZ[m])
+                    NEXT_lengthX = abs(NEXT_centreX - coordX[m]) 
+                    NEXT_alfa = atan2(NEXT_lengthZ,NEXT_lengthX)
+                    NEXT_zz= (NEXT_radius-offset)*sin(NEXT_alfa)
+                    NEXT_xx= (NEXT_radius-offset)*cos(NEXT_alfa)
+                    NEXT_pointX=NEXT_centreX-NEXT_xx
+                    if (coordZ[m]<NEXT_centreZ):#взаиморасположение центра и начала дуги
+                        NEXT_pointZ=NEXT_centreZ-NEXT_zz
+                        print 'NEXT_centreZ-NEXT_zz'
+                    else:
+                        NEXT_pointZ=NEXT_centreZ+NEXT_zz
+                        print 'NEXT_centreZ+NEXT_zz'
+                    print 'NEXT_coordZ[m]=', coordZ[m]
+                    print 'NEXT_centreZ=', NEXT_centreZ 
+                    print 'NEXT_zz=', NEXT_zz
+                    print 'NEXT_pointZ=', NEXT_pointZ
+                    print 'NEXT_xx=', NEXT_xx
+                    print 'NEXT_coordX[m]=', coordX[m]
+                    print 'NEXT_pointX=', NEXT_pointX
+                    print 'NEXT_centreX=', NEXT_centreX
+                    print 'NEXT_radius-offset=', NEXT_radius-offset
+                    
+                    
+                    print 'NEXT_alfa=', degrees(NEXT_alfa)
+                    print 'NEXT_lengthZ=', NEXT_lengthZ
+                    print 'NEXT_lengthX=', NEXT_lengthX
+                    print 'NEXT_radius=', NEXT_radius
+
                     if (line_or_arc[m-1] ==3): #если СЛЕДУЮЩИЙ участок "дуга" CW
                         if angle[m] < angle[m-1]: #угол следующего участка
                             print 'G01:LINE ANGLE:ccw next:ARC_G03'
@@ -255,16 +275,50 @@ def g712(self, **words):
                             print 'G01:LINE ANGLE:cw next:ARC_G02'
                             string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset)])
                             ins = program.append(string)
-                            string=ser.join(['G3','X',str(pointX),'Z',str(pointZ),'R',str(offset)])
+                            string=ser.join(['G3','X',str(NEXT_pointX),'Z',str(NEXT_pointZ),'R',str(offset)])
                             ins = program.append(string)          
 
             else:  #если участок "дуга"
+                radius = sqrt((coordK[m])*(coordK[m]) + (coordI[m])*(coordI[m]))
+                centreX = coordX[m+1] + coordI[m]
+                centreZ = coordZ[m+1] + coordK[m] 
+                lengthZ = abs(centreZ - coordZ[m])
+                lengthX = abs(centreX - coordX[m]) 
+                alfa = atan2(lengthZ,lengthX)
+                zz= (radius-offset)*sin(alfa)
+                xx= (radius-offset)*cos(alfa)
+                #pointX=centreX-xx
+                pointZ=centreZ-zz
+                if (coordX[m]<centreX):#взаиморасположение центра и начала дуги
+                    pointX=centreX-xx
+                else:
+                    pointX=centreX+xx
+                print 'coordX[m+1]=', coordX[m+1]
+                print 'coordZ[m+1]=', coordZ[m+1] 
+                print 'pointX=', pointX
+                print 'pointZ=', pointZ
+                print 'radius-offset=', radius-offset
+                print 'xx=', xx
+                print 'zz=', zz
+                print 'alfa=', degrees(alfa)
+                print 'lengthZ=', lengthZ
+                print 'lengthX=', lengthX
+                print 'radius=', radius
+                print 'centreX=', centreX
+                print 'centreZ=', centreZ
+                print 'angle[m]=', degrees(angle[m])
+                print 'angle[m+1]=', degrees(angle[m+1])
+                print 'angle[m-1]=', degrees(angle[m-1])
                 if (line_or_arc[m] ==2): #если участок "дуга" CW
                     if (line_or_arc[m-1] ==1): #если СЛЕДУЮЩИЙ участок "линия"
                         if angle[m] < angle[m-1]:#угол следующего участка
                             print 'G02:ARC ANGLE:ccw next:LINE'
                         else:       #угол следующего участка
                             print 'G02:ARC  ANGLE:cw next:LINE'
+                            string=ser.join(['G2','X',str(pointX),'Z',str(pointZ),'R',str(radius)])
+                            ins = program.append(string)
+                            string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(offset)])
+                            ins = program.append(string)
                     else:                     #если СЛЕДУЮЩИЙ участок "дуга"
                         if (line_or_arc[m-1] ==2): #если СЛЕДУЮЩИЙ участок "дуга" CW
                             if angle[m] < angle[m-1]: #угол следующего участка
@@ -293,9 +347,15 @@ def g712(self, **words):
                                 print 'G03:ARC ANGLE:ccw next:ARC_G03'
                             else:       #угол следующего участка
                                 print 'G03:ARC ANGLE:cw next:ARC_G03'
-        print 'program =', program                                
-        for w in program: 
-            self.execute(w,lineno())
+        print 'program =', program
+                                        
+        for w in program:
+            try:  
+                self.execute(w,lineno())
+            except InterpreterException,e:
+                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                        self.set_errormsg(msg) 
+                        return INTERP_ERROR  
         offset-=offset_mem/quantity
         program = []
         self.execute("G0  Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
