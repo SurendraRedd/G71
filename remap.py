@@ -47,7 +47,7 @@ def g712(self, **words):
     filename = s.file
     f = open(filename, "r")
     lines = f.readlines()
-    x,v,KI_iter = 0,-1,0
+    x,v = 0,-1
     line_or_arc = []
     coordZ = []
     coordX = []
@@ -67,6 +67,9 @@ def g712(self, **words):
                     if  re.search("[I]", lines[x]):
                         ins = pars(coordI,"I\s*([-0-9.]+)",lines[x])
                         ins = pars(coordK,"K\s*([-0-9.]+)",lines[x])
+                    else:
+                        a=coordI.insert(0,None)
+                        a=coordK.insert(0,None)                       
                     if  re.search("[R]", lines[x]):
                         ins = pars(coordR,"R\s*([-0-9.]+)",lines[x])                        
                 if num == p : # вычисляем Start_point по Z
@@ -78,14 +81,14 @@ def g712(self, **words):
         x+=1
  
  ######################################################
-    print 'данные массивов +++++++++++++++++++++++++++++++++++++++'
+    print ' +++++++++++++++++++++++++++++++++++++++'
     print 'coordZ=', coordZ
     print 'coordX=', coordX
     print 'line_or_arc=', line_or_arc
     print 'coordI=', coordI
     print 'coordK=', coordK
     print 'coordZ_start=', coordZ_start
-    print 'данные массивов +++++++++++++++++++++++++++++++++++++++'             
+    print ' +++++++++++++++++++++++++++++++++++++++'             
     for n in range(v):
         print 'n=' , n
         COORDx0 =  coordX[n]
@@ -114,14 +117,19 @@ def g712(self, **words):
         if line_or_arc[n] > 1:
             if len(coordR) :
                 pass
-                #radius = coordR[KI_iter]
+                #radius = coordR[n+1]
             else:
                 print ' ARC  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
-                print 'KI_iter=', KI_iter
-                radius = hip(coordK[KI_iter],coordI[KI_iter])
-                centreX = coordX[n+1] + coordI[KI_iter]
-                centreZ = coordZ[n+1] + coordK[KI_iter]               
-            KI_iter+=1                  
+                radius = hip(coordK[n],coordI[n])
+                centreX = coordX[n+1] + coordI[n]
+                centreZ = coordZ[n+1] + coordK[n]
+                print 'radius=' , radius
+                print 'coordX[n]=' , coordX[n]
+                print 'coordI[n]=' , coordI[n]
+                print 'coordZ[n]=' , coordZ[n]
+                print 'coordK[n]=' , coordK[n]                
+                print 'centreX=' , centreX
+                print 'centreZ=' , centreZ                                
         while lengthX >= 0  :
             try:
                 self.execute("F%f" % feed_rate,lineno())
@@ -163,6 +171,7 @@ def g712(self, **words):
     angle = [] #угол участка траектории к оси Z
     offset_mem=offset
     angle_deg = [] #TEMP TODO
+    print 'данные контура offset'
     for n in range(len(coordZ)-1):
         print 'n =',n
         lengthZ = abs(coordZ[n] - coordZ[n+1])
@@ -185,7 +194,7 @@ def g712(self, **words):
     print 'angle =',angle
     print 'angle_deg =',angle_deg
     print 'line_or_arc=', line_or_arc
-    ser=''
+    ser=' '
     self.execute("F%f" % feed_rate,lineno())
     string=ser.join(['G18 G90 G49 F1000',])
     ins = program.append(string)
@@ -224,9 +233,9 @@ def g712(self, **words):
                         string=ser.join(['G1','X',str(coordX[m]+cos(angl1)*gg),'Z',str(coordZ[m]+sin(angl1)*gg),])  
                         ins = program.append(string)
                 else: #если СЛЕДУЮЩИЙ участок "дуга"
-                    radius = sqrt((coordK[KI_iter])*(coordK[KI_iter]) + (coordI[KI_iter])*(coordI[KI_iter]))
-                    centreX = coordX[m] + coordI[KI_iter]
-                    centreZ = coordZ[m] + coordK[KI_iter] 
+                    radius = sqrt((coordK[m-1])*(coordK[m-1]) + (coordI[m-1])*(coordI[m-1]))
+                    centreX = coordX[m] + coordI[m-1]
+                    centreZ = coordZ[m] + coordK[m-1] 
                     lengthZ = abs(centreZ - coordZ[m-1])
                     lengthX = abs(centreX - coordX[m-1]) 
                     alfa = atan2(lengthX,lengthZ)
@@ -284,6 +293,7 @@ def g712(self, **words):
                                 print 'G03:ARC ANGLE:ccw next:ARC_G03'
                             else:       #угол следующего участка
                                 print 'G03:ARC ANGLE:cw next:ARC_G03'
+        print 'program =', program                                
         for w in program: 
             self.execute(w,lineno())
         offset-=offset_mem/quantity
