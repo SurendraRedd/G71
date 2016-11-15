@@ -19,7 +19,7 @@ import dxf2gcode_v01_tsp_opt as tsp
 import webbrowser
 from Tkconstants import END, INSERT, ALL, N, S, E, W, RAISED, RIDGE, GROOVE, FLAT, DISABLED, NORMAL, ACTIVE, LEFT
 from tkMessageBox import showwarning, showerror
-from Tkinter import Tk, Canvas, Menu, Frame, Grid, DoubleVar, StringVar , IntVar, Radiobutton, Label, Entry, Text, Scrollbar, Toplevel,Button , PhotoImage
+from Tkinter import Tk, Canvas, Menu, Frame, Grid, DoubleVar, StringVar , IntVar, Radiobutton,Checkbutton, Label, Entry, Text, Scrollbar, Toplevel,Button , PhotoImage
 from tkFileDialog import askopenfile, asksaveasfilename
 from tkSimpleDialog import askfloat
 from Canvas import Rectangle, Line, Oval, Arc
@@ -288,7 +288,7 @@ class Erstelle_Fenster:
         ch = ''
         ch1 = ''
         program = ''
-        x_max , p , q , d , k , i , f = 0 , 1 , 15 , 1 , 1 , 1 , 433 ,
+        x_max , p , q , d , k , i , f ,j,s,l = 0 , 1 , 15 , 1 , 1 , 1 , 433 ,1.2,0,1
         N_start_end = []
         Z_start = []
         for l in lines:
@@ -317,16 +317,22 @@ class Erstelle_Fenster:
         k = float(self.ExportParas.d_K.get())
         i = float(self.ExportParas.d_I.get())
         f = float(self.ExportParas.d_F.get())
+        j = float(self.ExportParas.d_J.get())
+        #s = float(self.ExportParas.d_S.get())
+        l = float(self.ExportParas.d_L.get())
         rb = self.ExportParas.g71_72.get()
+        checkbutton = self.ExportParas.only.get()
         code = 'G71.2'
         start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
         if rb :
             code = 'G72.2'
             start_point = str('G1 X%s  Z%s \n' % (x_max, z_max))
+        if checkbutton :
+            s = 1           
         program += ch1
         
         program += start_point
-        stt = str('%s P%s Q%s  D%s K%s I%s F%s \n' % (code , p , q , d , k , i , f ))
+        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s\n' % (code , p , q , d , k , i , f ,j ,s,l))
         program += stt
         program += ch
         program += 'M2'
@@ -413,7 +419,7 @@ class TextboxClass:
 
         self.textscr.config(command=self.text.yview)
         self.text.config(yscrollcommand=self.textscr.set)
-        self.prt('Program started\nVersion V0.1\nCoded by V. Schulz and C. Kohlöffel')
+        self.prt('Program started\nVersion V0.1LatheG71\n')
 
     def set_debuglevel(self,DEBUG=0):
         self.DEBUG=DEBUG
@@ -462,10 +468,12 @@ class ExportParasClass:
         self.gcode_be.insert(END,postpro.gcode_be)
         self.gcode_en.insert(END,postpro.gcode_en)
 
-
-            
+        self.ccc = CanvasContentClass(self,Canvas,config)# ????????????????????????????????????????????????
+        
 
         
+
+
         
     def erstelle_eingabefelder(self,config):
        
@@ -510,29 +518,29 @@ class ExportParasClass:
                 .grid(row=2,column=0,sticky=N+W,padx=4)
         self.d_Z0 = Entry(f2,width=7,textvariable=config.start_Z0)
         self.d_Z0.grid(row=2,column=1,sticky=N+E)
-        Label(f2, text=("empty[]:" ))\
+        
+        Label(f2, text=("OffsetJ  [J]" ))\
                 .grid(row=3,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable='')\
-                .grid(row=3,column=1,sticky=N+E)
+        self.d_J = Entry(f2,width=7,textvariable=config.offsetJ)
+        self.d_J.grid(row=3,column=1,sticky=N+E)
 
-        Label(f2, text=("empty []:" ))\
+        Label(f2, text=("Spindle  [S]" ))\
                 .grid(row=4,column=0,sticky=N+W,padx=4)
-        Entry(f2,width=7,textvariable='')\
-                .grid(row=4,column=1,sticky=N+E)
+        self.d_S = Entry(f2,width=7,textvariable=config.shpindle_S)
+        self.d_S.grid(row=4,column=1,sticky=N+E)
 
-        Label(f3, text=("empty[]:" ))\
-                .grid(row=1,column=0,sticky=N+W,padx=4)
-        Entry(f3,width=7,textvariable='')\
-                .grid(row=1,column=1,sticky=N+E)
 
-        Label(f3, text=("empty[]:" ))\
-                .grid(row=2,column=0,sticky=N+W,padx=4)
-        Entry(f3,width=7,textvariable='')\
-                .grid(row=2,column=1,sticky=N+E)
+        Label(f2, text=("Quantity  [L]" ))\
+                .grid(row=5,column=0,sticky=N+W,padx=4)
+        self.d_L = Entry(f2,width=7,textvariable=config.quantity_L)  
+        self.d_L.grid(row=5,column=1,sticky=N+E)
+
                 
                 
         self.g71_72=IntVar()
         self.g71_72.set(0)
+        self.only=IntVar()
+        #self.only.set(1)
         
         Label(f3, text=("G71" ))\
         .grid(row=3,column=0,sticky=N+W,padx=4)
@@ -544,9 +552,17 @@ class ExportParasClass:
         self.rad1 = Radiobutton(f3,text="G72",variable=self.g71_72,value=1,command=lambda: self.change_img72())
         self.rad1.grid(row=4,column=1,sticky=N+E)
         
-
+        Label(f3, text=("Only finishing [S]" ))\
+        .grid(row=5,column=0,sticky=N+W,padx=4)        
+        self.rad2 = Checkbutton(f3,text="",variable=self.only,onvalue=1,offvalue=0)
+        self.rad2.grid(row=5,column=1,sticky=N+E)
         
+
+    def revers_contour(self):
+        aa=self.ccc.switch_shape_dir()# ????????????????????????????????????????????????
+ 
     def change_img71( self): #при выборе 71-72 меняем картинки
+        self.textbox.prt('\ncheckbutton is OK!!')
         self.im = PhotoImage(file='G71.gif') 
         f33=Frame(self.nb_f3,relief = FLAT,bd = 1)
         f33.grid(row=0,column=0,padx=2,pady=2,sticky=N+W+E)
@@ -559,6 +575,7 @@ class ExportParasClass:
         f33.columnconfigure(0,weight=1)
         f33.rowconfigure(1,weight=0)
         f33.rowconfigure(3,weight=0)
+        
     def change_img72( self):
         self.im = PhotoImage(file='G72.gif') 
         f33=Frame(self.nb_f3,relief = FLAT,bd = 1)
@@ -631,12 +648,17 @@ class CanvasClass:
 
         self.label=Label(self.master, text="Curser Coordinates: X=0.0, Y=0.0, Scale: 1.00",bg="white",anchor="w")
         self.label.grid(row=1,column=0,sticky=E+W)
-
+        
+        self.var = IntVar()
+        self.cbutt = Checkbutton(self.master,text="Revers",variable=self.var,command=lambda: self.Content.switch_shape_dir)
+        self.cbutt.grid(row=2,column=1,sticky=E+W)
+        
         self.canvas=Canvas(self.master,width=650,height=500, bg = "white")
         self.canvas.grid(row=0,column=0,sticky=N+E+S+W)
         self.master.columnconfigure(0,weight=1)
         self.master.rowconfigure(0,weight=1)
-
+        for i in range(25):
+            self.canvas.create_oval(5+(4*i),5+(3*i),(5*i)+60,(i)+60, fill='gray70')
 
         self.canvas.bind("<Motion>", self.moving)
 
@@ -653,7 +675,11 @@ class CanvasClass:
         self.canvas.bind("<Control-ButtonRelease-1>", self.mouse_move_release)
         self.canvas.bind("<Control-Button-3>", self.mouse_zoom)
         self.canvas.bind("<Control-B3-Motion>", self.mouse_zoom_motion)
-        self.canvas.bind("<Control-ButtonRelease-3>", self.mouse_zoom_release)   
+        self.canvas.bind("<Control-ButtonRelease-3>", self.mouse_zoom_release) 
+          
+    def revers_contour(self,event):
+        a=self.Content.select_cont
+
 
     def moving(self,event):
         x=self.dx+(event.x/self.scale)
@@ -870,7 +896,7 @@ class CanvasContentClass:
         self.toggle_wp_zero.set(1)
 
         self.toggle_start_stop=IntVar()
-        self.toggle_start_stop.set(0)
+        self.toggle_start_stop.set(1) #показывать стрелки направления контура при старте
 
         self.toggle_show_disabled=IntVar()
         self.toggle_show_disabled.set(0)  
@@ -974,12 +1000,11 @@ class CanvasContentClass:
         for hdl in self.dir_hdls:
             self.Canvas.canvas.delete(hdl) 
         self.dir_hdls=[]
-
+       
         if not(self.toggle_start_stop.get()):
             draw_list=self.Selected[:]
         else:
-            draw_list=range(len(self.Shapes))
-               
+            draw_list=range(len(self.Shapes))    
         for shape_nr in draw_list:
             if not(shape_nr in self.Disabled):
                 self.dir_hdls+=self.Shapes[shape_nr].plot_cut_info(self.Canvas,self.config)
@@ -1061,7 +1086,7 @@ class CanvasContentClass:
                         break
             except:
                 pass
-            
+ 
         self.plot_cut_info()
         self.set_shapes_color(self.Selected,'selected')
  
@@ -1103,14 +1128,15 @@ class CanvasContentClass:
         else:
             self.set_hdls_hidden(self.Disabled)
             self.show_dis=0
-
+            
     def switch_shape_dir(self):
         for shape_nr in self.Selected:
             self.Shapes[shape_nr].reverse()
             self.textbox.prt('\n\nSwitched Direction at Shape:'\
-                             +str(self.Shapes[shape_nr]),3)
+                             +str(self.Shapes[shape_nr]))
         self.plot_cut_info()
-        
+
+                
     def set_cut_cor(self,correction):
         for shape_nr in self.Selected: 
             self.Shapes[shape_nr].cut_cor=correction
@@ -1243,7 +1269,7 @@ class ConfigClass:
         try:               
             self.tool_dia=DoubleVar()
             self.tool_dia.set(float(2.333))
- #######################################################################настройки по дефолту           
+ ####################################################################### настройки по дефолту           
             self.depth_D = DoubleVar()
             self.depth_D.set(float(self.parser.get('Parameters','depth_D')))
             
@@ -1260,7 +1286,16 @@ class ConfigClass:
             self.ending_block_Q.set(float(self.parser.get('Parameters','ending_block_Q')))         
            
             self.start_Z0  = IntVar()
-            self.start_Z0 .set(float(self.parser.get('Parameters','start_Z0')))            
+            self.start_Z0.set(float(self.parser.get('Parameters','start_Z0'))) 
+            
+            self.shpindle_S  = IntVar()
+            self.shpindle_S.set(float(self.parser.get('Parameters','shpindle_S'))) 
+            
+            self.offsetJ  = IntVar()
+            self.offsetJ.set(float(self.parser.get('Parameters','offsetJ')))
+            
+            self.quantity_L  = IntVar()
+            self.quantity_L.set(float(self.parser.get('Parameters','quantity_L')))            
 
             self.tempfile_gcode = self.parser.get('Paths','tempfile_gcode')
             self.editfilename = self.parser.get('Paths','editfilename')
@@ -1620,13 +1655,10 @@ class Show_About_Info(Toplevel):
         text.tag_bind("a", "<Button-1>", self.click)
         text.config(cursor="arrow")
 
-        href = "http://christian-kohloeffel.homepage.t-online.de/index.html"
-        text.insert(END, "You are using DXF2GCODE")
-        text.insert(END, "\nVersion v01 from the 27th Juli 2008")
-        text.insert(END, "\nFor more information und updates about")
-        text.insert(END, "\nplease visit my homepage at:")
-        text.insert(END, "\nwww.christian-kohloeffel.homepage.t-online.de", ("a", "href:"+href))
-        text.insert(END, "\nHotfix 1")
+        href = "https://github.com/nkp2169/G71"
+        text.insert(END, "\nVersion Lathe")
+        text.insert(END, "\nhttps://github.com/nkp2169/G71", ("a", "href:"+href))
+
 
 class NotebookClass:    
     def __init__(self, master,width=0,height=0):
