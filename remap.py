@@ -202,6 +202,7 @@ def g712(self, **words):
         print 'lengthX =',lengthX
         print 'angle =',degrees(atan2(lengthX,lengthZ))+180
         print '==========================='
+        
         app = angle.append(atan2(lengthX,lengthZ))
         DEG=int(degrees(atan2(lengthX,lengthZ)))+180
         app = angle_deg.append(DEG)
@@ -215,7 +216,7 @@ def g712(self, **words):
     ins = program.append(string)
     mm=int(len(angle)-2)
     for qq in range(quantity):
-        string=ser.join(['G1','x',str(coordX[mm+1]+(cos(angle[mm]))*offset),'z',str(coordZ[mm+1]+(sin(angle[mm]))*offset),])
+        string=ser.join(['G1','x',str(round(coordX[mm+1]+(cos(angle[mm]))*offset,10)) , 'z',str(coordZ[mm+1]+(sin(angle[mm]))*offset),]) # 2.png
         ins = program.append(string)
         for m in (reversed(range(len(angle)-1))):   
             print '------------------------------------------------------------'
@@ -223,18 +224,29 @@ def g712(self, **words):
             if (line_or_arc[m] ==1): #если участок "линия"
                 if (line_or_arc[m-1] ==1): #если СЛЕДУЮЩИЙ участок "линия"
                     if angle[m-1] < angle[m]:#если угол следующего участка cw XXX(5.png)
-                        print 'G01:LINE ANGLE:ccw next:LINE'
+                        if m==12:
+                            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!' 
+                            print 'G01:LINE ANGLE:cw next:LINE'
+                            print 'angle[m] =', angle[m]
+                            print 'angle[m-1] =',angle[m-1]
+                            print 'cos(angle[m]=', cos(angle[m])
+                            print 'coordZ[m] =', coordZ[m]
+                            print 'degrees(angle[m]) =', degrees(angle[m])
+                            print 'degrees(angle[m-1]) =', degrees(angle[m-1])
+                            print '!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
                         string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset),])
                         ins = program.append(string)
                         if m==0:
                             break  
                         string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(offset),])
                         ins = program.append(string)               
-                    else:       #если угол следующего участка ccw XXX(4.png)  
-                        print 'G01:LINE ANGLE:cw next:LINE'
+                    else:       #если угол следующего участка ccw XXX(4.png)
+                         
+                        print 'G01:LINE ANGLE:ccw next:LINE'
                         angl = (angle[m] - angle[m-1])/2 
                         gg =  offset / cos(angl)
                         angl1 = angle[m] - angl
+
                         string=ser.join(['G1','X',str(coordX[m]+cos(angl1)*gg),'Z',str(coordZ[m]+sin(angl1)*gg),])  
                         ins = program.append(string)
                 else: #если СЛЕДУЮЩИЙ участок "дуга"
