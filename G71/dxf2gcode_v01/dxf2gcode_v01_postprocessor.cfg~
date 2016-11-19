@@ -1,0 +1,36 @@
+[General]
+abs_export = 1
+write_to_stdout = 1
+code_begin = G21  G90 G64 P0.01 G18 G40 G49 
+	T1M6 
+
+	F1440
+	
+code_end =
+
+[Number format]
+pre_decimals = 4
+post_decimals = 3
+decimal_seperator = .
+pre_decimal_zero_padding = 0
+post_decimal_zero_padding = 1
+signed_values = 0
+
+[Line numbers]
+use_line_nrs = 1
+line_nrs_begin = 1
+line_nrs_step = 1
+
+[Program]
+tool_change = T%tool_nr M6%nl S%speed M3%nl
+feed_change = F%feed%nl
+rap_pos_plane = G0 X%X Z%Y%nl
+rap_pos_depth = 
+lin_mov_plane = G1 X%X Z%Y%nl
+lin_mov_depth = 
+arc_int_cw = G3 X%X Z%Y I%I K%J%nl
+arc_int_ccw = G2 X%X Z%Y I%I K%J%nl
+cutter_comp_off = G40%nl
+cutter_comp_left = G41%nl
+cutter_comp_right = G42%nl
+

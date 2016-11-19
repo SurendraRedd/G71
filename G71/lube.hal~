@@ -1,0 +1,62 @@
+# в INI файл прописать :
+
+#[LUBE]
+
+#PATH_AXIS0 = 100 #расстояние,пройденое осью x для вкл смазки
+#PATH_AXIS2 = 100 #расстояние,пройденое осью z для вкл смазки
+#TIME       = 3   #время работы насоса смазки
+
+########################################
+loadrt integ       count=2
+loadrt abs         count=2
+loadrt timedelay   count=1
+loadrt wcomp       count=2
+loadrt oneshot     count=1
+loadrt logic       count=1  personality=516
+
+addf   logic.0     servo-thread
+addf   oneshot.0   servo-thread
+addf   timedelay.0 servo-thread
+# X
+addf   integ.0     servo-thread
+addf   wcomp.0     servo-thread
+addf   abs.0       servo-thread
+# Z
+addf   integ.1     servo-thread
+addf   wcomp.1     servo-thread
+addf   abs.1       servo-thread
+setp   timedelay.0.on-delay  0
+# Время смазки
+setp   timedelay.0.off-delay  [LUBE]TIME
+setp   oneshot.0.width 1
+# Расстояния по осям
+setp   wcomp.0.max           [LUBE]PATH_AXIS0
+setp   wcomp.1.max          [LUBE]PATH_AXIS2
+
+net  is_on    <= halui.machine.is-on => oneshot.0.in
+net  onsh_out <= oneshot.0.out     =>   logic.0.in-03
+# X
+net  vel_in    <=  axis.0.joint-vel-cmd => abs.0.in
+net  vel_out   <=  abs.0.out =>            integ.0.in
+net  int_out   <=  integ.0.out =>          wcomp.0.in
+net  wcomp_out <=  wcomp.0.over =>         logic.0.in-00
+# Z
+net  vel_in2   <=  axis.2.joint-vel-cmd => abs.1.in
+net  vel_out2  <=  abs.1.out =>   integ.1.in
+net  int_out2  <=  integ.1.out =>   wcomp.1.in
+net  wcomp_out2 <= wcomp.1.over =>  logic.0.in-02
+# OR от всех осей + oneshot
+net  lube <=  logic.0.or =>   timedelay.0.in  integ.0.reset    integ.1.reset
+#net  port <=  timedelay.0.out =>  hm2_5i25.0.7i77.0.0.output-03
+
+loadrt dmux2 
+addf   dmux2.0  servo-thread
+
+net select   halui.spindle.runs-forward  dmux2.0.sel
+
+loadrt  pwmgen output_type=0
+addf    pwmgen.0   servo-thread
+
+
+
+
