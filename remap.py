@@ -105,19 +105,11 @@ def g712(self, **words):
     
     angle = [] #угол участка траектории к оси Z
     angle_deg = [] #TEMP TODO
-    print 'данные контура offset'
+
     for n in range(len(coordZ)-1):
         print 'n =',n
         lengthZ = abs(coordZ[n] - coordZ[n+1])
-        lengthX = abs(coordX[n] - coordX[n+1])
-        if lengthX == 0 :   #горизонтальная линия
-            delta = 0
-        elif lengthZ == 0 : #вертикальная линия
-            delta = 0
-        else:  
-            tangens = lengthX/lengthZ               
-        print 'lengthZ =',lengthZ
-        print 'lengthX =',lengthX
+        lengthX = abs(coordX[n] - coordX[n+1])             
         print 'angle =',degrees(atan2(lengthX,lengthZ))+180
         print '==========================='        
         app = angle.append(atan2(lengthX,lengthZ))
@@ -126,13 +118,7 @@ def g712(self, **words):
     app = angle.append(0.2914567944778671)
     print 'angle =',angle
     print 'angle_deg =',angle_deg
-    print 'line_or_arc=', line_or_arc
-    
-    if only_finishing_cut :
-        v=0
-        MESSAGE("Only finishing cut") 
-        self.execute("(MSG,Only finishing cut!\nResume: S)",lineno())
-        self.execute("M0",lineno())            
+    print 'line_or_arc=', line_or_arc           
     '''for n in range(v):
         print 'n=' , n
         COORDx0 =  coordX[n]
@@ -170,7 +156,7 @@ def g712(self, **words):
 
  ##################################07.11.2016 offset по g-коду
     part_n = -1
-    P = [] #массив массивов данных во каждому контуру
+    P = [] #массив массивов данных по каждому контуру
     program = [] # массив строк g-кода траектории с отступом на чистовую обработку
     offset_mem=offset
     mm=int(len(angle)-2)
@@ -179,10 +165,9 @@ def g712(self, **words):
     string=ser.join(['G18 G90 G49 F1000',])
     ins = program.append(string)
     for qq in range(quantity):
-        string=ser.join(['G1','x',str(round(coordX[mm+1]+(cos(angle[mm]))*offset,10)) , 'z',str(coordZ[mm+1]+(sin(angle[mm]))*offset),]) # IMG 2.png
+        string=ser.join(['G1','x',str(round(coordX[mm+1]+offset,10)) , 'z',str(coordZ[mm+1]),]) # IMG 2.png
         ins = program.append(string)
-
-
+        
         for m in (reversed(range(len(angle)-1))):   
             print '------------------------------------------------------------'
             print 'm =', m
@@ -190,8 +175,13 @@ def g712(self, **words):
                 if (line_or_arc[m-1] ==1): #если СЛЕДУЮЩИЙ участок "линия"
                     if angle[m-1] < angle[m]: #если угол следующего участка cw IMG(5.png)
                         print 'G01:LINE ANGLE:cw next:LINE'
-                        string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset),])
-                        ins = program.append(string)
+                        if m==0:
+                            string=ser.join(['G1','X',str(coordX[m]),'Z',str(coordZ[m]+offset),])
+                            print 'm!!!!! =', m
+                            ins = program.append(string)
+                        else:
+                            string=ser.join(['G1','X',str(coordX[m]+offset),'Z',str(coordZ[m]+sin(angle[m])*offset),])
+                            ins = program.append(string)
                         part_n+=1
                         P.append([])
                         P[part_n].append(1) 
@@ -398,11 +388,17 @@ def g712(self, **words):
                             else:       #угол следующего участка#TODO
                                 print 'G02:ARC ANGLE:cw next:ARC_G02'
         print 'program =', program
-        print ' !!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!'
         modulo = 0 # остаток от деления LenghtX / d
         COORDx0 = P[len(P)-1][3] #новая позиция по X (первый проход)
         COORDz0 = P[len(P)-1][4] #новая позиция по Z (первый проход)
+
         for i in reversed(range(len(P))):
+            print 'i =', i
+            if only_finishing_cut :
+                break
+                MESSAGE("Only finishing cut") 
+                self.execute("(MSG,Only finishing cut!\nResume: S)",lineno())
+                self.execute("M0",lineno()) 
             COORDx0  =  P[i][3]
             while COORDx0 - P[i][1] >= d :
                 try:
@@ -414,44 +410,34 @@ def g712(self, **words):
                     self.execute("G91",lineno())
                     self.execute("G0 X%f Z%f" % ((0.5),(0.5)),lineno())# отход 45гр
                     self.execute("G90",lineno())
-                    coordZ_start = 0
                     self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
                     if modulo:
-                        print 'COORDx0ДО =', COORDx0 
-                        COORDx0 = COORDx0 - (d-modulo)
-                        print 'd-modulo=',d-modulo 
-                        print 'd=',d 
-                        print 'modulo=',modulo
-                        print 'COORDx0ПСЛЕ =', COORDx0 
-                        modulo = 0
-                        print COORDx0  #новая позиция по X
-                        
+                        COORDx0 = COORDx0 - abs(d-modulo)
+                        modulo = 0                        
                     else:
                         COORDx0 = COORDx0 - d
-                        print COORDx0  #новая позиция по X
-                    self.execute("G1 X%f " % (COORDx0),lineno())#новая позиция по X
-             
-                    if COORDx0 -P[i][1] < d:
-                        modulo = COORDx0 - P[i][1]
-                        print 'modulo=' ,  modulo 
-                        print 'P[i][1]=' ,  P[i][1]
+                    self.execute("G1 X%f " % (COORDx0),lineno())#новая позиция по X             
+
                     #просчитываем новую COORDz0 :
-                    if   P[part_n][0] == 1:
+                    if   P[i][0] == 1:
                         COORDz0=-2
-                    elif P[part_n][0] >  1:
-                        pass                             
+                    elif P[i][0] >  1:
+                        pass 
+                    if COORDx0 - P[i][1] < d:
+                        modulo = COORDx0 - P[i][1]
+                        if i==0:
+                            self.execute("G1  Z%f" % ((COORDz0)),lineno())
+                            self.execute("G91",lineno())
+                            self.execute("G0 X%f Z%f" % ((0.5),(0.5)),lineno())# отход 45гр
+                            self.execute("G90",lineno())
+                            self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
 
                 except InterpreterException,e:
                     msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                     self.set_errormsg(msg) 
                     return INTERP_ERROR                    
-                    print 'LINE_OR_ARC=' ,  P[i][0]
-                    COORDx0=P[i][0]
-                    self.execute("G0 X%f " % (COORDx0),lineno())
 
-        print P[0][1]#новая позиция по X (последний проход)
-        print 'P =', P 
-                                               
+        print 'P =', P                                               
         for w in program:
             try:  
                 self.execute(w,lineno())
