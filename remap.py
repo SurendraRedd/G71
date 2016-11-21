@@ -165,7 +165,7 @@ def g712(self, **words):
     string=ser.join(['G18 G90 G49 F1000',])
     ins = program.append(string)
     for qq in range(quantity):
-        string=ser.join(['G1','x',str(round(coordX[mm+1]+offset,10)) , 'z',str(coordZ[mm+1]),]) # IMG 2.png
+        string=ser.join(['G1','x',str(round(coordX[mm+1]+(cos(angle[mm]))*offset,10)) , 'z',str(coordZ[mm+1]+(sin(angle[mm]))*offset),]) # IMG 2.png
         ins = program.append(string)
         
         for m in (reversed(range(len(angle)-1))):   
@@ -176,33 +176,56 @@ def g712(self, **words):
                     if angle[m-1] < angle[m]: #если угол следующего участка cw IMG(5.png)
                         print 'G01:LINE ANGLE:cw next:LINE'
                         if m==0:
-                            string=ser.join(['G1','X',str(coordX[m]),'Z',str(coordZ[m]+offset),])
-                            print 'm!!!!! =', m
+                            print 'm =0', m
+                            string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset)])
                             ins = program.append(string)
                         else:
-                            string=ser.join(['G1','X',str(coordX[m]+offset),'Z',str(coordZ[m]+sin(angle[m])*offset),])
+                            string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),
+                                                  'Z',str(coordZ[m]+sin(angle[m])*offset),])
+                            ins = program.append(string)
+                            print 'm !=0', m                   
+                        if m!=0:
+ 
+                            string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),
+                                        'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(offset),])
                             ins = program.append(string)
                         part_n+=1
                         P.append([])
                         P[part_n].append(1) 
                         if part_n == 0:
-                            P[part_n].append(round(coordX[mm+1]+(cos(angle[mm]))*offset,10))
-                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)
+                            P[part_n].append(coordX[mm+1]+(cos(angle[mm]))*offset)
+                            P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
                             P[part_n].append(coordX[m]+cos(angle[m])*offset)
-                            P[part_n].append(coordZ[m]+sin(angl1)*gg)
+                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)
+                            part_n+=1 
+                            P.append([])
+                            P[part_n].append(3)
+                            P[part_n].append(P[part_n-1][3])
+                            P[part_n].append(P[part_n-1][4])                                               
+                            P[part_n].append(coordX[m]+cos(angle[m-1])*offset)
+                            P[part_n].append(coordZ[m]+sin(angle[m-1])*offset)
+                            P[part_n].append(offset)
                             continue
-                        P[part_n].append(P[part_n-1][3])
-                        P[part_n].append(P[part_n-1][4])                                               
-                        P[part_n].append(coordX[m]+cos(angle[m])*offset)
-                        P[part_n].append(coordZ[m]+sin(angle[m])*offset)                                               
                         if m==0:
-                            continue  
-                        string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(offset),])
-                        ins = program.append(string)
-                        part_n+=1 
-                        P.append([])
-                        P[part_n].append(3) 
-            
+                            P[part_n].append(P[part_n-1][3])
+                            P[part_n].append(P[part_n-1][4])                                               
+                            P[part_n].append(coordX[m]+cos(angle[m])*offset)
+                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)                         
+                        else:
+                            P[part_n].append(P[part_n-1][3])
+                            P[part_n].append(P[part_n-1][4])                                               
+                            P[part_n].append(coordX[m]+cos(angle[m])*offset)
+                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)  
+                            part_n+=1 
+                            P.append([])
+                            P[part_n].append(3)
+                            P[part_n].append(P[part_n-1][3])
+                            P[part_n].append(P[part_n-1][4])                                               
+                            P[part_n].append(coordX[m]+cos(angle[m-1])*offset)
+                            P[part_n].append(coordZ[m]+sin(angle[m-1])*offset)
+                            P[part_n].append(offset)
+                            P[part_n].append(coordX[m])
+                            P[part_n].append(coordZ[m])
                     else:       #если угол следующего участка ccw IMG(4.png)                         
                         print 'G01:LINE ANGLE:ccw next:LINE'
                         angl = (angle[m] - angle[m-1])/2 
@@ -215,8 +238,8 @@ def g712(self, **words):
                         P.append([])
                         P[part_n].append(1)
                         if part_n == 0:
-                            P[part_n].append(round(coordX[mm+1]+(cos(angle[mm]))*offset,10))
-                            P[part_n].append((sin(angle[mm]))*offset)
+                            P[part_n].append(coordX[mm+1]+(cos(angle[mm]))*offset)
+                            P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
                             P[part_n].append(coordX[m]+cos(angl1)*gg)
                             P[part_n].append(coordZ[m]+sin(angl1)*gg)
                             continue
@@ -391,7 +414,11 @@ def g712(self, **words):
         modulo = 0 # остаток от деления LenghtX / d
         COORDx0 = P[len(P)-1][3] #новая позиция по X (первый проход)
         COORDz0 = P[len(P)-1][4] #новая позиция по Z (первый проход)
-
+        coordZ_start += 3 
+        self.execute("F%f" % feed_rate,lineno())
+        self.execute("G21 G18",lineno())
+        self.execute("G61",lineno())
+        self.execute("G1  X%f" % ((COORDx0)),lineno()) 
         for i in reversed(range(len(P))):
             print 'i =', i
             if only_finishing_cut :
@@ -402,10 +429,12 @@ def g712(self, **words):
             COORDx0  =  P[i][3]
             while COORDx0 - P[i][1] >= d :
                 try:
-                    self.execute("F%f" % feed_rate,lineno())
-                    self.execute("G21 G18",lineno())
-                    self.execute("G61",lineno())
-                                
+                    if i==0:
+                        print 'if i==0'
+                        print 'P[i][1]=',P[i][1]
+                        print 'COORDx0=',COORDx0
+                        print 'COORDz0=',COORDz0
+
                     self.execute("G1  Z%f" % ((COORDz0)),lineno())
                     self.execute("G91",lineno())
                     self.execute("G0 X%f Z%f" % ((0.5),(0.5)),lineno())# отход 45гр
@@ -420,11 +449,23 @@ def g712(self, **words):
 
                     #просчитываем новую COORDz0 :
                     if   P[i][0] == 1:
-                        COORDz0=-2
-                    elif P[i][0] >  1:
+                        Mz1 = P[i][2]
+                        Mx1 = P[i][1]
+                        Mz2 = P[i][4]
+                        Mx2 = P[i][3]  
+                        if (Mz2-Mz1)!=0:
+                            K=(Mx2-Mx1)/(Mz2-Mz1)
+                            B=(K*Mz1-Mx1)
+                            COORDz0 = (COORDx0 + B)/K
+                            #print 'COORDz0=',COORDz0
+                        else:
+                            print '(Mz2-Mz1)==0'
+                    else:
                         pass 
                     if COORDx0 - P[i][1] < d:
                         modulo = COORDx0 - P[i][1]
+                        print 'modulo=',modulo,i
+                        
                         if i==0:
                             self.execute("G1  Z%f" % ((COORDz0)),lineno())
                             self.execute("G91",lineno())
