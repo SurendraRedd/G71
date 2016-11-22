@@ -197,14 +197,7 @@ def g712(self, **words):
                             P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
                             P[part_n].append(coordX[m]+cos(angle[m])*offset)
                             P[part_n].append(coordZ[m]+sin(angle[m])*offset)
-                            part_n+=1 
-                            P.append([])
-                            P[part_n].append(3)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m-1])*offset)
-                            P[part_n].append(coordZ[m]+sin(angle[m-1])*offset)
-                            P[part_n].append(offset)
+
                             continue
                         if m==0:
                             P[part_n].append(P[part_n-1][3])
@@ -412,73 +405,80 @@ def g712(self, **words):
                                 print 'G02:ARC ANGLE:cw next:ARC_G02'
         print 'program =', program
         modulo = 0 # остаток от деления LenghtX / d
-        COORDx0 = P[len(P)-1][3] #новая позиция по X (первый проход)
-        COORDz0 = P[len(P)-1][4] #новая позиция по Z (первый проход)
-        coordZ_start += 3 
+
+        #coordZ_start += 3 
         self.execute("F%f" % feed_rate,lineno())
         self.execute("G21 G18",lineno())
         self.execute("G61",lineno())
-        self.execute("G1  X%f" % ((COORDx0)),lineno()) 
+        COORDx0 = P[len(P)-1][3] #новая позиция по X (первый проход)
+        self.execute("G1 X%f " % (COORDx0),lineno())#первый по X
         for i in reversed(range(len(P))):
             print 'i =', i
             if only_finishing_cut :
-                break
                 MESSAGE("Only finishing cut") 
                 self.execute("(MSG,Only finishing cut!\nResume: S)",lineno())
-                self.execute("M0",lineno()) 
-            COORDx0  =  P[i][3]
+                self.execute("M0",lineno())
+                break 
             while COORDx0 - P[i][1] >= d :
-                try:
-                    if i==0:
-                        print 'if i==0'
-                        print 'P[i][1]=',P[i][1]
-                        print 'COORDx0=',COORDx0
-                        print 'COORDz0=',COORDz0
-
-                    self.execute("G1  Z%f" % ((COORDz0)),lineno())
-                    self.execute("G91",lineno())
-                    self.execute("G0 X%f Z%f" % ((0.5),(0.5)),lineno())# отход 45гр
-                    self.execute("G90",lineno())
-                    self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
-                    if modulo:
-                        COORDx0 = COORDx0 - abs(d-modulo)
-                        modulo = 0                        
-                    else:
-                        COORDx0 = COORDx0 - d
-                    self.execute("G1 X%f " % (COORDx0),lineno())#новая позиция по X             
-
+                try:                                     
                     #просчитываем новую COORDz0 :
-                    if   P[i][0] == 1:
+                    if P[i][0] == 1:
                         Mz1 = P[i][2]
                         Mx1 = P[i][1]
                         Mz2 = P[i][4]
                         Mx2 = P[i][3]  
                         if (Mz2-Mz1)!=0:
                             K=(Mx2-Mx1)/(Mz2-Mz1)
-                            B=(K*Mz1-Mx1)
-                            COORDz0 = (COORDx0 + B)/K
-                            #print 'COORDz0=',COORDz0
+                            B=-(K*Mz1-Mx1)
+                            COORDz0 = (COORDx0 - B)/K
+
                         else:
-                            print '(Mz2-Mz1)==0'
+                            COORDz0=COORDz0 #'vertical_line'
+
+                    elif P[i][0] == 2:
+                        pass
+                    elif P[i][0] == 3:
+                        pass
+
+                    self.execute("G1  Z%f" % ((COORDz0)),lineno())#основной проход
+                    self.execute("G0 X%f Z%f" % ((COORDx0+0.5),(COORDz0+0.5)),lineno())# отход 45гр
+                    self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
+                    if modulo:
+                        COORDx0 = COORDx0 - (d)
+                        modulo = 0
                     else:
-                        pass 
-                    if COORDx0 - P[i][1] < d:
+                        COORDx0 = COORDx0 - d
+                    self.execute("G1 X%f " % (COORDx0),lineno()) #новая позиция по X
+                    self.execute("M1",lineno())
+             
+                    if COORDx0 -P[i][1] < d:
                         modulo = COORDx0 - P[i][1]
-                        print 'modulo=',modulo,i
-                        
-                        if i==0:
-                            self.execute("G1  Z%f" % ((COORDz0)),lineno())
-                            self.execute("G91",lineno())
-                            self.execute("G0 X%f Z%f" % ((0.5),(0.5)),lineno())# отход 45гр
-                            self.execute("G90",lineno())
+                        print 'modulo=' ,  modulo
+                        if i:
+                            Mz1 = P[i][2]
+                            Mx1 = P[i][1]
+                            Mz2 = P[i][4]
+                            Mx2 = P[i][3]  
+                            if (Mz2-Mz1)!=0:
+                                K=(Mx2-Mx1)/(Mz2-Mz1)
+                                B=-(K*Mz1-Mx1)
+                                COORDz0 = (COORDx0 - B)/K
+                            self.execute("G1  Z%f" % ((COORDz0)),lineno())#основной проход
+                            self.execute("G0 X%f Z%f" % ((COORDx0+0.5),(COORDz0+0.5)),lineno())# отход 45гр
                             self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
+                            COORDx0  =  P[i-1][3]
+                            COORDx0 = COORDx0 - (d-modulo)
+                            self.execute("G1 X%f " % (COORDx0),lineno()) #новая позиция по X
+
+
 
                 except InterpreterException,e:
                     msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                     self.set_errormsg(msg) 
                     return INTERP_ERROR                    
 
-        print 'P =', P                                               
+        print 'P =', P 
+                                            
         for w in program:
             try:  
                 self.execute(w,lineno())
