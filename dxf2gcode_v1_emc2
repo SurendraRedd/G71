@@ -288,7 +288,7 @@ class Erstelle_Fenster:
         ch = ''
         ch1 = ''
         program = ''
-        x_max , p , q , d , k , i , f ,j,s,l = 0 , 1 , 15 , 1 , 1 , 1 , 433 ,1.2,0,1
+        x_max , p , q , d , k , i , f ,j,s,l,t = 0 , 1 , 15 , 1 , 1 , 1 , 433 ,1.2,0,1,1
         N_start_end = []
         Z_start = []
         for l in lines:
@@ -320,6 +320,7 @@ class Erstelle_Fenster:
         j = float(self.ExportParas.d_J.get())
         #s = float(self.ExportParas.d_S.get())
         l = float(self.ExportParas.d_L.get())
+        t = int(self.ExportParas.d_T.get())
         rb = self.ExportParas.g71_72.get()
         checkbutton = self.ExportParas.only.get()
         code = 'G71.2'
@@ -332,7 +333,7 @@ class Erstelle_Fenster:
         program += ch1
         
         program += start_point
-        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s\n' % (code , p , q , d , k , i , f ,j ,s,l))
+        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s T%s\n' % (code , p , q , d , k , i , f ,j ,s,l,t))
         program += stt
         program += ch
         program += 'M2'
@@ -524,10 +525,10 @@ class ExportParasClass:
         self.d_J = Entry(f2,width=7,textvariable=config.offsetJ)
         self.d_J.grid(row=3,column=1,sticky=N+E)
 
-        Label(f2, text=("Spindle  [S]" ))\
+        Label(f2, text=("Tool  [T]" ))\
                 .grid(row=4,column=0,sticky=N+W,padx=4)
-        self.d_S = Entry(f2,width=7,textvariable=config.shpindle_S)
-        self.d_S.grid(row=4,column=1,sticky=N+E)
+        self.d_T = Entry(f2,width=7,textvariable=config.tool_T)
+        self.d_T.grid(row=4,column=1,sticky=N+E)
 
 
         Label(f2, text=("Quantity  [L]" ))\
@@ -1288,8 +1289,8 @@ class ConfigClass:
             self.start_Z0  = IntVar()
             self.start_Z0.set(float(self.parser.get('Parameters','start_Z0'))) 
             
-            self.shpindle_S  = IntVar()
-            self.shpindle_S.set(float(self.parser.get('Parameters','shpindle_S'))) 
+            self.tool_T  = IntVar()
+            self.tool_T.set(int(self.parser.get('Parameters','tool_T'))) 
             
             self.offsetJ  = IntVar()
             self.offsetJ.set(float(self.parser.get('Parameters','offsetJ')))
