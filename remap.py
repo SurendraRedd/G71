@@ -165,7 +165,7 @@ def g712(self, **words):
     self.execute("F%f" % feed_rate,lineno())
     string=ser.join(['G18 G90 G49 F1000',])
     ins = program.append(string)
-    for qq in range(quantity): 
+    for qq in range(quantity):
         string=ser.join(['G1','X',str(round(coordX[mm+1]+(cos(angle[mm]))*offset,10)) ,
                               'Z',str(coordZ[mm+1]+(sin(angle[mm]))*offset),]) # IMG 2.png
         ins = program.append(string)        
@@ -419,6 +419,7 @@ def g712(self, **words):
                             else:       #угол следующего участка#TODO
                                 print 'G02:ARC ANGLE:cw next:ARC_G02'
         print 'program =', program
+        flag_micro_part = 0
         coordZ_start +=(sin(angle[mm]))*offset
         bounce = 0.5 #величина отхода 45гр
         self.execute("F%f" % feed_rate,lineno())
@@ -427,16 +428,59 @@ def g712(self, **words):
         COORDx0 = P[len(P)-1][3] #новая позиция по X (первый проход)
         self.execute("G1 X%f " % (COORDx0),lineno())#первый по X
         if flag_executed :
-            for i in reversed(range(len(P))):
-                print 'i =', i
-                if only_finishing_cut :
-                    MESSAGE("Only finishing cut") 
-                    self.execute("(MSG,Only finishing cut!\nResume: S)",lineno())
-                    self.execute("M0",lineno())
-                    break 
+            i = int(len(P)-1)
+            if only_finishing_cut==0 :
+                MESSAGE("Only finishing cut") 
+                self.execute("(MSG,Only finishing cut!\nResume: S)",lineno())
+                self.execute("M0",lineno())
+
                 while COORDx0 - P[i][1] >= d :
-                    try:                                     
-                        #просчитываем новую COORDz0 :
+                    d = float(words['d'])                                   
+                    #просчитываем новую COORDz0 :
+                    if P[i][0] == 1:
+                        Mz1 = P[i][2]
+                        Mx1 = P[i][1]
+                        Mz2 = P[i][4]
+                        Mx2 = P[i][3]  
+                        if (Mz2-Mz1)!=0:
+                            K=(Mx2-Mx1)/(Mz2-Mz1)
+                            B=-(K*Mz1-Mx1)
+                            COORDz0 = (COORDx0 - B)/K
+                        else:
+                            COORDz0=P[i][2] #'vertical_line'
+                    elif P[i][0] == 2:
+                        pass
+                    elif P[i][0] == 3:
+                        Mz1 = P[i][2]
+                        Mx1 = P[i][3]
+                        Mz2 = P[i][4]
+                        Mx2 = P[i][3] 
+                        B=COORDx0                           
+                        center = [P[i][7],P[i][6]]
+                        radius = P[i][5]                                                                                   
+                        b = -2*center[0]                                                        
+                        c = -radius**2 + (B-center[1])**2 + center[0]**2                                                
+                        D = b**2 - 4*c                                                                                
+                        if D < 0:                                                                                       
+                            print 'D<0'
+                        else:                                                                                 
+                            z1 = (-b-sqrt(D))/2                                                                   
+                            z2 = (-b+sqrt(D))/2 
+                            if Mz1 < z1 < Mz2:                                                               
+                                COORDz0=z1
+                            else:
+                                COORDz0=z2
+                    self.execute("G1  Z%f" % ((COORDz0)),lineno())#основной проход
+                    self.execute("G0 X%f Z%f" % ((COORDx0+bounce),(COORDz0+bounce)),lineno())# отход 45гр
+                    self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
+
+                    COORDx0 = COORDx0 - d
+                    self.execute("G1 X%f " % (COORDx0),lineno()) #новая позиция по X
+                    MESSAGE("переход")
+                    self.execute("M1",lineno())#XXX
+        
+                    if COORDx0 - P[i][1] < d:
+                        MESSAGE("COORDx0 - P[i][1] < d")
                         if P[i][0] == 1:
                             Mz1 = P[i][2]
                             Mx1 = P[i][1]
@@ -448,62 +492,21 @@ def g712(self, **words):
                                 COORDz0 = (COORDx0 - B)/K
                             else:
                                 COORDz0=P[i][2] #'vertical_line'
-                        elif P[i][0] == 2:
-                            pass
-                        elif P[i][0] == 3:
-                            Mz1 = P[i][2]
-                            Mx1 = P[i][3]
-                            Mz2 = P[i][4]
-                            Mx2 = P[i][3] 
-                            B=COORDx0                           
-                            center = [P[i][7],P[i][6]]
-                            radius = P[i][5]                                                                                   
-                            b = -2*center[0]                                                        
-                            c = -radius**2 + (B-center[1])**2 + center[0]**2                                                
-                            D = b**2 - 4*c                                                                                
-                            if D < 0:                                                                                       
-                                print 'D<0'
-                            else:                                                                                 
-                                z1 = (-b-sqrt(D))/2                                                                   
-                                z2 = (-b+sqrt(D))/2 
-                                if Mz1 < z1 < Mz2:                                                               
-                                    COORDz0=z1
-                                else:
-                                    COORDz0=z2
-                        self.execute("G1  Z%f" % ((COORDz0)),lineno())#основной проход
-                        self.execute("G0 X%f Z%f" % ((COORDx0+bounce),(COORDz0+bounce)),lineno())# отход 45гр
-                        self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
-
-                        COORDx0 = COORDx0 - d
-                        self.execute("G1 X%f " % (COORDx0),lineno()) #новая позиция по X
-                        self.execute("M1",lineno())#XXX
-                 
-                        if COORDx0 - P[i][1] < d:
-                            modulo = COORDx0 - P[i][1]
-                            if P[i][0] == 1:
-                                Mz1 = P[i][2]
-                                Mx1 = P[i][1]
-                                Mz2 = P[i][4]
-                                Mx2 = P[i][3]  
-                                if (Mz2-Mz1)!=0:
-                                    K=(Mx2-Mx1)/(Mz2-Mz1)
-                                    B=-(K*Mz1-Mx1)
-                                    COORDz0 = (COORDx0 - B)/K
-                                self.execute("G1  Z%f" % ((COORDz0)),lineno())#основной проход
-                                self.execute("G0 X%f Z%f" % ((COORDx0+bounce),(COORDz0+bounce)),lineno())# отход 45гр
-                                self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
-                                if i:#если не последний проход
-                                    COORDx0  =  P[i-1][3]
-                                    COORDx0 = COORDx0 - (d-modulo)
-                                    self.execute("G1 X%f " % (COORDx0),lineno()) #новая позиция по X
-                            elif P[i][0] == 3:
-                                pass
-
-                    except InterpreterException,e:
-                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                        self.set_errormsg(msg) 
-                        return INTERP_ERROR                    
-        flag_executed = 0
+                            self.execute("G1  Z%f" % ((COORDz0)),lineno())#основной проход
+                            self.execute("G0 X%f Z%f" % ((COORDx0+bounce),(COORDz0+bounce)),lineno())# отход 45гр
+                            self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
+                            if i:#если не последний проход
+                                COORDx0 = COORDx0 - d 
+                                for next_i in reversed(range(len(P))): #вычисляем нужное i
+                                    if P[next_i][3] > COORDx0 > P[next_i][1]:
+                                        i=next_i                                  
+                                if COORDx0 - P[i][1] < d and P[i][3] > COORDx0 > P[i][1]:#IMG bug8.png
+                                    d=0                                
+                                self.execute("G1 X%f " % (COORDx0),lineno()) #новая позиция по X
+                                MESSAGE("переходNEXT")
+                                self.execute("M1",lineno())#XXX 
+########################################################################                                                            
+        flag_executed = 0 #исключить повторный основной цикл
         print 'P =', P                                             
         for w in program:
             try:  
