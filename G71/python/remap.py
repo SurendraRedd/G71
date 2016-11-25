@@ -53,7 +53,7 @@ def g712(self, **words):
     offset = float(words['j'])# чистовой проход,мм
     only_finishing_cut = int(words['s'])#  об. шпинделя при чист.обработке(вариант onli_finish_cut)
     quantity = int(words['l'])# количество чистовых проходов 
-    #tool = float(words['t'])
+    tool = int(words['t'])
     s = linuxcnc.stat() 
     s.poll()
     #backangle  =  s.tool_table #TODO проверка угла резца
@@ -105,19 +105,11 @@ def g712(self, **words):
     
     angle = [] #угол участка траектории к оси Z
     angle_deg = [] #TEMP TODO
-    print 'данные контура offset'
+
     for n in range(len(coordZ)-1):
         print 'n =',n
         lengthZ = abs(coordZ[n] - coordZ[n+1])
-        lengthX = abs(coordX[n] - coordX[n+1])
-        if lengthX == 0 :   #горизонтальная линия
-            delta = 0
-        elif lengthZ == 0 : #вертикальная линия
-            delta = 0
-        else:  
-            tangens = lengthX/lengthZ               
-        print 'lengthZ =',lengthZ
-        print 'lengthX =',lengthX
+        lengthX = abs(coordX[n] - coordX[n+1])             
         print 'angle =',degrees(atan2(lengthX,lengthZ))+180
         print '==========================='        
         app = angle.append(atan2(lengthX,lengthZ))
@@ -126,14 +118,8 @@ def g712(self, **words):
     app = angle.append(0.2914567944778671)
     print 'angle =',angle
     print 'angle_deg =',angle_deg
-    print 'line_or_arc=', line_or_arc
-    
-    if only_finishing_cut :
-        v=0
-        MESSAGE("Only finishing cut") 
-        self.execute("(MSG,Only finishing cut!\nResume: S)",lineno())
-        self.execute("M0",lineno())            
-    for n in range(v):
+    print 'line_or_arc=', line_or_arc           
+    '''for n in range(v):
         print 'n=' , n
         COORDx0 =  coordX[n]
         COORDz0 =  coordZ[n]
@@ -166,67 +152,88 @@ def g712(self, **words):
                 print ' ARC  ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^'
                 radius = hip(coordK[n],coordI[n])
                 centreX = coordX[n+1] + coordI[n]
-                centreZ = coordZ[n+1] + coordK[n]                                
-        while lengthX >0 :
-            try:
-                self.execute("F%f" % feed_rate,lineno())
-                self.execute("G21 G18",lineno())
-                self.execute("G61",lineno())
-                if (COORDz0 + l) <= coordZ_start:                             
-                    self.execute(" G1 Z%f" % (COORDz0 + l),lineno())
-                else:
-                    self.execute(" G1 Z%f" % coordZ_start,lineno())
-                if (COORDz0 + 0.5 +l) <= coordZ_start:
-                    self.execute(" G0 X%f Z%f" % ((COORDx0+0.5),(COORDz0+0.5+l)),lineno())# отход 45гр
-               # else:
-                    #self.execute(" G0  X%f Z%f" % ((COORDx0 + 0.5),(coordZ_start)),lineno())# отход 45гр
-                self.execute(" G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
-                if lengthX < d:
-                    newX = COORDx0 - lengthX
-                else:
-                    newX = COORDx0 - d 
-                self.execute(" G1  X%f" % (newX),lineno())# новая позиция по X
-                COORDx0 = newX
-                #просчитываем новую COORDz0 с учетом E(l) TODO пока без учета I(h):
-                if line_or_arc[n] == 1:
-                    if incline:
-                        COORDz0 = COORDz0 - delta 
-                    else:
-                        COORDz0 = COORDz0 + delta
+                centreZ = coordZ[n+1] + coordK[n]'''                                
 
-                elif line_or_arc[n] >1:
-                    b2 = cathetus(radius,((centreX-COORDx0)-d))
-                    b1 = cathetus(radius,(centreX-COORDx0))
-                    COORDz0 = COORDz0 + (abs(b2-b1)) # (abs(b2-b1)) - приращение по Z                              
-                lengthX = lengthX - d #d - съем за один проход
-            except InterpreterException,e:
-                msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                self.set_errormsg(msg) 
-                return INTERP_ERROR 
- ##################################07.11.2016 offset(Ы) по g-коду
+ ##################################07.11.2016 offset по g-коду
+    part_n = -1
+    flag_executed = 1 # чистовых может быть несколько ,но основной цикл только один
+    P = [] #массив массивов данных по каждому контуру
     program = [] # массив строк g-кода траектории с отступом на чистовую обработку
     offset_mem=offset
+    mm=int(len(angle)-2)
     ser=' '
     self.execute("F%f" % feed_rate,lineno())
     string=ser.join(['G18 G90 G49 F1000',])
     ins = program.append(string)
-    mm=int(len(angle)-2)
     for qq in range(quantity):
-        string=ser.join(['G1','x',str(round(coordX[mm+1]+(cos(angle[mm]))*offset,10)) , 'z',str(coordZ[mm+1]+(sin(angle[mm]))*offset),]) # IMG 2.png
-        ins = program.append(string)
+        string=ser.join(['G1','X',str(round(coordX[mm+1]+(cos(angle[mm]))*offset,10)) ,
+                              'Z',str(coordZ[mm+1]+(sin(angle[mm]))*offset),]) # IMG 2.png
+        ins = program.append(string)        
         for m in (reversed(range(len(angle)-1))):   
-            print '------------------------------------------------------------'
             print 'm =', m
             if (line_or_arc[m] ==1): #если участок "линия"
                 if (line_or_arc[m-1] ==1): #если СЛЕДУЮЩИЙ участок "линия"
-                    if angle[m-1] < angle[m]:#если угол следующего участка cw IMG(5.png)
+                    if angle[m-1] < angle[m]: #если угол следующего участка cw IMG(5.png)
                         print 'G01:LINE ANGLE:cw next:LINE'
-                        string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset),])
-                        ins = program.append(string)
                         if m==0:
-                            break  
-                        string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(offset),])
-                        ins = program.append(string)               
+                            print 'm =0', m
+                            string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),
+                                                  'Z',str(coordZ[m]+sin(angle[m])*offset)])
+                            ins = program.append(string)
+                        else:
+                            string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),
+                                                  'Z',str(coordZ[m]+sin(angle[m])*offset),])
+                            ins = program.append(string)
+                            print 'm !=0', m                   
+                        if m!=0:
+                            string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),
+                                        'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(offset),])
+                            ins = program.append(string)
+                        part_n+=1
+                        P.append([])
+                        P[part_n].append(1) 
+                        if part_n == 0 and m:# если первый ,но не последний
+                            P[part_n].append(coordX[mm+1]+(cos(angle[mm]))*offset)
+                            P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
+                            P[part_n].append(coordX[m]+cos(angle[m])*offset)
+                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)
+                            part_n+=1 
+                            P.append([])
+                            P[part_n].append(3)
+                            P[part_n].append(P[part_n-1][3])
+                            P[part_n].append(P[part_n-1][4])                                               
+                            P[part_n].append(coordX[m]+cos(angle[m-1])*offset)
+                            P[part_n].append(coordZ[m]+sin(angle[m-1])*offset)
+                            P[part_n].append(offset)
+                            P[part_n].append(coordX[m])
+                            P[part_n].append(coordZ[m])
+                            continue
+                        if part_n == 0 and m==0:# если первый ,и он же  последний
+                            P[part_n].append(coordX[mm+1]+(cos(angle[mm]))*offset)
+                            P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
+                            P[part_n].append(coordX[m]+cos(angle[m])*offset)
+                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)
+                            continue    
+                        if m==0:
+                            P[part_n].append(P[part_n-1][3])
+                            P[part_n].append(P[part_n-1][4])                                               
+                            P[part_n].append(coordX[m]+cos(angle[m])*offset)
+                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)                         
+                        else:
+                            P[part_n].append(P[part_n-1][3])
+                            P[part_n].append(P[part_n-1][4])                                               
+                            P[part_n].append(coordX[m]+cos(angle[m])*offset)
+                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)  
+                            part_n+=1 
+                            P.append([])
+                            P[part_n].append(3)
+                            P[part_n].append(P[part_n-1][3])
+                            P[part_n].append(P[part_n-1][4])                                               
+                            P[part_n].append(coordX[m]+cos(angle[m-1])*offset)
+                            P[part_n].append(coordZ[m]+sin(angle[m-1])*offset)
+                            P[part_n].append(offset)
+                            P[part_n].append(coordX[m])
+                            P[part_n].append(coordZ[m])
                     else:       #если угол следующего участка ccw IMG(4.png)                         
                         print 'G01:LINE ANGLE:ccw next:LINE'
                         angl = (angle[m] - angle[m-1])/2 
@@ -235,6 +242,20 @@ def g712(self, **words):
 
                         string=ser.join(['G1','X',str(coordX[m]+cos(angl1)*gg),'Z',str(coordZ[m]+sin(angl1)*gg),])  
                         ins = program.append(string)
+                        part_n+=1
+                        P.append([])
+                        P[part_n].append(1)
+                        if part_n == 0:
+                            P[part_n].append(coordX[mm+1]+(cos(angle[mm]))*offset)
+                            P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
+                            P[part_n].append(coordX[m]+cos(angl1)*gg)
+                            P[part_n].append(coordZ[m]+sin(angl1)*gg)
+                            continue
+                        P[part_n].append(P[part_n-1][3])
+                        P[part_n].append(P[part_n-1][4])                                                 
+                        P[part_n].append(coordX[m]+cos(angl1)*gg)
+                        P[part_n].append(coordZ[m]+sin(angl1)*gg)
+                       
                 else: #если СЛЕДУЮЩИЙ участок "дуга"
                     NEXT_radius = sqrt((coordK[m-1])*(coordK[m-1]) + (coordI[m-1])*(coordI[m-1]))
                     NEXT_centreX = coordX[m] + coordI[m-1]
@@ -397,7 +418,102 @@ def g712(self, **words):
                                 print 'G02:ARC ANGLE:ccw next:ARC_G02'
                             else:       #угол следующего участка#TODO
                                 print 'G02:ARC ANGLE:cw next:ARC_G02'
-        print 'program =', program                                        
+        print 'program =', program
+        flag_micro_part = 0
+        coordZ_start +=(sin(angle[mm]))*offset
+        bounce = 0.5 #величина отхода 45гр
+        self.execute("F%f" % feed_rate,lineno())
+        self.execute("G21 G18",lineno())
+        self.execute("G61",lineno())
+        COORDx0 = P[len(P)-1][3] #новая позиция по X (первый проход)
+        self.execute("G1 X%f " % (COORDx0),lineno())#первый по X
+        if flag_executed :
+            i = int(len(P)-1)
+            if only_finishing_cut==0 :
+                if COORDx0 - P[len(P)-1][1] <= d:#чтоб зайти в цикл ,если part1<d
+                    d=0
+                while COORDx0 - P[i][1] >= d :
+                    d = float(words['d'])                                   
+                    #просчитываем новую COORDz0 :
+                    if P[i][0] == 1:
+                        Mz1 = P[i][2]
+                        Mx1 = P[i][1]
+                        Mz2 = P[i][4]
+                        Mx2 = P[i][3]  
+                        if (Mz2-Mz1)!=0:
+                            K=(Mx2-Mx1)/(Mz2-Mz1)
+                            B=-(K*Mz1-Mx1)
+                            COORDz0 = (COORDx0 - B)/K
+                        else:
+                            COORDz0=P[i][2] #'vertical_line'
+                    elif P[i][0] == 2:
+                        pass
+                    elif P[i][0] == 3:
+                        Mz1 = P[i][2]
+                        Mx1 = P[i][3]
+                        Mz2 = P[i][4]
+                        Mx2 = P[i][3] 
+                        B=COORDx0                           
+                        center = [P[i][7],P[i][6]]
+                        radius = P[i][5]                                                                                   
+                        b = -2*center[0]                                                        
+                        c = -radius**2 + (B-center[1])**2 + center[0]**2                                                
+                        D = b**2 - 4*c                                                                                
+                        if D < 0:                                                                                       
+                            print 'D<0'
+                        else:                                                                                 
+                            z1 = (-b-sqrt(D))/2                                                                   
+                            z2 = (-b+sqrt(D))/2 
+                            if Mz1 < z1 < Mz2:                                                               
+                                COORDz0=z1
+                            else:
+                                COORDz0=z2
+                    self.execute("G1  Z%f" % ((COORDz0)),lineno())#основной проход
+                    self.execute("G0 X%f Z%f" % ((COORDx0+bounce),(COORDz0+bounce)),lineno())# отход 45гр
+                    self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
+
+                    COORDx0 = COORDx0 - d
+                    for next_i in reversed(range(len(P))): #вычисляем нужное i
+                        if P[next_i][3] > COORDx0 > P[next_i][1]:
+                            i=next_i                     
+                    self.execute("G1 X%f " % (COORDx0),lineno()) #новая позиция по X
+                    if flag_micro_part :                    
+                        if COORDx0 - P[i][1] < d and P[i][3] > COORDx0 > P[i][1]:#IMG bug8.png
+                            d=0
+                            flag_micro_part = 1
+                        else:
+                            flag_micro_part = 0
+                        continue
+                    if COORDx0 - P[i][1] < d:
+                        if P[i][0] == 1:
+                            Mz1 = P[i][2]
+                            Mx1 = P[i][1]
+                            Mz2 = P[i][4]
+                            Mx2 = P[i][3]  
+                            if (Mz2-Mz1)!=0:
+                                K=(Mx2-Mx1)/(Mz2-Mz1)
+                                B=-(K*Mz1-Mx1)
+                                COORDz0 = (COORDx0 - B)/K
+                            else:
+                                COORDz0=P[i][2] #'vertical_line'
+                            self.execute("G1  Z%f" % ((COORDz0)),lineno())#основной проход
+                            self.execute("G0 X%f Z%f" % ((COORDx0+bounce),(COORDz0+bounce)),lineno())# отход 45гр
+                            self.execute("G0 Z%f" % (coordZ_start),lineno())# выход в стартовую по Z
+                            if i:#если не последний проход
+                                COORDx0 = COORDx0 - d 
+                                for next_i in reversed(range(len(P))): #вычисляем нужное i
+                                    if P[next_i][3] > COORDx0 > P[next_i][1]:
+                                        i=next_i                                  
+                                if COORDx0 - P[i][1] < d and P[i][3] > COORDx0 > P[i][1]:#IMG bug8.png
+                                    d=0
+                                    flag_micro_part = 1                                
+                                self.execute("G1 X%f " % (COORDx0),lineno()) #новая позиция по X
+            else:
+                MESSAGE("Only finishing cut") 
+                self.execute("M0",lineno())                          
+########################################################################                                                            
+        flag_executed = 0 #исключить повторный основной цикл
+        print 'P =', P                                             
         for w in program:
             try:  
                 self.execute(w,lineno())
@@ -408,7 +524,8 @@ def g712(self, **words):
         offset-=offset_mem/quantity
         program = []
         self.execute("G0  Z%f" % (coordZ_start),lineno())# выход в стартовую по Z       
- ###################################################### непосредственно по контуру         
+ ###################################################### непосредственно по контуру
+    self.execute("M6 T%d " % (tool),lineno())         
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
@@ -421,11 +538,7 @@ def g712(self, **words):
                         msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                         self.set_errormsg(msg) 
                         return INTERP_ERROR   
-    self.execute("G91",lineno())
-    self.execute("G0  X0.5 Z0.5",lineno())# отход 45гр 
-    self.execute("G90",lineno())
     self.execute("G0  Z%f" % (coordZ_start),lineno())# выход в стартовую по Z                              
     f.close()                 
     return INTERP_OK
-
 
