@@ -1,16 +1,12 @@
-# --*-- coding:utf-8 --*--
-import sys
-sys.path.insert(0,'/home/nkp/git/linuxcnc/lib/python/')
+
 import linuxcnc
 import re
 from math import *
 import traceback
 from interpreter import *
-from emccanon import MESSAGE, SET_MOTION_OUTPUT_BIT, CLEAR_MOTION_OUTPUT_BIT,SET_AUX_OUTPUT_BIT,CLEAR_AUX_OUTPUT_BIT
-from util import lineno, call_pydevd
+from emccanon import MESSAGE
 
 throw_exceptions = 1 # raises InterpreterException if execute() or read() fail
-
     
 def pars(array,reg ,lines): 
     a=array.insert(0,(float(re.search(reg,lines, re.I).group(1))))
@@ -39,8 +35,7 @@ def intersection_line_arc(Mz1,Mx1,Mz2,Mx2,centreZ,centreX,radius):
         else:
           pointZ1 = z2
           pointX1 = K*z2+B
-          return  pointZ1,pointX1  
-           
+          return  pointZ1,pointX1             
 #################################################-----G71.2
 def g712(self, **words):
     """ remap code G71.2 """
@@ -469,4 +464,3 @@ def g712(self, **words):
     self.execute("G0  Z%f" % (coordZ_start))                            
     f.close()                 
     return INTERP_OK
-
