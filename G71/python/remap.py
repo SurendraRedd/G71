@@ -117,7 +117,7 @@ def g712(self, **words):
     ser=' '
     if words.has_key('t'):
         self.execute("F%f" % feed_rate)
-    string=ser.join(['G18 G90 G49 F1000',])
+    string=ser.join(['G18 G90 G49 ',])
     ins = program.append(string)
     for i in range(quantity):
         string=ser.join(['G1','X',str(round(coordX[mm+1]+(cos(angle[mm]))*offset,10)) ,
@@ -448,7 +448,9 @@ def g712(self, **words):
         program = []
         self.execute("G0  Z%f" % (coordZ_start))     
  #####################################################
-    self.execute("M6 T%d " % (tool))         
+    self.execute("G40 " )  
+    self.execute("M6 T%d " % (tool))  
+    self.execute("G42" )         
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
