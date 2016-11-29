@@ -46,33 +46,35 @@ def intersection_line_arc(G,Mz1,Mx1,Mz2,Mx2,centreZ,centreX,radius):
               pointZ1 = z1
               pointX1 = K*z1+B
               return  pointZ1,pointX1 
-def intersection_arc_arc(x1,y1,r1,x2,y2,r2,Px,Py):
+def intersection_arc_arc(x1,z1,r1,x2,z2,r2,Px,Pz):
 
-    d=sqrt( pow(abs(x1-x2),2) + pow(abs(y1-y2),2))
+    d=sqrt( pow(abs(x1-x2),2) + pow(abs(z1-z2),2))
     if(d > r1+r2): 
         print 'окружности не пересекаются'
         return
     a= (r1*r1 - r2*r2 + d*d ) / (2*d)
     h= sqrt( pow(r1,2) - pow(a,2))
     x0 = x1 + a*( x2 - x1 ) / d
-    y0 = y1 + a*( y2 - y1 ) / d;
-    ix1= x0 + h*( y2 - y1 ) / d
-    iy1= y0 - h*( x2 - x1 ) / d
-
+    z0 = z1 + a*( z2 - z1 ) / d;
+    ix1= x0 + h*( z2 - z1 ) / d
+    iz1= z0 - h*( x2 - x1 ) / d
+    ix2= x0 - h*( z2 - z1 ) / d
+    iz2= z0 + h*( x2 - x1 ) / d
     if(a == r1 ) :
         print 'окружности соприкасаются'
-        ix2= x0 - h*( y2 - y1 ) / d
-        iy2= y0 + h*( x2 - x1 ) / d
-        intscX = ix2, intscY = iy2
-        return intscX , intscY 
+        intscX = ix2
+        intscZ = iz2
+        return intscX , intscZ 
 
-    l1= sqrt((Px - ix1)**2+(Py - iy1)**2)
-    l2= sqrt((Px - ix2)**2+(Py - iy2)**2)
+    l1= sqrt((Px - ix1)**2+(Pz - iz1)**2)
+    l2= sqrt((Px - ix2)**2+(Pz - iz2)**2)
     if l1>l2:
-        intscX = ix2, intscY = iy2
+        intscX = ix2
+        intscZ = iz2
     else:
-       intscX = ix1, intscY = iy1              
-    return  intscX , intscY 
+       intscX = ix1
+       intscZ = iz1              
+    return  intscX , intscZ 
                                
 def fapp(n,G,x,z,App=[],r=1,xc=1,zc=1):
     App.append([])
@@ -495,12 +497,35 @@ def g712(self, **words):
                             P[part_n].append(radius+offset)
                             P[part_n].append(centreX)
                             P[part_n].append(centreZ)                              
-                    else:                 
-                        if (line_or_arc[m-1] == 3): 
-                            if angle[m] < angle[m-1]: #TODO
-                                print 'G03:ARC  ANGLE:ccw next:ARC_G03'
-                            else:    #TODO
-                                print 'G03:ARC  ANGLE:cw next:ARC_G03'
+                    else:  #если дуга G3  и следующая дуга G3 
+                        NEXT_radius = sqrt((coordK[m-1])*(coordK[m-1]) + (coordI[m-1])*(coordI[m-1]))
+                        NEXT_centreX = coordX[m] + coordI[m-1]
+                        NEXT_centreZ = coordZ[m] + coordK[m-1] 
+                        NEXT_lengthZ = abs(NEXT_centreZ - coordZ[m])
+                        NEXT_lengthX = abs(NEXT_centreX - coordX[m]) 
+                        NEXT_alfa = atan2(NEXT_lengthZ,NEXT_lengthX)
+                        NEXT_zz= (NEXT_radius-offset)*sin(NEXT_alfa)
+                        NEXT_xx= (NEXT_radius-offset)*cos(NEXT_alfa)
+                        print 'NEXT_radius=', NEXT_radius
+                        print 'NEXT_centreX=', NEXT_centreX
+                        print 'NEXT_centreZ=', NEXT_centreZ
+                        print 'NEXT_lengthZ=', NEXT_lengthZ
+                        print 'NEXT_lengthX=', NEXT_lengthX
+                        print 'NEXT_alfa=', NEXT_alfa
+                        print 'NEXT_zz=', NEXT_zz
+                        print 'NEXT_xx=', NEXT_xx
+                        print 'coordX[m]=', coordX[m]
+                        print 'coordZ[m]=', coordZ[m]                        
+                        if (line_or_arc[m-1] == 3):   
+                            print 'G03:ARC  next:ARC_G03'
+                            NEXT_X,NEXT_Z=intersection_arc_arc(NEXT_centreX,NEXT_centreZ, 
+                                                               NEXT_radius+offset,centreX,centreZ,radius+offset,
+                                                               coordX[m],coordZ[m])                
+                            string=ser.join(['G3','X',str(NEXT_X),
+                                            'Z',str(NEXT_Z),'R',str(radius+offset)])
+                            ins = program.append(string)
+                            part_n+=1
+                            fapp(part_n,3,NEXT_X,NEXT_Z,P,radius+offset,centreX,centreZ)
                                 ########################################
                         if (line_or_arc[m-1] == 2): 
                             if angle[m] < angle[m-1]:#TODO
