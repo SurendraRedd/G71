@@ -139,18 +139,46 @@ def g712(self, **words):
                         ins = pars(coordI,"I\s*([-0-9.]+)",lines[x])
                         ins = pars(coordK,"K\s*([-0-9.]+)",lines[x])
                     else:
-                        a=coordI.insert(0,None)
-                        a=coordK.insert(0,None)                       
+                        ins=coordI.insert(0,None)
+                        ins=coordK.insert(0,None)                       
                     if  re.search("[R]", lines[x]):
-                        ins = pars(coordR,"R\s*([-0-9.]+)",lines[x])                          
+                        ins = pars(coordR,"R\s*([-0-9.]+)",lines[x])
+                    else:
+                        ins=coordR.insert(0,None)                                                  
         x+=1     
     angle = [] 
     for n in range(len(coordZ)-1):
         lengthZ = abs(coordZ[n] - coordZ[n+1])
         lengthX = abs(coordX[n] - coordX[n+1])                    
         app = angle.append(atan2(lengthX,lengthZ))
+        if line_or_arc[n]>1 and coordR[n]!=None:
+            lh=(hip(lengthZ,lengthX))/2
+            par=acos(lh/coordR[n])
+            if line_or_arc[n]==2:
+                ar=angle[n]+par
+                indK=abs(cos(ar)*coordR[n])
+            elif line_or_arc[n]==3:
+                ar=angle[n]-par
+                indK=-(cos(ar)*coordR[n])
+            indI=sin(ar)*coordR[n] 
+            pp=coordI.pop(n) 
+            pp=coordK.pop(n) 
+            ins=coordK.insert(n,indK) 
+            ins=coordI.insert(n,indI)               
     app = angle.append(0.2914567944778671)                               
  ################################
+    print 'данные массивов +++++++++++++++++++++++++++++++++++++++'
+    print 'coordZ=', coordZ
+    print 'coordX=', coordX
+    print 'line_or_arc=', line_or_arc
+    print 'coordI=', coordI
+    print 'coordK=', coordK
+    print 'coordR=', coordR
+    print ' +++++++++++++++++++++++++++++++++++++++' 
+    for n in range(len(line_or_arc)-1):
+        if line_or_arc[n] >1:
+            print 'n=', n
+
     part_n = -1
     flag_executed = 1 
     P = [] 
