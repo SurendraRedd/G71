@@ -20,17 +20,17 @@ def intersection_line_arc(G,Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad):
     if (Mz2-Mz1)!=0:
         K=(Mx2-Mx1)/(Mz2-Mz1)
         B=-(K*Mz1-Mx1)           
-        a = 1 + K**2                                                                                    
-        b = -2*centreZ + 2*K*B -2*K*centreX                                                         
-        c = -rad**2 + (B-centreX)**2 + centreZ**2                                                 
-        D = b**2 - 4*a*c                                                                                
-        if D < 0:                                                                                       
-          print 'D<0'                                                                                  
-        z1 = (-b-sqrt(D))/(2*a)                                                                    
+        a = 1 + K**2 
+        b = -2*centreZ + 2*K*B -2*K*centreX  
+        c = -rad**2 + (B-centreX)**2 + centreZ**2 
+        D = b**2 - 4*a*c 
+        if D < 0: 
+          print 'D<0' 
+        z1 = (-b-sqrt(D))/(2*a) 
         z2 = (-b+sqrt(D))/(2*a)
         if G==3:
             if Mz2 < z1 < Mz1:
-              pointZ1 = z1                                                            
+              pointZ1 = z1   
               pointX1 = K*z1+B
               return  pointZ1,pointX1
             else:
@@ -39,7 +39,7 @@ def intersection_line_arc(G,Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad):
               return  pointZ1,pointX1
         if G==2:
             if Mz2 < z1 < Mz1:
-              pointZ1 = z2                                                            
+              pointZ1 = z2 
               pointX1 = K*z2+B
               return  pointZ1,pointX1
             else:
@@ -50,7 +50,7 @@ def intersection_arc_arc(x1,z1,r1,x2,z2,r2,Px,Pz):
 
     d=sqrt( pow(abs(x1-x2),2) + pow(abs(z1-z2),2))
     if(d > r1+r2): 
-        print 'окружности не пересекаются'
+        #окружности не пересекаются
         return
     a= (r1*r1 - r2*r2 + d*d ) / (2*d)
     h= sqrt( pow(r1,2) - pow(a,2))
@@ -61,7 +61,7 @@ def intersection_arc_arc(x1,z1,r1,x2,z2,r2,Px,Pz):
     ix2= x0 - h*( z2 - z1 ) / d
     iz2= z0 + h*( x2 - x1 ) / d
     if(a == r1 ) :
-        print 'окружности соприкасаются'
+        #окружности соприкасаются
         intscX = ix2
         intscZ = iz2
         return intscX , intscZ 
@@ -76,7 +76,7 @@ def intersection_arc_arc(x1,z1,r1,x2,z2,r2,Px,Pz):
        intscZ = iz1              
     return  intscX , intscZ 
                                
-def papp(n,G,x,z,App=[],r=1,xc=1,zc=1):
+def papp(n,G,x,z,App=[],r=None,xc=None,zc=None):
     App.append([])
     App[n].append(G)
     App[n].append(App[n-1][3])
@@ -144,7 +144,7 @@ def g712(self, **words):
                     if  re.search("[R]", lines[x]):
                         ins = pars(coordR,"R\s*([-0-9.]+)",lines[x])
                     else:
-                        ins=coordR.insert(0,None)                                                  
+                        ins=coordR.insert(0,None)
         x+=1     
     angle = [] 
     for n in range(len(coordZ)-1):
@@ -167,14 +167,6 @@ def g712(self, **words):
             ins=coordI.insert(n,indI)               
     app = angle.append(0.2914567944778671)                               
  ################################
-    print 'данные массивов +++++++++++++++++++++++++++++++++++++++'
-    print 'coordZ=', coordZ
-    print 'coordX=', coordX
-    print 'line_or_arc=', line_or_arc
-    print 'coordI=', coordI
-    print 'coordK=', coordK
-    print 'coordR=', coordR
-    print ' +++++++++++++++++++++++++++++++++++++++' 
     for n in range(len(line_or_arc)-1):
         if line_or_arc[n] >1:
             print 'n=', n
@@ -215,8 +207,7 @@ def g712(self, **words):
                                                                 FIRST_radius+offset
                                                                 )
        
-            string=ser.join(['G1','X',str(FIRST_pointX) ,
-                              'Z',str(FIRST_pointZ)]) 
+            string=ser.join(['G1','X',str(FIRST_pointX) ,'Z',str(FIRST_pointZ)]) 
             ins = program.append(string)
             part_n+=1
             P.append([])
@@ -225,18 +216,10 @@ def g712(self, **words):
             P[part_n].append(FIRST_pointZ)
             P[part_n].append(FIRST_pointX)
             P[part_n].append(FIRST_pointZ) 
- 
         elif line_or_arc[len(angle)-2] ==2:
             FIRST_radius = sqrt((coordK[mm])*(coordK[mm]) + (coordI[mm])*(coordI[mm]))            
             FIRST_centreX = coordX[mm+1] + coordI[mm]            
-            FIRST_centreZ = coordZ[mm+1] + coordK[mm] 
-            print 'FIRST_radius=',FIRST_radius
-            print 'FIRST_centreX=',FIRST_centreX
-            print 'FIRST_centreZ=',FIRST_centreZ
-            print 'coordZ[mm+1]=',coordZ[mm+1]
-            print 'coordX[mm+1]=',coordX[mm+1]
-            print 'FIRST_radius-offset=',FIRST_radius-offset
-                      
+            FIRST_centreZ = coordZ[mm+1] + coordK[mm]                     
             #FIRST_pointZ,FIRST_pointX=intersection_line_arc(2,coordZ[mm+1],coordX[mm+1],
                                                            #coordZ[mm+1],coordX[mm+1]+100,
                                                                # FIRST_centreZ,FIRST_centreX,
@@ -272,46 +255,25 @@ def g712(self, **words):
                         if m!=0:
                             string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),
                                         'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(offset),])
-                            ins = program.append(string)
-                        part_n+=1
-                        P.append([])
-                        P[part_n].append(1)    
+                            ins = program.append(string)    
                         if m==0:
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m])*offset)
-                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)                         
-                        else:
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m])*offset)
-                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)  
-                            part_n+=1 
-                            P.append([])
-                            P[part_n].append(3)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m-1])*offset)
-                            P[part_n].append(coordZ[m]+sin(angle[m-1])*offset)
-                            P[part_n].append(offset)
-                            P[part_n].append(coordX[m])
-                            P[part_n].append(coordZ[m])
+                            part_n+=1
+                            papp(part_n,1,coordX[m]+cos(angle[m])*offset,coordZ[m]+sin(angle[m])*offset,P)                        
+                        else: 
+                            part_n+=1
+                            papp(part_n,1,coordX[m]+cos(angle[m])*offset,coordZ[m]+sin(angle[m])*offset,P) 
+                            part_n+=1
+                            papp(part_n,3,coordX[m]+cos(angle[m-1])*offset,coordZ[m]+sin(angle[m-1])*offset,
+                                   P,offset,coordX[m],coordZ[m])                            
                     else:                               
                         print 'G01:LINE ANGLE:ccw next:LINE'
                         angl = (angle[m] - angle[m-1])/2 
                         gg =  offset / cos(angl)
                         angl1 = angle[m] - angl
-
                         string=ser.join(['G1','X',str(coordX[m]+cos(angl1)*gg),'Z',str(coordZ[m]+sin(angl1)*gg),])  
                         ins = program.append(string)
                         part_n+=1
-                        P.append([])
-                        P[part_n].append(1)
-                        P[part_n].append(P[part_n-1][3])
-                        P[part_n].append(P[part_n-1][4])                                                 
-                        P[part_n].append(coordX[m]+cos(angl1)*gg)
-                        P[part_n].append(coordZ[m]+sin(angl1)*gg)
-                       
+                        papp(part_n,1,coordX[m]+cos(angl1)*gg,coordZ[m]+sin(angl1)*gg,P)
                 else: #если СЛЕДУЮЩИЙ участок "дуга"
                     NEXT_radius = sqrt((coordK[m-1])*(coordK[m-1]) + (coordI[m-1])*(coordI[m-1]))
                     NEXT_centreX = coordX[m] + coordI[m-1]
@@ -319,16 +281,12 @@ def g712(self, **words):
                     NEXT_lengthZ = abs(NEXT_centreZ - coordZ[m])
                     NEXT_lengthX = abs(NEXT_centreX - coordX[m]) 
                     NEXT_alfa = atan2(NEXT_lengthZ,NEXT_lengthX)
-                    NEXT_zz= (NEXT_radius-offset)*sin(NEXT_alfa)
-                    NEXT_xx= (NEXT_radius-offset)*cos(NEXT_alfa)
-                    NEXT_pointX=NEXT_centreX-NEXT_xx
-                    if (coordZ[m]<NEXT_centreZ):
-                        NEXT_pointZ=NEXT_centreZ-NEXT_zz
-                    else:
-                        NEXT_pointZ=NEXT_centreZ+NEXT_zz
-                    if (line_or_arc[m-1] ==3): #если СЛЕДУЮЩИЙ участок "дуга" CW                        
+                    cw_next_pointZ= coordZ[m]+sin(NEXT_alfa)*offset
+                    cw_next_pointX= coordX[m]+cos(NEXT_alfa)*offset
+                    
+                    if (line_or_arc[m-1] ==3): #если СЛЕДУЮЩИЙ участок "дуга" CW 
                         if (angle[m] - NEXT_alfa<-0.2): 
-                            print '(G01:LINE)(ANGLE:angle[m]-NEXT_alfa < -0.2)(next:ARC_G03)'                            
+                            print '(G01:LINE)(ANGLE:angle[m]-NEXT_alfa < -0.2)(next:ARC_G03)'
                             radius_OFF = NEXT_radius+offset
                             NEXT_arc_itrs_lineZ,NEXT_arc_itrs_lineX = intersection_line_arc(3,coordZ[m+1]+sin(angle[m])*offset,
                                                                                   coordX[m+1]+cos(angle[m])*offset,
@@ -338,58 +296,29 @@ def g712(self, **words):
                             string=ser.join(['G1','X',str(NEXT_arc_itrs_lineX ),'Z',str(NEXT_arc_itrs_lineZ)])
                             ins = program.append(string)
                             part_n+=1
-                            P.append([])
-                            P[part_n].append(1)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(NEXT_arc_itrs_lineX )
-                            P[part_n].append(NEXT_arc_itrs_lineZ)
+                            papp(part_n,1,NEXT_arc_itrs_lineX,NEXT_arc_itrs_lineZ,P)
 
                         elif (angle[m] - NEXT_alfa>0.2): 
                             print '(G01:LINE)(ANGLE:angle[m]-NEXT_alfa > 0.2)(next:ARC_G03)'
-                            cw_next_zz = (NEXT_radius+offset)*sin(NEXT_alfa)#TODO
-                            cw_next_xx = (NEXT_radius+offset)*cos(NEXT_alfa)#TODO
-                            OLD_cw_next_pointZ= NEXT_centreZ+cw_next_zz
-                            OLD_cw_next_pointX= NEXT_centreX+cw_next_xx
-                            cw_next_pointZ= coordZ[m]+sin(NEXT_alfa)*offset
-                            cw_next_pointX= coordX[m]+cos(NEXT_alfa)*offset                           
-                            print 'NEXT_alfa=', degrees(NEXT_alfa) 
-                            print 'cw_next_pointX по старому=', OLD_cw_next_pointX
-                            print 'cw_next_pointZ по старому=', OLD_cw_next_pointZ
-                            print 'cw_next_pointX по НОВОМУ=', cw_next_pointX
-                            print 'cw_next_pointZ по НОВОМУ=', cw_next_pointZ
                             string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset)])
                             ins = program.append(string)
                             part_n+=1
-                            P.append([])
-                            P[part_n].append(1)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m])*offset )
-                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)                            
+                            papp(part_n,1,coordX[m]+cos(angle[m])*offset,
+                                 coordZ[m]+sin(angle[m])*offset,P)
+                                                             
                             string=ser.join(['G3','X',str(cw_next_pointX),'Z',str(cw_next_pointZ),'R',str(offset)])
                             ins = program.append(string)
                             part_n+=1 
-                            P.append([])
-                            P[part_n].append(3)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(cw_next_pointX)
-                            P[part_n].append(cw_next_pointZ)
-                            P[part_n].append(offset)
-                            P[part_n].append(coordX[m])
-                            P[part_n].append(coordZ[m])
+                            papp(part_n,3,cw_next_pointX,cw_next_pointZ,P,offset,coordX[m],coordZ[m])                           
+
                         else: #angle[m] == NEXT_alfa 
                             print '(G01:LINE)  (ANGLE:angle[m] == NEXT_alfa)(next:ARC_G03)'
                             string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset)])
                             ins = program.append(string)
                             part_n+=1
-                            P.append([])
-                            P[part_n].append(1)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m])*offset )
-                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)
+                            papp(part_n,1,coordX[m]+cos(angle[m])*offset,
+                                 coordZ[m]+sin(angle[m])*offset,P)
+                                 
                     if (line_or_arc[m-1] ==2): #если СЛЕДУЮЩИЙ участок "дуга" CCW
                         if (angle[m] - NEXT_alfa<-0.2):
                             print '(G01:LINE) (angle[m] - NEXT_alfa<-0.2) (next:ARC_G02)'
@@ -401,47 +330,28 @@ def g712(self, **words):
                             string=ser.join(['G1','X',str(NEXT_arc_itrs_lineX),'Z',str(NEXT_arc_itrs_lineZ)])
                             ins = program.append(string)
                             part_n+=1
-                            P.append([])
-                            P[part_n].append(1)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(NEXT_arc_itrs_lineX)
-                            P[part_n].append(NEXT_arc_itrs_lineZ)
+                            papp(part_n,3,NEXT_arc_itrs_lineX,NEXT_arc_itrs_lineZ,P)
+
                         elif (angle[m] - NEXT_alfa>0.2): 
                             print '(G01:LINE) (angle[m] - NEXT_alfa>0.2) (next:ARC_G02)'#DXF line_arc_G2>.dxf
                             string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset)])
                             ins = program.append(string)
                             part_n+=1
-                            P.append([])
-                            P[part_n].append(1)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m])*offset )
-                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)
-                            string=ser.join(['G3','X',str(NEXT_pointX),'Z',str(NEXT_pointZ),'R',str(offset)])#TODO
+                            papp(part_n,1,coordX[m]+cos(angle[m])*offset,
+                                 coordZ[m]+sin(angle[m])*offset,P)
+                                 
+                            string=ser.join(['G3','X',str(cw_next_pointX),'Z',str(cw_next_pointZ),'R',str(offset)])
                             ins = program.append(string)
-                            part_n+=1 
-                            P.append([])
-                            P[part_n].append(3)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(NEXT_pointX)#TODO упростить вычисление
-                            P[part_n].append(NEXT_pointZ)#TODO
-                            P[part_n].append(offset)
-                            P[part_n].append(coordX[m])
-                            P[part_n].append(coordZ[m])
+                            part_n+=1
+                            papp(part_n,3,cw_next_pointX,cw_next_pointZ,P,offset,coordX[m],coordZ[m]) 
+
                         else:       #angle[m] == NEXT_alfa
                             print '(G01:LINE)  (next:ARC_G02 angle[m] == NEXT_alfa) (next:ARC_G02)'
                             string=ser.join(['G1','X',str(coordX[m]+cos(angle[m])*offset),'Z',str(coordZ[m]+sin(angle[m])*offset)])
                             ins = program.append(string)
                             part_n+=1
-                            P.append([])
-                            P[part_n].append(1)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m])*offset )
-                            P[part_n].append(coordZ[m]+sin(angle[m])*offset)
-         
+                            papp(part_n,1,coordX[m]+cos(angle[m])*offset,
+                                 coordZ[m]+sin(angle[m])*offset,P)
 #+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
             else:  
                 radius = sqrt((coordK[m])*(coordK[m]) + (coordI[m])*(coordI[m]))
@@ -469,30 +379,13 @@ def g712(self, **words):
                             ins = program.append(string)
                             part_n+=1
                             papp(part_n,3,cw_pointX,cw_pointZ,P,radius+offset,centreX,centreZ)
-                            '''part_n+=1 
-                            P.append([])
-                            P[part_n].append(3)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(cw_pointX)
-                            P[part_n].append(cw_pointZ)
-                            P[part_n].append(radius+offset)
-                            P[part_n].append(centreX)
-                            
-                            P[part_n].append(centreZ)''' 
                             string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),
                                                   'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(offset)])
                             ins = program.append(string)
-                            part_n+=1 
-                            P.append([])
-                            P[part_n].append(3)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m-1])*offset)
-                            P[part_n].append(coordZ[m]+sin(angle[m-1])*offset)
-                            P[part_n].append(offset)
-                            P[part_n].append(coordX[m])
-                            P[part_n].append(coordZ[m])  
+                            part_n+=1
+                            papp(part_n,3,coordX[m]+cos(angle[m-1])*offset,
+                                  coordZ[m]+sin(angle[m-1])*offset,P,offset,coordX[m],coordZ[m]) 
+ 
                         elif (angle[m-1] - alfa > 0.2):
                             print '(G03:ARC)(ANGLE:angle[m-1] - alfa > 0.2)(next:LINE)'#DXF arc_G3_line>.dxf
                             radius_and_off = radius+offset
@@ -507,30 +400,15 @@ def g712(self, **words):
                             string=ser.join(['G3','X',str(arc_itrs_lineX),'Z',str(arc_itrs_lineZ),'R',str(radius_and_off)])
                             ins = program.append(string)
                             part_n+=1 
-                            P.append([])
-                            P[part_n].append(3)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(arc_itrs_lineX)
-                            P[part_n].append(arc_itrs_lineZ)
-                            P[part_n].append(radius_and_off)
-                            P[part_n].append(centreX)
-                            P[part_n].append(centreZ) 
+                            papp(part_n,3,arc_itrs_lineX,arc_itrs_lineZ,P,radius_and_off,centreX,centreZ) 
                         else:      
                             print 'G03:ARC   next:LINE angle[m-1] == alfa' #DXF arc_G3_line=.dxf  
                             string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),
                                                 'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(radius+offset)])
                             ins = program.append(string)
-                            part_n+=1 
-                            P.append([])
-                            P[part_n].append(3)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m-1])*offset)
-                            P[part_n].append(coordZ[m]+sin(angle[m-1])*offset)
-                            P[part_n].append(radius+offset)
-                            P[part_n].append(centreX)
-                            P[part_n].append(centreZ)                              
+                            part_n+=1
+                            papp(part_n,3,coordX[m]+cos(angle[m-1])*offset,
+                                 coordZ[m]+sin(angle[m-1])*offset,P,radius+offset,centreX,centreZ)                               
                     else:  #если дуга G3
                         NEXT_radius = sqrt((coordK[m-1])*(coordK[m-1]) + (coordI[m-1])*(coordI[m-1]))
                         NEXT_centreX = coordX[m] + coordI[m-1]
@@ -562,29 +440,16 @@ def g712(self, **words):
                             string=ser.join(['G2','X',str(pointX),'Z',str(pointZ),'R',str(radius-offset)])
                             ins = program.append(string)
                             part_n+=1 
-                            P.append([])
-                            P[part_n].append(2)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(pointX)
-                            P[part_n].append(pointZ)
-                            P[part_n].append(radius-offset)
-                            P[part_n].append(centreX)
-                            P[part_n].append(centreZ) 
+                            papp(part_n,2,pointX,pointZ,P,radius-offset,centreX,centreZ)
+
                             string=ser.join(['G3','X',str(coordX[m]+cos(angle[m-1])*offset),
                                                   'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(offset)])
                             if m:                      
                                 ins = program.append(string)
-                                part_n+=1 
-                                P.append([])
-                                P[part_n].append(3)
-                                P[part_n].append(P[part_n-1][3])
-                                P[part_n].append(P[part_n-1][4])                                               
-                                P[part_n].append(coordX[m]+cos(angle[m-1])*offset)
-                                P[part_n].append(coordZ[m]+sin(angle[m-1])*offset)
-                                P[part_n].append(offset)
-                                P[part_n].append(coordX[m])
-                                P[part_n].append(coordZ[m]) 
+                                part_n+=1
+                                papp(part_n,3,coordX[m]+cos(angle[m-1])*offset,
+                                     coordZ[m]+sin(angle[m-1])*offset,P,offset,coordX[m],coordZ[m]) 
+
                         elif (angle[m-1] - alfa > 0.2):
                             '(G02:ARC)(ANGLE:angle[m-1] - alfa > 0.2)(next:LINE)'      
                             radius_and_off = radius-offset
@@ -598,31 +463,17 @@ def g712(self, **words):
                                                                                      centreZ,centreX,radius_and_off)
                             string=ser.join(['G2','X',str(arc_itrs_lineX),'Z',str(arc_itrs_lineZ),'R',str(radius_and_off)])
                             ins = program.append(string)
-                            part_n+=1 
-                            P.append([])
-                            P[part_n].append(2)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(arc_itrs_lineX)
-                            P[part_n].append(arc_itrs_lineZ)
-                            P[part_n].append(radius_and_off)
-                            P[part_n].append(centreX)
-                            P[part_n].append(centreZ)  
+                            part_n+=1
+                            papp(part_n,2,arc_itrs_lineX,arc_itrs_lineZ,P,radius_and_off,centreX,centreZ) 
+ 
                         else:
                             print 'G02:ARC   next:LINE angle[m-1] == alfa'
                             string=ser.join(['G2','X',str(coordX[m]+cos(angle[m-1])*offset),
                                                 'Z',str(coordZ[m]+sin(angle[m-1])*offset),'R',str(radius-offset)])
                             ins = program.append(string)
-                            part_n+=1 
-                            P.append([])
-                            P[part_n].append(2)
-                            P[part_n].append(P[part_n-1][3])
-                            P[part_n].append(P[part_n-1][4])                                               
-                            P[part_n].append(coordX[m]+cos(angle[m-1])*offset)
-                            P[part_n].append(coordZ[m]+sin(angle[m-1])*offset)
-                            P[part_n].append(radius-offset)
-                            P[part_n].append(centreX)
-                            P[part_n].append(centreZ)
+                            part_n+=1
+                            papp(part_n,2,coordX[m]+cos(angle[m-1])*offset,
+                                 coordZ[m]+sin(angle[m-1])*offset,P,radius-offset,centreX,centreZ)                              
                             
                     else: 
                         NEXT_radius = sqrt((coordK[m-1])*(coordK[m-1]) + (coordI[m-1])*(coordI[m-1]))
@@ -661,7 +512,7 @@ def g712(self, **words):
                 if COORDx0 - P[len(P)-1][1] <= d:
                     d=0
                 while COORDx0 - P[i][1] >= d :
-                    d = float(words['d'])                                   
+                    d = float(words['d'])  
                     if P[i][0] == 1:
                         Mz1 = P[i][2]
                         Mx1 = P[i][1]
@@ -680,16 +531,16 @@ def g712(self, **words):
                         Mx2 = P[i][3] 
                         B=COORDx0                           
                         center = [P[i][7],P[i][6]]
-                        radius = P[i][5]                                                                                   
-                        b = -2*center[0]                                                        
-                        c = -radius**2 + (B-center[1])**2 + center[0]**2                                                
-                        D = b**2 - 4*c                                                                                
-                        if D < 0:                                                                                       
+                        radius = P[i][5]                   
+                        b = -2*center[0]   
+                        c = -radius**2 + (B-center[1])**2 + center[0]**2  
+                        D = b**2 - 4*c  
+                        if D < 0:  
                             print 'D<0'
-                        else:                                                                                 
-                            z1 = (-b-sqrt(D))/2                                                                   
+                        else:   
+                            z1 = (-b-sqrt(D))/2 
                             z2 = (-b+sqrt(D))/2 
-                            if Mz1 < z1 < Mz2:#TODO                                                               
+                            if Mz1 < z1 < Mz2:#TODO 
                                 COORDz0=z2
                             else:
                                 COORDz0=z1
@@ -698,18 +549,18 @@ def g712(self, **words):
                         Mx1 = P[i][3]
                         Mz2 = P[i][4]
                         Mx2 = P[i][3] 
-                        B=COORDx0                           
+                        B=COORDx0      
                         center = [P[i][7],P[i][6]]
-                        radius = P[i][5]                                                                                   
-                        b = -2*center[0]                                                        
-                        c = -radius**2 + (B-center[1])**2 + center[0]**2                                                
-                        D = b**2 - 4*c                                                                                
-                        if D < 0:                                                                                       
+                        radius = P[i][5] 
+                        b = -2*center[0]  
+                        c = -radius**2 + (B-center[1])**2 + center[0]**2  
+                        D = b**2 - 4*c 
+                        if D < 0: 
                             print 'D<0'
-                        else:                                                                                 
-                            z1 = (-b-sqrt(D))/2                                                                   
+                        else:  
+                            z1 = (-b-sqrt(D))/2 
                             z2 = (-b+sqrt(D))/2 
-                            if Mz1 < z1 < Mz2:#TODO                                                                 
+                            if Mz1 < z1 < Mz2:#TODO 
                                 COORDz0=z1
                             else:
                                 COORDz0=z2
@@ -757,7 +608,7 @@ def g712(self, **words):
                                         i=next_i                                  
                                 if COORDx0 - P[i][1] < d and P[i][3] > COORDx0 > P[i][1]:
                                     d=0
-                                    flag_micro_part = 1                                
+                                    flag_micro_part = 1   
                                 self.execute("G1 X%f " % (COORDx0)) 
                         elif P[i][0] == 2:
                             Mz1 = P[i][2]
@@ -766,16 +617,16 @@ def g712(self, **words):
                             Mx2 = P[i][3] 
                             B=COORDx0                           
                             center = [P[i][7],P[i][6]]
-                            radius = P[i][5]                                                                                   
-                            b = -2*center[0]                                                        
-                            c = -radius**2 + (B-center[1])**2 + center[0]**2                                                
-                            D = b**2 - 4*c                                                                                
-                            if D < 0:                                                                                       
+                            radius = P[i][5]  
+                            b = -2*center[0]  
+                            c = -radius**2 + (B-center[1])**2 + center[0]**2
+                            D = b**2 - 4*c 
+                            if D < 0:
                                 print 'D<0'
-                            else:                                                                                 
-                                z1 = (-b-sqrt(D))/2                                                                   
+                            else: 
+                                z1 = (-b-sqrt(D))/2
                                 z2 = (-b+sqrt(D))/2 
-                                if Mz1 < z1 < Mz2:#TODO                                                                 
+                                if Mz1 < z1 < Mz2:#TODO
                                     COORDz0=z2
                                 else:
                                     COORDz0=z1
@@ -792,29 +643,29 @@ def g712(self, **words):
                                         i=next_i                                  
                                 if COORDx0 - P[i][1] < d and P[i][3] > COORDx0 > P[i][1]:
                                     d=0
-                                    flag_micro_part = 1                                
-                                self.execute("G1 X%f " % (COORDx0))                                 
+                                    flag_micro_part = 1
+                                self.execute("G1 X%f " % (COORDx0))
                         elif P[i][0] == 3:
                             Mz1 = P[i][2]
                             Mx1 = P[i][3]
                             Mz2 = P[i][4]
                             Mx2 = P[i][3] 
-                            B=COORDx0                           
+                            B=COORDx0
                             center = [P[i][7],P[i][6]]
-                            radius = P[i][5]                                                                                   
-                            b = -2*center[0]                                                        
-                            c = -radius**2 + (B-center[1])**2 + center[0]**2                                                
-                            D = b**2 - 4*c                                                                                
-                            if D < 0:                                                                                       
+                            radius = P[i][5]
+                            b = -2*center[0]
+                            c = -radius**2 + (B-center[1])**2 + center[0]**2
+                            D = b**2 - 4*c
+                            if D < 0:  
                                 print 'D<0'
-                            else:                                                                                 
-                                z1 = (-b-sqrt(D))/2                                                                   
+                            else:   
+                                z1 = (-b-sqrt(D))/2   
                                 z2 = (-b+sqrt(D))/2 
-                                if Mz1 < z1 < Mz2: #TODO сделать "умнее" расчет                                              
+                                if Mz1 < z1 < Mz2: #TODO сделать "умнее" расчет
                                     COORDz0=z1
                                 else:
                                     COORDz0=z2
-                            self.execute("G1  Z%f" % ((COORDz0)))                          
+                            self.execute("G1  Z%f" % ((COORDz0)))
                             if bounce > coordZ_start - COORDz0:
                                 self.execute("G0 X%f Z%f" % ((COORDx0),(coordZ_start)))
                             else:
@@ -827,7 +678,7 @@ def g712(self, **words):
                                         i=next_i                                  
                                 if COORDx0 - P[i][1] < d and P[i][3] > COORDx0 > P[i][1]:
                                     d=0
-                                    flag_micro_part = 1                                
+                                    flag_micro_part = 1
                                 self.execute("G1 X%f " % (COORDx0)) 
                         
             else:
