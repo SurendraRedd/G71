@@ -175,7 +175,10 @@ def g712(self, **words):
             ins=coordI.insert(n,indI)               
     app = angle.append(0.2914567944778671)                               
  ################################
+    fn = '/home/nkp/fgcode.ngc'
+    fgcode = open(fn, "w")
     self.execute("F%f" % feed_rate)#TODO
+
     part_n = -1
     flag_executed = 1 
     P = [] 
@@ -469,9 +472,12 @@ def g712(self, **words):
         flag_micro_part = 0        
         bounce = 0.5 
         self.execute("G21 G18 G49  G90 G61")
-
+        
+        fgcode.write("G21 G18 G49  G90 G61 \n")
+        fgcode.write("F%f \n" % feed_rate)
         COORDx0 = P[len(P)-1][3] 
         self.execute("G1 X%f " % (COORDx0))
+        fgcode.write("G1 X%f \n " % (COORDx0))
         if flag_executed :
             i = len(P)-1
             if only_finishing_cut==0 :
@@ -531,17 +537,22 @@ def g712(self, **words):
                             else:
                                 COORDz0=z2
                     self.execute("G1  Z%f" % ((COORDz0)))
+                    fgcode.write("G1  Z%f\n" % ((COORDz0)))
                     if bounce > coordZ_start - COORDz0:
                         self.execute("G0 X%f Z%f" % ((COORDx0),(coordZ_start)))
+                        fgcode.write("G0 X%f Z%f\n" % ((COORDx0),(coordZ_start)))
                     else:
                         self.execute("G0 X%f Z%f" % ((COORDx0+bounce),(COORDz0+bounce)))
+                        fgcode.write("G0 X%f Z%f\n" % ((COORDx0+bounce),(COORDz0+bounce)))
                         self.execute("G0 Z%f" % (coordZ_start))
+                        fgcode.write("G0 Z%f\n" % (coordZ_start))
 
                     COORDx0 = COORDx0 - d
                     for next_i in reversed(range(len(P))): 
                         if P[next_i][3] > COORDx0 > P[next_i][1]:
                             i=next_i                     
-                    self.execute("G1 X%f " % (COORDx0)) 
+                    self.execute("G1 X%f" % (COORDx0))
+                    fgcode.write("G1 X%f\n" % (COORDx0)) 
                     if flag_micro_part :                    
                         if COORDx0 - P[i][1] < d and P[i][3] > COORDx0 > P[i][1]:
                             d=0
@@ -562,11 +573,15 @@ def g712(self, **words):
                             else:
                                 COORDz0=P[i][2] 
                             self.execute("G1  Z%f" % ((COORDz0)))
+                            fgcode.write("G1  Z%f\n" % ((COORDz0)))
                             if bounce > coordZ_start - COORDz0:
                                 self.execute("G0 X%f Z%f" % ((COORDx0),(coordZ_start)))
+                                fgcode.write("G0 X%f Z%f\n" % ((COORDx0),(coordZ_start)))
                             else:
                                 self.execute("G0 X%f Z%f" % ((COORDx0+bounce),(COORDz0+bounce)))
+                                fgcode.write("G0 X%f Z%f\n" % ((COORDx0+bounce),(COORDz0+bounce)))
                                 self.execute("G0 Z%f" % (coordZ_start))
+                                fgcode.write("G0 Z%f\n" % (coordZ_start))
                             if i>1:
                                 COORDx0 = COORDx0 - d 
                                 for next_i in reversed(range(len(P))): 
@@ -575,7 +590,8 @@ def g712(self, **words):
                                 if COORDx0 - P[i][1] < d and P[i][3] > COORDx0 > P[i][1]:
                                     d=0
                                     flag_micro_part = 1   
-                                self.execute("G1 X%f " % (COORDx0)) 
+                                self.execute("G1 X%f" % (COORDx0))
+                                fgcode.write("G1 X%f\n" % (COORDx0))
                         elif P[i][0] == 2:
                             Mz1 = P[i][2]
                             Mx1 = P[i][3]
@@ -596,12 +612,16 @@ def g712(self, **words):
                                     COORDz0=z2
                                 else:
                                     COORDz0=z1
-                            self.execute("G1  Z%f" % ((COORDz0)))                           
+                            self.execute("G1  Z%f" % ((COORDz0)))
+                            fgcode.write("G1  Z%f \n" % ((COORDz0)))                          
                             if bounce > coordZ_start - COORDz0:
                                 self.execute("G0 X%f Z%f" % ((COORDx0),(coordZ_start)))
+                                fgcode.write("G0 X%f Z%f\n" % ((COORDx0),(coordZ_start)))
                             else:
                                 self.execute("G0 X%f Z%f" % ((COORDx0+bounce),(COORDz0+bounce)))
+                                fgcode.write("G0 X%f Z%f\n" % ((COORDx0+bounce),(COORDz0+bounce)))
                                 self.execute("G0 Z%f" % (coordZ_start))
+                                fgcode.write("G0 Z%f\n" % (coordZ_start))
                             if i>1:
                                 COORDx0 = COORDx0 - d 
                                 for next_i in reversed(range(len(P))): 
@@ -610,7 +630,8 @@ def g712(self, **words):
                                 if COORDx0 - P[i][1] < d and P[i][3] > COORDx0 > P[i][1]:
                                     d=0
                                     flag_micro_part = 1
-                                self.execute("G1 X%f " % (COORDx0))
+                                self.execute("G1 X%f" % (COORDx0))
+                                fgcode.write("G1 X%f\n" % (COORDx0))
                         elif P[i][0] == 3:
                             Mz1 = P[i][2]
                             Mx1 = P[i][3]
@@ -632,11 +653,15 @@ def g712(self, **words):
                                 else:
                                     COORDz0=z2
                             self.execute("G1  Z%f" % ((COORDz0)))
+                            fgcode.write("G1  Z%f\n" % ((COORDz0)))
                             if bounce > coordZ_start - COORDz0:
                                 self.execute("G0 X%f Z%f" % ((COORDx0),(coordZ_start)))
+                                fgcode.write("G0 X%f Z%f\n" % ((COORDx0),(coordZ_start)))
                             else:
                                 self.execute("G0 X%f Z%f" % ((COORDx0+bounce),(COORDz0+bounce)))
+                                fgcode.write("G0 X%f Z%f\n" % ((COORDx0+bounce),(COORDz0+bounce)))
                                 self.execute("G0 Z%f" % (coordZ_start))
+                                fgcode.write("G0 Z%f\n" % (coordZ_start))
                             if i>1:
                                 COORDx0 = COORDx0 - d 
                                 for next_i in reversed(range(len(P))): 
@@ -645,25 +670,28 @@ def g712(self, **words):
                                 if COORDx0 - P[i][1] < d and P[i][3] > COORDx0 > P[i][1]:
                                     d=0
                                     flag_micro_part = 1
-                                self.execute("G1 X%f " % (COORDx0)) 
-                        
+                                self.execute("G1 X%f" % (COORDx0))
+                                fgcode.write("G1 X%f\n" % (COORDx0))                         
             else:
                 MESSAGE("Only finishing cut") 
                 self.execute("M0")                          
-####################################################### 
+##################################################### 
         print 'program =', program                                                          
         flag_executed = 0                                            
         for w in program:
             try:  
                 self.execute(w)
+                fgcode.write(w)
+                fgcode.write("\n")
             except InterpreterException,e:
                         msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                         self.set_errormsg(msg) 
                         return INTERP_ERROR  
         offset-=offset_mem/quantity
         program = []
-        self.execute("G0  Z%f" % (coordZ_start))     
- #####################################################
+        self.execute("G0  Z%f" % (coordZ_start)) 
+        fgcode.write("G0  Z%f \n" % (coordZ_start))   
+#####################################################
     print 'P =', P 
     self.execute("G40 " )
  
@@ -678,11 +706,16 @@ def g712(self, **words):
                     try: 
                         contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
                         self.execute(contour)
+                        fgcode.write(contour)
+                        fgcode.write("\n")
                     except InterpreterException,e:
                         msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                         self.set_errormsg(msg) 
                         return INTERP_ERROR 
     self.execute("G40 " )   
-    self.execute("G0  Z%f" % (coordZ_start))                            
-    f.close()                 
+    self.execute("G0  Z%f" % (coordZ_start))
+    fgcode.write("G0  Z%f\n" % (coordZ_start))
+    fgcode.write("M02\n")                             
+    f.close() 
+    fgcode.close()               
     return INTERP_OK
