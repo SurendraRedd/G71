@@ -47,10 +47,8 @@ def intersection_line_arc(G,Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad):
               pointX1 = K*z1+B
               return  pointZ1,pointX1 
 def intersection_arc_arc(x1,z1,r1,x2,z2,r2,Px,Pz):
-
     d=sqrt( pow(abs(x1-x2),2) + pow(abs(z1-z2),2))
     if(d > r1+r2): 
-        #окружности не пересекаются
         return
     a= (r1*r1 - r2*r2 + d*d ) / (2*d)
     h= sqrt( pow(r1,2) - pow(a,2))
@@ -61,7 +59,6 @@ def intersection_arc_arc(x1,z1,r1,x2,z2,r2,Px,Pz):
     ix2= x0 - h*( z2 - z1 ) / d
     iz2= z0 + h*( x2 - x1 ) / d
     if(a == r1 ) :
-        #окружности соприкасаются
         intscX = ix2
         intscZ = iz2
         return intscX , intscZ 
@@ -117,7 +114,7 @@ def g712(self, **words):
     tool = 2
     if words.has_key('t'):
         tool = int(words['t'])
-    if words.has_key('t'):    
+    if words.has_key('f'):    
         feed_rate = float(words['f'])
     s = linuxcnc.stat() 
     s.poll()
@@ -136,6 +133,9 @@ def g712(self, **words):
     s.poll()
     x = 0 
     while x < len(lines):
+        if re.search("\s*F\d", lines[x], re.I) and not re.search("G71",lines[x].upper()) :
+            feed_rate=float(re.search("F\s*([0-9.]+)",lines[x], re.I).group(1))
+            print 'feed_rate=', feed_rate
         if  re.search("^\s*[(]\s*N\d", lines[x], re.I):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]",lines[x].upper()):
                 num = int(re.search("N\s*([0-9.]+)",lines[x], re.I).group(1))
@@ -175,22 +175,22 @@ def g712(self, **words):
             ins=coordI.insert(n,indI)               
     app = angle.append(0.2914567944778671)                               
  ################################
-    for n in range(len(line_or_arc)-1):
-        if line_or_arc[n] >1:
-            print 'n=', n
-
+    self.execute("F%f" % feed_rate)#TODO
     part_n = -1
     flag_executed = 1 
     P = [] 
     program = [] 
     offset_mem=offset
     mm=len(angle)-2
-    ser=' '
-    if words.has_key('t'):
-        self.execute("F%f" % feed_rate)
-    string=ser.join(['G18 G90 G49 ',])
-    ins = program.append(string)   
+  
     for i in range(quantity):
+        print 'i=',i
+        if i==1:
+            if words.has_key('t'):
+                self.execute("M6 T%d " % (tool))
+            if words.has_key('f'):
+                feed_rate = float(words['f'])
+                self.execute("F%f" % feed_rate)#TODO
         if line_or_arc[len(angle)-2] ==1:
             part_n+=1
             P.append([])
@@ -468,8 +468,8 @@ def g712(self, **words):
                             papp(part_n,2,NEXT_X,NEXT_Z,P,radius-offset,centreX,centreZ)
         flag_micro_part = 0        
         bounce = 0.5 
-        self.execute("G21 G18")
-        self.execute("G61")
+        self.execute("G21 G18 G49  G90 G61")
+
         COORDx0 = P[len(P)-1][3] 
         self.execute("G1 X%f " % (COORDx0))
         if flag_executed :
@@ -666,7 +666,7 @@ def g712(self, **words):
  #####################################################
     print 'P =', P 
     self.execute("G40 " )
-    self.execute("M6 T%d " % (tool))  
+ 
     #self.execute("G42" )
  #   self.execute("G0 X%f Z%f" % ((FIRST_pointX),(coordZ_start)))
 #    self.execute("G1 X%f " % FIRST_pointX)                 
@@ -683,6 +683,6 @@ def g712(self, **words):
                         self.set_errormsg(msg) 
                         return INTERP_ERROR 
     self.execute("G40 " )   
-    self.execute("G1  Z%f" % (coordZ_start))                            
+    self.execute("G0  Z%f" % (coordZ_start))                            
     f.close()                 
     return INTERP_OK
