@@ -285,10 +285,11 @@ class Erstelle_Fenster:
         f = open(save_file, "r")  
         lines = f.readlines()
         f.close()
-        ch = ''
+        ch = '' 
         ch1 = ''
         program = ''
-        x_max , p , q , d , k , i , f ,j,s,l,t = 0 , 1 , 15 , 1.5 , 0.3 , 1 , 433 ,0,0,1,1
+        x_max, p, q, d, k, i, f, j, s, l, t = 0, 1, 15, 1.5, 0.3, 1, 433, 0, 0, 1, 1
+        Dtr, Lng, Prk = 0, 0, 0
         N_start_end = []
         Z_start = []
         for l in lines:
@@ -321,7 +322,12 @@ class Erstelle_Fenster:
         l = float(self.ExportParas.d_L.get())
         t = int(self.ExportParas.d_T.get())
         rb = self.ExportParas.g71_72.get()
+
+        Dtr = float(self.ExportParas.D_out.get())
+        Lng = float(self.ExportParas.Lg.get())
+        Prk = float(self.ExportParas.D_in.get())
         checkbutton = self.ExportParas.only.get()
+        
         code = 'G71.2'
         start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
         if rb :
@@ -330,9 +336,10 @@ class Erstelle_Fenster:
         if checkbutton :
             j = 1           
         program += ch1
-        
+        blank = str('(AXIS,blank,%s,%s,%s)\n' % (Dtr, Lng, Prk))
+        program += blank
         program += start_point
-        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s T%s\n' % (code , p , q , d , k , i , f ,j ,s,l,t))
+        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s T%s\n' % (code,p,q,d,k,i,f,j,s,l,t))
         program += stt
         program += ch
         program += 'M2'
@@ -483,10 +490,13 @@ class ExportParasClass:
         f2.grid(row=1,column=0,padx=2,pady=2,sticky=N+W+E)
         f3=Frame(self.nb_f1,relief = GROOVE,bd = 2)
         f3.grid(row=2,column=0,padx=2,pady=2,sticky=N+W+E)
-    
+        f4=Frame(self.nb_f1,relief = GROOVE,bd = 2)
+        f4.grid(row=3,column=0,padx=2,pady=2,sticky=N+W+E)
+            
         f1.columnconfigure(0,weight=1)
         f2.columnconfigure(0,weight=1)
         f3.columnconfigure(0,weight=1) 
+        f4.columnconfigure(0,weight=1)         
 #########################################################################################параметры в окне              
         Label(f1, text="Depth of cut   [D]")\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
@@ -556,6 +566,21 @@ class ExportParasClass:
         .grid(row=5,column=0,sticky=N+W,padx=4)        
         self.rad2 = Checkbutton(f3,text="",variable=self.only,onvalue=1,offvalue=0)
         self.rad2.grid(row=5,column=1,sticky=N+E)
+        
+        Label(f4, text="Diameter blank outside")\
+        .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.D_out = Entry(f4,width=7,textvariable=config.b_D_out)
+        self.D_out.grid(row=0,column=1,sticky=N+E)
+             
+        Label(f4, text="Lenght blank")\
+        .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.Lg = Entry(f4,width=7,textvariable=config.b_L)
+        self.Lg.grid(row=1,column=1,sticky=N+E)        
+
+        Label(f4, text=("Blank diam. inside" ))\
+        .grid(row=2,column=0,sticky=N+W,padx=4)
+        self.D_in = Entry(f4,width=7,textvariable=config.b_D_in)
+        self.D_in.grid(row=2,column=1,sticky=N+E)
         
 
     def revers_contour(self):
@@ -1350,7 +1375,17 @@ class ConfigClass:
             self.save_path=self.parser.get('Paths','save_path')          
 
             self.debug=int(self.parser.get('Debug', 'global_debug_level'))
+
+            self.b_D_out = DoubleVar()
+            self.b_D_out.set(float(self.parser.get('Parameters','b_D_out')))
             
+            self.b_L = DoubleVar()
+            self.b_L.set(float(self.parser.get('Parameters','b_L')))            
+            
+             
+            self.b_D_in = DoubleVar()
+            self.b_D_in.set(float(self.parser.get('Parameters','b_D_in')))           
+                       
             
         except:
             showerror("Error during reading config file", "Please delete or correct\n %s"\
