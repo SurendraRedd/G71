@@ -327,7 +327,7 @@ class Erstelle_Fenster:
         Lng = float(self.ExportParas.Lg.get())
         Prk = float(self.ExportParas.D_in.get())
         checkbutton = self.ExportParas.only.get()
-        
+        show_blank = self.ExportParas.show_blank.get()
         code = 'G71.2'
         start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
         if rb :
@@ -337,7 +337,8 @@ class Erstelle_Fenster:
             j = 1           
         program += ch1
         blank = str('(AXIS,blank,%s,%s,%s)\n' % (Dtr, Lng, Prk))
-        program += blank
+        if show_blank :
+            program += blank
         program += start_point
         stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s T%s\n' % (code,p,q,d,k,i,f,j,s,l,t))
         program += stt
@@ -545,12 +546,12 @@ class ExportParasClass:
         self.d_L = Entry(f2,width=7,textvariable=config.reserve_L)  
         self.d_L.grid(row=5,column=1,sticky=N+E)
 
-                
-                
+                               
         self.g71_72=IntVar()
         self.g71_72.set(0)
         self.only=IntVar()
-        #self.only.set(1)
+        self.show_blank=IntVar()
+        self.show_blank.set(1)
         
         Label(f3, text=("G71" ))\
         .grid(row=3,column=0,sticky=N+W,padx=4)
@@ -567,6 +568,7 @@ class ExportParasClass:
         self.rad2 = Checkbutton(f3,text="",variable=self.only,onvalue=1,offvalue=0)
         self.rad2.grid(row=5,column=1,sticky=N+E)
         
+        
         Label(f4, text="Diameter blank outside")\
         .grid(row=0,column=0,sticky=N+W,padx=4)
         self.D_out = Entry(f4,width=7,textvariable=config.b_D_out)
@@ -582,7 +584,11 @@ class ExportParasClass:
         self.D_in = Entry(f4,width=7,textvariable=config.b_D_in)
         self.D_in.grid(row=2,column=1,sticky=N+E)
         
-
+        Label(f4, text=("Show blank" ))\
+        .grid(row=3,column=0,sticky=N+W,padx=4)        
+        self.rad3 = Checkbutton(f4,text="",variable=self.show_blank,onvalue=1,offvalue=0)
+        self.rad3.grid(row=3,column=1,sticky=N+E)
+        
     def revers_contour(self):
         aa=self.ccc.switch_shape_dir()# ????????????????????????????????????????????????
  
