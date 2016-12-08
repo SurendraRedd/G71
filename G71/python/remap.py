@@ -202,7 +202,6 @@ def g712(self, **words):
             P[part_n].append(1)
             P[part_n].append(round(coordX[mm+1]+(cos(angle[mm]))*offset,10))
             P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
-            print '!!!!!!!!!!!!!@'
             P[part_n].append(round(coordX[mm+1]+(cos(angle[mm]))*offset,10))
             P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
             FIRST_pointZ = coordZ[mm+1]+(sin(angle[mm]))*offset
@@ -725,8 +724,8 @@ def g712(self, **words):
                         self.set_errormsg(msg) 
                         return INTERP_ERROR 
     self.execute("G40" )   
-    self.execute("G0 Z%f" % (coordZ_start))
-    fgcode.write("G0 Z%f\n" % (coordZ_start))
+    self.execute("G0 Z0")
+    fgcode.write("G0 Z0\n")
     fgcode.write("M02\n")                             
     f.close() 
     fgcode.close()               
