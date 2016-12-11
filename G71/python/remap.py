@@ -91,11 +91,14 @@ def papp(n,G,x,z,App=[],r=None,xc=None,zc=None):
     return App 
 def prog(array,G,x,z,r=None):
     ser=' '
-    string=ser.join(['G1','X',str(x),'Z',str(z)])
-    if G==2: 
+    if G==1: 
+        string=ser.join(['G1','X',str(x),'Z',str(z)])    
+    elif G==2: 
         string=ser.join(['G2','X',str(x),'Z',str(z),'R',str(r)])
-    if G==3: 
-        string=ser.join(['G3','X',str(x),'Z',str(z),'R',str(r)])        
+    elif G==3: 
+        string=ser.join(['G3','X',str(x),'Z',str(z),'R',str(r)])
+    elif G==0: 
+        string=ser.join(['G0','X',str(x),'Z',str(z)])                
     return array.append(string)                
 #################################################-----G71.2
 def g712(self, **words):
@@ -159,6 +162,7 @@ def g712(self, **words):
                         ins=coordR.insert(0,None)
                     if num == p:
                         st_pointX_finishing = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
+                        st_pointZ_finishing = float(re.search("Z\s*([-0-9.]+)",lines[x], re.I).group(1))
 
         x+=1     
     angle = [] 
@@ -185,7 +189,7 @@ def g712(self, **words):
     fn = '/home/nkp/fgcode.ngc'
     fgcode = open(fn, "w")
     self.execute("F%f" % feed_rate)#TODO
-
+    bounce = 0.5 
     part_n = -1
     flag_executed = 1 
     P = [] 
@@ -194,7 +198,7 @@ def g712(self, **words):
     mm=len(angle)-2
   
     for i in range(quantity):
-        print 'i=',i
+        '''print 'i=',i
         if i==1:
             if words.has_key('t'):
                 self.execute("M6 T%d" % (tool))
@@ -202,7 +206,7 @@ def g712(self, **words):
             if words.has_key('f'):
                 feed_rate = float(words['f'])
                 self.execute("F%f" % feed_rate)#TODO
-                fgcode.write("F%f\n" % feed_rate)
+                fgcode.write("F%f\n" % feed_rate)'''
         if line_or_arc[len(angle)-2] ==1:
             part_n+=1
             P.append([])
@@ -213,6 +217,10 @@ def g712(self, **words):
             P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
             FIRST_pointZ = coordZ[mm+1]+(sin(angle[mm]))*offset
             FIRST_pointX = round(coordX[mm+1]+(cos(angle[mm]))*offset,10)
+            '''if FIRST_pointX + bounce > FIRST_pointX - d:
+                prog(program,0,FIRST_pointX+d,FIRST_pointZ)
+            else:
+                prog(program,0,FIRST_pointX+bounce,FIRST_pointZ)'''
             prog(program,1,FIRST_pointX,FIRST_pointZ)
         elif line_or_arc[len(angle)-2] ==3:
             FIRST_radius = sqrt((coordK[mm])*(coordK[mm]) + (coordI[mm])*(coordI[mm]))            
@@ -476,7 +484,7 @@ def g712(self, **words):
                             part_n+=1
                             papp(part_n,2,NEXT_X,NEXT_Z,P,radius-offset,centreX,centreZ)
         flag_micro_part = 0        
-        bounce = 0.5 
+
         self.execute("G21 G18 G49  G90 G61 G8")
         
         fgcode.write("G21 G18 G49  G90 G61 \n")
@@ -484,9 +492,10 @@ def g712(self, **words):
         fgcode.write("M6 T2\n")
         COORDx0 = P[len(P)-1][3] 
 
-        self.execute("G0 X%f Z%f" % ((COORDx0),(coordZ_start+bounce)))
-        fgcode.write("G0 X%f Z%f" % ((COORDx0),(coordZ_start+bounce)))
+
         if flag_executed :
+            self.execute("G0 X%f Z%f" % ((COORDx0),(coordZ_start+bounce)))
+            fgcode.write("G0 X%f Z%f" % ((COORDx0),(coordZ_start+bounce)))        
             i = len(P)-1
             if only_finishing_cut==0 :
                 if COORDx0 - P[len(P)-1][1] <= d:
@@ -685,7 +694,9 @@ def g712(self, **words):
                 self.execute("M0")                          
 ##################################################### 
         print 'program =', program 
-                                                        
+        if only_finishing_cut and flag_executed:
+            self.execute("G0 X%f" % (FIRST_pointX+d))
+            fgcode.write("G0 X%f" % (FIRST_pointX+d))                                              
         flag_executed = 0                                            
         for w in program:
             try:  
@@ -699,7 +710,9 @@ def g712(self, **words):
         offset-=offset_mem/quantity
         program = []
         self.execute("G0 Z%f" % (coordZ_start)) 
-        fgcode.write("G0 Z%f\n" % (coordZ_start))   
+        fgcode.write("G0 Z%f\n" % (coordZ_start)) 
+        self.execute("G0 X%f" % (FIRST_pointX+d))
+        fgcode.write("G0 X%f" % (FIRST_pointX+d))  
 #####################################################
     print 'P =', P 
     self.execute("G40 " )
@@ -716,7 +729,7 @@ def g712(self, **words):
         feed_rate = float(words['f'])
         self.execute("F%f" % feed_rate)#TODO
         fgcode.write("F%f\n" % feed_rate)
-    self.execute("G0 X%f Z%f" % ((st_pointX_finishing),(coordZ_start+bounce)))                          
+    self.execute("G0 X%f Z%f" % ((st_pointX_finishing),(st_pointZ_finishing+bounce)))                          
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
