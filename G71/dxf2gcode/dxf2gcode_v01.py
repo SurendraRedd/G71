@@ -339,7 +339,7 @@ class Erstelle_Fenster:
         blank = str('(AXIS,blank,%s,%s,%s)\n' % (Dtr, Lng, Prk))
         if show_blank :
             program += blank
-        program += start_point
+        #program += start_point
         stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s T%s\n' % (code,p,q,d,k,i,f,j,s,l,t))
         program += stt
         program += ch
