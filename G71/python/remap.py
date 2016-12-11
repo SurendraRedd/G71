@@ -46,6 +46,10 @@ def intersection_line_arc(G,Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad):
               pointZ1 = z1
               pointX1 = K*z1+B
               return  pointZ1,pointX1 
+    else:
+        pointZ1 = Mz1 
+        pointX1 = centreX-(cathetus(rad,centreZ))
+        return  pointZ1,pointX1               
 def intersection_arc_arc(x1,z1,r1,x2,z2,r2,Px,Pz):
     d=sqrt( pow(abs(x1-x2),2) + pow(abs(z1-z2),2))
     if(d > r1+r2): 
@@ -153,6 +157,9 @@ def g712(self, **words):
                         ins = pars(coordR,"R\s*([-0-9.]+)",lines[x])
                     else:
                         ins=coordR.insert(0,None)
+                    if num == p:
+                        st_pointX_finishing = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
+
         x+=1     
     angle = [] 
     for n in range(len(coordZ)-1):
@@ -226,23 +233,20 @@ def g712(self, **words):
         elif line_or_arc[len(angle)-2] ==2:
             FIRST_radius = sqrt((coordK[mm])*(coordK[mm]) + (coordI[mm])*(coordI[mm]))            
             FIRST_centreX = coordX[mm+1] + coordI[mm]            
-            FIRST_centreZ = coordZ[mm+1] + coordK[mm]                     
-            #FIRST_pointZ,FIRST_pointX=intersection_line_arc(2,coordZ[mm+1],coordX[mm+1],
-                                                           #coordZ[mm+1],coordX[mm+1]+100,
-                                                               # FIRST_centreZ,FIRST_centreX,
-                                                               # FIRST_radius-offset
-                                                                #)
-            FIRST_pointZ = coordZ[mm+1]+(sin(angle[mm]))*offset
-            FIRST_pointX = round(coordX[mm+1]+(cos(angle[mm]))*offset,10)
+            FIRST_centreZ = coordZ[mm+1] + coordK[mm]                           
+            FIRST_pointZ,FIRST_pointX=intersection_line_arc(2,coordZ[mm+1],
+                                       coordX[mm+1],coordZ[mm+1],
+                                       coordX[mm+1]+10,FIRST_centreZ,
+                                       FIRST_centreX,FIRST_radius-offset)
+
             part_n+=1
             P.append([])
-            P[part_n].append(2)         
+            P[part_n].append(2)     
             P[part_n].append(FIRST_pointX)
             P[part_n].append(FIRST_pointZ)
             P[part_n].append(FIRST_pointX)
             P[part_n].append(FIRST_pointZ)
-            prog(program,1,FIRST_pointX,FIRST_pointZ)
-            
+            prog(program,1,FIRST_pointX,FIRST_pointZ) 
         coordZ_start =FIRST_pointZ                 
         for m in (reversed(range(len(angle)-1))):   
             if (line_or_arc[m] ==1): 
@@ -284,8 +288,8 @@ def g712(self, **words):
                     cw_next_pointZ= coordZ[m]+sin(NEXT_alfa)*offset
                     cw_next_pointX= coordX[m]+cos(NEXT_alfa)*offset                    
                     if (line_or_arc[m-1] ==3): #если СЛЕДУЮЩИЙ участок "дуга" CW 
-                        if (angle[m] - NEXT_alfa<-0.2): 
-                            print '(G01:LINE)(ANGLE:angle[m]-NEXT_alfa < -0.2)(next:ARC_G03)'
+                        if (angle[m] - NEXT_alfa<-0.00349): 
+                            print '(G01:LINE)(ANGLE:angle[m]-NEXT_alfa < -0.00349)(next:ARC_G03)'
                             radius_OFF = NEXT_radius+offset
                             NEXT_arc_itrs_lineZ,NEXT_arc_itrs_lineX = intersection_line_arc(3,coordZ[m+1]+sin(angle[m])*offset,
                                                                                   coordX[m+1]+cos(angle[m])*offset,
@@ -295,8 +299,8 @@ def g712(self, **words):
                             prog(program,1,NEXT_arc_itrs_lineX,NEXT_arc_itrs_lineZ)
                             part_n+=1
                             papp(part_n,1,NEXT_arc_itrs_lineX,NEXT_arc_itrs_lineZ,P)
-                        elif (angle[m] - NEXT_alfa>0.2): 
-                            print '(G01:LINE)(ANGLE:angle[m]-NEXT_alfa > 0.2)(next:ARC_G03)'
+                        elif (angle[m] - NEXT_alfa>0.00349): 
+                            print '(G01:LINE)(ANGLE:angle[m]-NEXT_alfa > 0.00349)(next:ARC_G03)'
                             prog(program,1,coordX[m]+cos(angle[m])*offset,
                                  coordZ[m]+sin(angle[m])*offset)
                             part_n+=1
@@ -313,8 +317,8 @@ def g712(self, **words):
                             papp(part_n,1,coordX[m]+cos(angle[m])*offset,
                                  coordZ[m]+sin(angle[m])*offset,P)                                 
                     if (line_or_arc[m-1] ==2): #если СЛЕДУЮЩИЙ участок "дуга" CCW
-                        if (angle[m] - NEXT_alfa<-0.2):
-                            print '(G01:LINE) (angle[m] - NEXT_alfa<-0.2) (next:ARC_G02)'
+                        if (angle[m] - NEXT_alfa<-0.00349):
+                            print '(G01:LINE) (angle[m] - NEXT_alfa<-0.00349) (next:ARC_G02)'
                             NEXT_arc_itrs_lineZ,NEXT_arc_itrs_lineX = intersection_line_arc(3,coordZ[m+1]+sin(angle[m])*offset,
                                                                                   coordX[m+1]+cos(angle[m])*offset,
                                                                                   coordZ[m]+sin(angle[m])*offset,
@@ -324,8 +328,8 @@ def g712(self, **words):
                             part_n+=1
                             papp(part_n,1,NEXT_arc_itrs_lineX,NEXT_arc_itrs_lineZ,P)
 
-                        elif (angle[m] - NEXT_alfa>0.2): 
-                            print '(G01:LINE) (angle[m] - NEXT_alfa>0.2) (next:ARC_G02)'#DXF line_arc_G2>.dxf
+                        elif (angle[m] - NEXT_alfa>0.00349): 
+                            print '(G01:LINE) (angle[m] - NEXT_alfa>0.00349) (next:ARC_G02)'#DXF line_arc_G2>.dxf
                             prog(program,1,coordX[m]+cos(angle[m])*offset,
                                  coordZ[m]+sin(angle[m])*offset)
                             part_n+=1
@@ -358,8 +362,8 @@ def g712(self, **words):
                     pointX=centreX+xx
                 if (line_or_arc[m] == 3): 
                     if (line_or_arc[m-1] == 1): 
-                        if (angle[m-1] - alfa < -0.2):
-                            print '(G03:ARC)(ANGLE:angle[m-1] - alfa < -0.2)(next:LINE)'#DXF arc_G3_line<.dxf
+                        if (angle[m-1] - alfa < -0.00349):
+                            print '(G03:ARC)(ANGLE:angle[m-1] - alfa < -0.00349)(next:LINE)'#DXF arc_G3_line<.dxf
                             cw_zz = (radius+offset)*sin(alfa)
                             cw_xx = (radius+offset)*cos(alfa)
                             cw_pointZ= centreZ+cw_zz
@@ -373,8 +377,8 @@ def g712(self, **words):
                             part_n+=1
                             papp(part_n,3,coordX[m]+cos(angle[m-1])*offset,
                                   coordZ[m]+sin(angle[m-1])*offset,P,offset,coordX[m],coordZ[m]) 
-                        elif (angle[m-1] - alfa > 0.2):
-                            print '(G03:ARC)(ANGLE:angle[m-1] - alfa > 0.2)(next:LINE)'#DXF arc_G3_line>.dxf
+                        elif (angle[m-1] - alfa > 0.00349):
+                            print '(G03:ARC)(ANGLE:angle[m-1] - alfa > 0.00349)(next:LINE)'#DXF arc_G3_line>.dxf
                             radius_and_off = radius+offset
                             if m==0:
                                 arc_itrs_lineZ,arc_itrs_lineX = coordZ[m],coordX[m]+offset
@@ -416,8 +420,8 @@ def g712(self, **words):
                             papp(part_n,3,NEXT_X,NEXT_Z,P,radius+offset,centreX,centreZ)
                 else: #если участок "дуга" CCW  
                     if (line_or_arc[m-1] == 1): 
-                        if (angle[m-1] - alfa < -0.2):
-                            print '(G02:ARC) (angle[m-1] - alfa < -0.2) (next:LINE)'#DXF arc_G2_line<.dxf
+                        if (angle[m-1] - alfa < -0.00349):
+                            print '(G02:ARC) (angle[m-1] - alfa < -0.00349) (next:LINE)'#DXF arc_G2_line<.dxf
                             prog(program,2,pointX,pointZ,radius-offset)
                             part_n+=1 
                             papp(part_n,2,pointX,pointZ,P,radius-offset,centreX,centreZ)
@@ -427,8 +431,8 @@ def g712(self, **words):
                                 part_n+=1
                                 papp(part_n,3,coordX[m]+cos(angle[m-1])*offset,
                                      coordZ[m]+sin(angle[m-1])*offset,P,offset,coordX[m],coordZ[m]) 
-                        elif (angle[m-1] - alfa > 0.2):
-                            '(G02:ARC)(ANGLE:angle[m-1] - alfa > 0.2)(next:LINE)'      
+                        elif (angle[m-1] - alfa > 0.00349):
+                            '(G02:ARC)(ANGLE:angle[m-1] - alfa > 0.00349)(next:LINE)'      
                             radius_and_off = radius-offset
                             if m==0:
                                 arc_itrs_lineZ,arc_itrs_lineX = coordZ[m],coordX[m]+offset
@@ -473,14 +477,15 @@ def g712(self, **words):
                             papp(part_n,2,NEXT_X,NEXT_Z,P,radius-offset,centreX,centreZ)
         flag_micro_part = 0        
         bounce = 0.5 
-        self.execute("G21 G18 G49  G90 G61")
+        self.execute("G21 G18 G49  G90 G61 G8")
         
         fgcode.write("G21 G18 G49  G90 G61 \n")
         fgcode.write("F%f \n" % feed_rate)
         fgcode.write("M6 T2\n")
         COORDx0 = P[len(P)-1][3] 
-        self.execute("G1 X%f" % (COORDx0))
-        fgcode.write("G1 X%f\n" % (COORDx0))
+
+        self.execute("G0 X%f Z%f" % ((COORDx0),(coordZ_start+bounce)))
+        fgcode.write("G0 X%f Z%f" % ((COORDx0),(coordZ_start+bounce)))
         if flag_executed :
             i = len(P)-1
             if only_finishing_cut==0 :
@@ -702,13 +707,16 @@ def g712(self, **words):
     #self.execute("G42" )
  #   self.execute("G0 X%f Z%f" % ((FIRST_pointX),(coordZ_start)))
 #    self.execute("G1 X%f " % FIRST_pointX)
+
+
     if words.has_key('t'):
         self.execute("M6 T%d" % (tool))
         fgcode.write("M6 T%d\n" % (tool))
     if words.has_key('f'):
         feed_rate = float(words['f'])
         self.execute("F%f" % feed_rate)#TODO
-        fgcode.write("F%f\n" % feed_rate)                  
+        fgcode.write("F%f\n" % feed_rate)
+    self.execute("G0 X%f Z%f" % ((st_pointX_finishing),(coordZ_start+bounce)))                          
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
