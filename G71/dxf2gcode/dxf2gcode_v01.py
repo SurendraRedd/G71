@@ -339,7 +339,7 @@ class Erstelle_Fenster:
         blank = str('(AXIS,blank,%s,%s,%s)\n' % (Dtr, Lng, Prk))
         if show_blank :
             program += blank
-        #program += start_point
+        program += start_point
         stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s T%s\n' % (code,p,q,d,k,i,f,j,s,l,t))
         program += stt
         program += ch
@@ -1468,8 +1468,21 @@ class PostprocessorClass:
         self.lz=self.z
         self.i=0.0
         self.j=0.0
-
-        self.vars={"%feed":'self.iprint(self.feed)',\
+        if self.diameter_mode():
+            self.vars={"%feed":'self.iprint(self.feed)',\
+                       "%nl":'self.nlprint()',\
+                       "%X":'self.fnprint(self.x*2)',\
+                       "%-X":'self.fnprint(-self.x)',\
+                       "%Y":'self.fnprint(self.y)',\
+                       "%-Y":'self.fnprint(-self.y)',\
+                       "%Z":'self.fnprint(self.z)',\
+                       "%-Z":'self.fnprint(-self.z)',\
+                       "%I":'self.fnprint(self.i)',\
+                       "%-I":'self.fnprint(-self.i)',\
+                       "%J":'self.fnprint(self.j)',\
+                       "%-J":'self.fnprint(-self.j)'}
+        else:
+            self.vars={"%feed":'self.iprint(self.feed)',\
                    "%nl":'self.nlprint()',\
                    "%X":'self.fnprint(self.x)',\
                    "%-X":'self.fnprint(-self.x)',\
@@ -1480,16 +1493,21 @@ class PostprocessorClass:
                    "%I":'self.fnprint(self.i)',\
                    "%-I":'self.fnprint(-self.i)',\
                    "%J":'self.fnprint(self.j)',\
-                   "%-J":'self.fnprint(-self.j)'}
+                   "%-J":'self.fnprint(-self.j)'}                   
 
-
+    def diameter_mode(self):
+        self.sgg =("%s\n" %self.gcode_be)
+        if re.search("\s*G7[^0-9]", self.sgg, re.I):
+            return 1
+        else:
+        
+            return 1
     def make_new_postpro_file(self):
         pass
 
     def write_gcode_be(self,ExportParas,load_filename):
         str=("(File: %s)\n" %load_filename)
-        self.string=(str.encode("utf-8"))
-        
+        self.string=(str.encode("utf-8"))    
         self.string+=("%s\n" %ExportParas.gcode_be.get(1.0,END).strip())
 
     def write_gcode_en(self,ExportParas):
