@@ -1,6 +1,7 @@
 # --*-- coding:utf-8 --*--
 import linuxcnc
 import re
+import os
 from math import *
 import traceback
 from interpreter import *
@@ -46,10 +47,7 @@ def intersection_line_arc(G,Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad):
               pointZ1 = z1
               pointX1 = K*z1+B
               return  pointZ1,pointX1 
-    else:
-        pointZ1 = Mz1 
-        pointX1 = centreX-(cathetus(rad,centreZ))
-        return  pointZ1,pointX1              
+             
 def intersection_arc_arc(x1,z1,r1,x2,z2,r2,Px,Pz):
     d=sqrt( pow(abs(x1-x2),2) + pow(abs(z1-z2),2))
     if(d > r1+r2): 
@@ -184,14 +182,10 @@ def g712(self, **words):
     if diameter_mode:
         d_m=2   
     angle = []
-    print 'd_m=',d_m 
     for n in range(len(coordZ)-1):
         lengthZ = abs(coordZ[n] - coordZ[n+1])
         lengthX = abs((coordX[n] - coordX[n+1])/d_m) #XXX /2                   
         app = angle.append(atan2(lengthX,lengthZ))
-        print 'lengthX',lengthX
-        print 'lengthZ',lengthZ
-        print 'angle',degrees(atan2(lengthX,lengthZ))
         if line_or_arc[n]>1 and coordR[n]!=None:
             lh=(hip(lengthZ,lengthX))/2
             par=acos(lh/coordR[n])
@@ -207,9 +201,9 @@ def g712(self, **words):
             ins=coordK.insert(n,indK) 
             ins=coordI.insert(n,indI)               
     app = angle.append(0.2914567944778671)                               
- ################################
-    fn = '/home/nkp/fgcode.ngc'
-    fgcode = open(fn, "w")
+ ################################    
+    name_file = './fgcode.ngc'
+    fgcode = open(name_file, "w")
     self.execute("F%f" % feed_rate)#TODO
 
     part_n = -1
@@ -220,7 +214,6 @@ def g712(self, **words):
     offsetX=offset*d_m
     mm=len(angle)-2  
     for i in range(quantity):
-        print 'i=',i
         if i==1:
             if words.has_key('t'):
                 self.execute("M6 T%d" % (tool))
@@ -552,12 +545,7 @@ def g712(self, **words):
                         radius = P[i][5]                   
                         b = -2*center[0]   
                         c = -radius**2 + (B-center[1])**2 + center[0]**2  
-                        D = b**2 - 4*c
-                        print 'Mx1=',Mx1
-                        print 'Mx2=',Mx2
-                        print 'center=',center
-                        print 'radius=',radius
-                        print 'B=',B                          
+                        D = b**2 - 4*c                         
                         if D < 0:  
                             print 'D<0  G2'
                         else:   
