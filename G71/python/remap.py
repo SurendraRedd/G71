@@ -177,6 +177,8 @@ def g712(self, **words):
                         ins = pars(coordR,"R\s*([-0-9.]+)",lines[x])
                     else:
                         ins=coordR.insert(0,None)
+                    if num == p:
+                        st_pointX_finishing = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
         x+=1 
     d_m=1
     if diameter_mode:
@@ -214,14 +216,6 @@ def g712(self, **words):
     offsetX=offset*d_m
     mm=len(angle)-2  
     for i in range(quantity):
-        if i==1:
-            if words.has_key('t'):
-                self.execute("M6 T%d" % (tool))
-                fgcode.write("M6 T%d\n" % (tool))
-            if words.has_key('f'):
-                feed_rate = float(words['f'])
-                self.execute("F%f" % feed_rate)#TODO
-                fgcode.write("F%f\n" % feed_rate)
         if line_or_arc[len(angle)-2] ==1:
             part_n+=1
             P.append([])
@@ -513,10 +507,10 @@ def g712(self, **words):
             fgcode.write("G21 G18 G49  G90 G61 G8\n") 
                    
         fgcode.write("F%f \n" % feed_rate)
-        fgcode.write("M6 T2\n")
+        fgcode.write("M6 T2\n") #XXX
         COORDx0 = P[len(P)-1][3] 
-        self.execute("G1 X%f" % (COORDx0))
-        fgcode.write("G1 X%f\n" % (COORDx0))
+        self.execute("G0 X%f Z%f" % ((COORDx0),(coordZ_start+bounce)))
+        fgcode.write("G0 X%f Z%f" % ((COORDx0),(coordZ_start+bounce)))
         if flag_executed :
             i = len(P)-1
             if only_finishing_cut==0 :
@@ -740,7 +734,8 @@ def g712(self, **words):
     if words.has_key('f'):
         feed_rate = float(words['f'])
         self.execute("F%f" % feed_rate)#TODO
-        fgcode.write("F%f\n" % feed_rate)                  
+        fgcode.write("F%f\n" % feed_rate)
+    self.execute("G0 X%f Z%f" % ((st_pointX_finishing),(coordZ_start+bounce)))                  
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
