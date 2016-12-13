@@ -1499,9 +1499,8 @@ class PostprocessorClass:
         self.sgg =("%s\n" %self.gcode_be)
         if re.search("\s*G7[^0-9]", self.sgg, re.I):
             return 1
-        else:
-        
-            return 1
+        else:       
+            return 0
     def make_new_postpro_file(self):
         pass
 
