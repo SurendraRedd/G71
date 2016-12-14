@@ -1497,7 +1497,7 @@ class PostprocessorClass:
 
     def diameter_mode(self):
         self.sgg =("%s\n" %self.gcode_be)
-        if re.search("\s*G7[^0-9]", self.sgg, re.I):
+        if re.search("\s*G0?7[^0-9]", self.sgg, re.I):
             return 1
         else:       
             return 0
