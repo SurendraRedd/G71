@@ -8,7 +8,14 @@ from interpreter import *
 from emccanon import MESSAGE
 
 throw_exceptions = 1 # raises InterpreterException if execute() or read() fail
-    
+
+dir_ini = str(os.getcwd())
+all_files = os.listdir(os.getcwd()) 
+n_ini = filter(lambda x: x.endswith('.ini'),all_files)
+if len(n_ini)>1 : print 'ini file > 1'
+f_ini = os.path.join(dir_ini, n_ini[0])
+inifile = linuxcnc.ini(f_ini)
+  
 def pars(array,reg ,lines): 
     a=array.insert(0,(float(re.search(reg,lines, re.I).group(1))))
 def cathetus(c,b):
@@ -180,13 +187,15 @@ def g712(self, **words):
                     if num == p:
                         st_pointX_finishing = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
         x+=1 
+        
+    coordZ_start = max(coordZ)    
     d_m=1
     if diameter_mode:
         d_m=2   
     angle = []
     for n in range(len(coordZ)-1):
         lengthZ = abs(coordZ[n] - coordZ[n+1])
-        lengthX = abs((coordX[n] - coordX[n+1])/d_m) #XXX /2                   
+        lengthX = abs(coordX[n]/d_m - coordX[n+1]/d_m)                   
         app = angle.append(atan2(lengthX,lengthZ))
         if line_or_arc[n]>1 and coordR[n]!=None:
             lh=(hip(lengthZ,lengthX))/2
@@ -207,7 +216,7 @@ def g712(self, **words):
     name_file = './fgcode.ngc'
     fgcode = open(name_file, "w")
     self.execute("F%f" % feed_rate)#TODO
-
+    bounce = float(inifile.find("G71", "BOUNCE")) 
     part_n = -1
     flag_executed = 1 
     P = [] 
@@ -498,7 +507,7 @@ def g712(self, **words):
         print 'program =', program 
         print 'P =', P                            
         flag_micro_part = 0        
-        bounce = 0.5 
+
         if diameter_mode:
             self.execute("G21 G18 G49  G90 G61 G7")
             fgcode.write("G21 G18 G49  G90 G61 G7\n")
