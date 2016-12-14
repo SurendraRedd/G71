@@ -217,8 +217,8 @@ def g712(self, **words):
     name_file = './fgcode.ngc'
     fgcode = open(name_file, "w")
     self.execute("F%f" % feed_rate)#TODO
-    bounce_x = 0.0*d_m
-    bounce_z = 0.0 
+    bounce_x = 0.5*d_m
+    bounce_z = 0.5 
     if inifile.find("G71", "BOUNCE_X") != None :
         bounce_x = float(inifile.find("G71", "BOUNCE_X"))*d_m 
     if inifile.find("G71", "BOUNCE_Z") != None :
