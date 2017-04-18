@@ -27,22 +27,26 @@ def main(argv):
                 flag=1
             if  numC == t_Q:
                 flag=0 
-                lines[x] = '(' + lines[x] 
+                l = re.sub("^\s+|\n|\r|\s+$", '',  lines[x] )
+                lines[x] = '(' + l+ ')'+'\n'   
         if flag:
             if not re.search("N\s*([0-9.]+)",lines[x], re.I):
-                lines[x] = '('+'N'+str(numC+n)+' ' + lines[x]                   
+                l = re.sub("^\s+|\n|\r|\s+$", '',  lines[x] )
+                lines[x] = '('+'N'+str(numC+n)+' ' + l + ')'+'\n'                    
                 n+= 1
             else:
-                lines[x] = '(' + lines[x]                    
+                l = re.sub("^\s+|\n|\r|\s+$", '',  lines[x] )
+                lines[x] = '(' + l+ ')'+'\n'                     
         if re.search(".*\s*G71", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
-            try:
-                t_U = float(re.search("U\s*([-0-9.]+)",lines[x], re.I).group(1))
-            except:
-                pass
-            try:
-                t_R = float(re.search("R\s*([-0-9.]+)",lines[x], re.I).group(1))
-            except:
-                pass        
+            if k==0:
+                try:
+                    t_U = int(re.search("U\s*([-0-9.]+)",lines[x], re.I).group(1))
+                except:
+                    pass
+                try:
+                    t_R = float(re.search("R\s*([-0-9.]+)",lines[x], re.I).group(1))
+                except:
+                    pass        
             try:
                 t_P = int(re.search("P\s*([-0-9.]+)",lines[x], re.I).group(1))
             except:
@@ -124,8 +128,37 @@ def main(argv):
                         pass                                           
                 strings +=  lineUW                                               
         x+=1 
-                                 
+    f=open('fc.ngc','w')
+    f.write(strings) 
+    f.close                            
     print  strings
     print  'M2'    
 if __name__ == "__main__":
    main(sys.argv[1:])
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
