@@ -67,7 +67,14 @@ class Erstelle_Fenster:
         if not(self.load_filename==None):
             self.Canvas.canvas.update()
             self.Load_File(self.load_filename)
-
+            
+        self.b = Button(self.frame_u, text="Reverse",command=self.CanvasContent.switch_shape_dir)
+        self.b.grid(row=1)
+        self.bt1 = Button(self.frame_l, text="Added",command=self.Add_to_File)
+        self.bt1.grid(row=3,column=1,sticky=W)
+        self.bt2 = Button(self.frame_l, text="Write",command=self.Write_GCode)
+        self.bt2.grid(row=3,column=1,sticky=E)
+        
     def erstelle_menu(self): 
         self.menu = Menu(self.master)
         self.master.config(menu=self.menu)
@@ -243,6 +250,35 @@ class Erstelle_Fenster:
                                initialfile=fileBaseName +'.ngc',filetypes=myFormats)
 
     def Write_GCode(self):
+        
+        tempfile_rw = self.config.tempfile_rw         
+        editfile = self.config.editfilename
+        
+        delete_e = open(editfile, "w")
+        delete_e.write("")
+        delete_e.close()       
+        
+        outlog = open(editfile, "a")
+        edit_readline = open(tempfile_rw, "r")
+        for ew in edit_readline: 
+            outlog.write(ew)
+        outlog.write("M2")
+        outlog.close()
+        edit_readline.close() 
+        
+        readline = open(tempfile_rw, "r")    
+        for w in readline: 
+            print w       
+        print'M2'
+        readline.close()
+                
+        delete_t = open(tempfile_rw, "w")
+        delete_t.write("")
+        delete_t.close()
+        
+        self.ende()          
+            
+    def Add_to_File(self):
 
         self.opt_export_route()
 
@@ -253,17 +289,13 @@ class Erstelle_Fenster:
 
         postpro.write_gcode_be(self.ExportParas,self.load_filename)
 
-
         for nr in range(1,len(self.TSP.opt_route)):
             shape=self.shapes_to_write[self.TSP.opt_route[nr]]
             self.textbox.prt(("\nWriting Shape: %s" %shape),1)
                 
-
-
             if not(shape.nr in self.CanvasContent.Disabled):
                 stat =shape.Write_GCode(config,postpro)
                 status=status*stat
-
 
         string=postpro.write_gcode_en(self.ExportParas)
 
@@ -274,7 +306,6 @@ class Erstelle_Fenster:
         else:
             self.textbox.prt(("\nError during G-Code Generation"))
             self.master.update_idletasks()
-
 
 ################################################################################вывод программы
         save_file = self.config.tempfile_gcode
@@ -288,7 +319,7 @@ class Erstelle_Fenster:
         ch = '' 
         ch1 = ''
         program = ''
-        x_max, p, q, d, k, i, f, j, s, l, t = 0, 1, 15, 1.5, 0.3, 1, 433, 0, 0, 1, 1
+        x_max, p, q, d, k, i, f, j, s, l, t = 0, 1, 15, 1.5, 0.3, 1, 433, 0, 0, 1, 0101
         Dtr, Lng, Prk = 0, 0, 0
         N_start_end = []
         Z_start = []
@@ -308,7 +339,7 @@ class Erstelle_Fenster:
                     z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
                     x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
                     if x_max_sr > x_max:
-                        x_max = x_max_sr
+                        x_max = x_max_sr + 5
                     z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
                         
         p = N_start_end[0]
@@ -320,7 +351,7 @@ class Erstelle_Fenster:
         f = float(self.ExportParas.d_F.get())
         s = float(self.ExportParas.d_S.get())
         l = float(self.ExportParas.d_L.get())
-        t = int(self.ExportParas.d_T.get())
+        t = str(self.ExportParas.d_T.get())
         rb = self.ExportParas.g71_72.get()
 
         Dtr = float(self.ExportParas.D_out.get())
@@ -340,19 +371,17 @@ class Erstelle_Fenster:
         if show_blank :
             program += blank
         program += start_point
-        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s T%s\n' % (code,p,q,d,k,i,f,j,s,l,t))
+        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s \n' % (code,p,q,d,k,i,f,j,s,l,))
         program += stt
         program += ch
-        program += 'M2'
+               
+
         
-        stdoutsav = sys.stdout
-        editfile = self.config.editfilename
-        outlog = open(editfile, "w")
-        outlog.write(program)
-        outlog.close()
-        print(program)
-        self.ende()          
-            
+        tempfile_rw = self.config.tempfile_rw
+        rw = open(tempfile_rw, "a")
+        rw.write(program)
+        rw.close()
+                    
 
     def opt_export_route(self):
         
@@ -594,7 +623,7 @@ class ExportParasClass:
  
     def change_img71( self): #при выборе 71-72 меняем картинки
         self.textbox.prt('\ncheckbutton is OK!!')
-        self.im = PhotoImage(file='G71.gif') 
+        self.im = PhotoImage(file='/home/nkp/dxf/G71.gif') 
         f33=Frame(self.nb_f3,relief = FLAT,bd = 1)
         f33.grid(row=0,column=0,padx=2,pady=2,sticky=N+W+E)
         f33.columnconfigure(0,weight=1) 
@@ -608,7 +637,7 @@ class ExportParasClass:
         f33.rowconfigure(3,weight=0)
         
     def change_img72( self):
-        self.im = PhotoImage(file='G72.gif') 
+        self.im = PhotoImage(file='/home/nkp/dxf/G72.gif') 
         f33=Frame(self.nb_f3,relief = FLAT,bd = 1)
         f33.grid(row=0,column=0,padx=2,pady=2,sticky=N+W+E)
         f33.columnconfigure(0,weight=1) 
@@ -652,7 +681,7 @@ class ExportParasClass:
         f33=Frame(self.nb_f3,relief = FLAT,bd = 1)
         f33.grid(row=0,column=0,padx=2,pady=2,sticky=N+W+E)
         f33.columnconfigure(0,weight=1)
-        self.im = PhotoImage(file='G71.gif')  
+        self.im = PhotoImage(file='/home/nkp/dxf/G71.gif')  
         self.gif = Label(f33 , image=self.im)
         self.gif.grid(row=0,column=0,columnspan=2,sticky=N+W,padx=2)
 
@@ -1005,7 +1034,16 @@ class CanvasContentClass:
                         
                 self.addtoLayerContents(self.Shapes[-1].nr,ent_geo.Layer_Nr)
                 self.addtoEntitieContents(self.Shapes[-1].nr,ent_nr,c_nr)
+                
+                lns=len(self.Shapes[-1].geos) - 1
+                bx=self.Shapes[-1].geos[0].Pa.x
+                ex=self.Shapes[-1].geos[lns].Pe.x
 
+                if bx < ex:
+                    self.switch_shape_dir()#XXX
+                bx=self.Shapes[-1].geos[0].Pa.x
+                ex=self.Shapes[-1].geos[0].Pe.x
+                    
     def plot_shapes(self):
         for shape in self.Shapes:
             shape.plot2can(self.Canvas.canvas)
@@ -1161,7 +1199,8 @@ class CanvasContentClass:
             self.show_dis=0
             
     def switch_shape_dir(self):
-        for shape_nr in self.Selected:
+        #print "***************************"
+        for shape_nr in range(len(self.Shapes)):
             self.Shapes[shape_nr].reverse()
             self.textbox.prt('\n\nSwitched Direction at Shape:'\
                              +str(self.Shapes[shape_nr]))
@@ -1316,8 +1355,8 @@ class ConfigClass:
             self.start_Z0  = IntVar()
             self.start_Z0.set(float(self.parser.get('Parameters','start_Z0'))) 
             
-            self.tool_T  = IntVar()
-            self.tool_T.set(int(self.parser.get('Parameters','tool_T'))) 
+            self.tool_T  = StringVar()
+            self.tool_T.set(self.parser.get('Parameters','tool_T'))
             
             self.reserve_S  = IntVar()
             self.reserve_S.set(float(self.parser.get('Parameters','reserve_S')))
@@ -1330,7 +1369,9 @@ class ConfigClass:
 
             self.tempfile_gcode = self.parser.get('Paths','tempfile_gcode')
             self.editfilename = self.parser.get('Paths','editfilename')
-            
+            self.tempfile_rw = self.parser.get('Paths','tempfile_rw')
+
+
             
             
             
@@ -1471,10 +1512,10 @@ class PostprocessorClass:
         if self.diameter_mode():
             self.vars={"%feed":'self.iprint(self.feed)',\
                        "%nl":'self.nlprint()',\
-                       "%X":'self.fnprint(self.x*2)',\
+                       "%X":'self.fnprint(self.x)',\
                        "%-X":'self.fnprint(-self.x)',\
-                       "%Y":'self.fnprint(self.y)',\
-                       "%-Y":'self.fnprint(-self.y)',\
+                       "%Y":'self.fnprint(self.y*2)',\
+                       "%-Y":'self.fnprint(-self.y*2)',\
                        "%Z":'self.fnprint(self.z)',\
                        "%-Z":'self.fnprint(-self.z)',\
                        "%I":'self.fnprint(self.i)',\
