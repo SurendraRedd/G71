@@ -70,10 +70,13 @@ class Erstelle_Fenster:
             
         self.b = Button(self.frame_u, text="Reverse",command=self.CanvasContent.switch_shape_dir)
         self.b.grid(row=1)
-        self.bt1 = Button(self.frame_l, text="Added",command=self.Add_to_File)
+        self.bt1 = Button(self.frame_l, text="Added",command=self.selection_cycle)
         self.bt1.grid(row=3,column=1,sticky=W)
         self.bt2 = Button(self.frame_l, text="Write",command=self.Write_GCode)
         self.bt2.grid(row=3,column=1,sticky=E)
+
+        self.no_add_lines = 0
+        
         
     def erstelle_menu(self): 
         self.menu = Menu(self.master)
@@ -280,7 +283,7 @@ class Erstelle_Fenster:
         
         self.ende()          
             
-    def Add_to_File(self):
+    def make_gcode(self):
 
         self.opt_export_route()
 
@@ -308,8 +311,12 @@ class Erstelle_Fenster:
         else:
             self.textbox.prt(("\nError during G-Code Generation"))
             self.master.update_idletasks()
+   
+        return string
 
 ################################################################################вывод программы
+    def Add_to_File_G71(self):
+        string = self.make_gcode()
         save_file = self.config.tempfile_gcode
         f = open(save_file, "w")
         f.write(string)
@@ -361,11 +368,8 @@ class Erstelle_Fenster:
         Prk = float(self.ExportParas.D_in.get())
         checkbutton = self.ExportParas.only.get()
         show_blank = self.ExportParas.show_blank.get()
-        code = 'G71.2'
+        code = 'G71'
         start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
-        if rb :
-            code = 'G72.2'
-            start_point = str('G1 X%s  Z%s \n' % (x_max, z_max))
         if checkbutton :
             j = 1           
         program += ch1
@@ -374,17 +378,87 @@ class Erstelle_Fenster:
             program += blank
         program += start_point
         stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s \n' % (code,p,q,d,k,i,f,j,s,l,))
-        program += stt
-        program += ch
-               
 
-        
+        program += stt
+
+        if self.no_add_lines == 0: #выводим в программу строки контура(один раз)
+            program += ch
+                       
         tempfile_rw = self.config.tempfile_rw
         rw = open(tempfile_rw, "a")
         rw.write(program)
         rw.close()
-                    
-
+        self.no_add_lines = 1
+        
+    def Add_to_File_G70(self):
+    
+        string = self.make_gcode()
+        save_file = self.config.tempfile_gcode
+        f = open(save_file, "w")
+        f.write(string)
+        f.close()
+        
+        f = open(save_file, "r")  
+        lines = f.readlines()
+        f.close()
+        ch = '' 
+        ch1 = ''
+        program = ''
+        x_max, p, q, d, k, i, f, j, s, l, t = 0, 1, 15, 1.5, 0.3, 1, 433, 0, 0, 1, 0101
+        Dtr, Lng, Prk = 0, 0, 0
+        N_start_end = []
+        Z_start = []
+        for l in lines:
+            if  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                l=str(re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I))
+                ch1 +=l
+                ch1 +='\n'
+            elif  re.search("G\s*([0-3.]+)", l.upper() ,re.I):
+                if not  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                    l=re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I)
+                    ch +='('
+                    ch +=l
+                    ch +=')'
+                    ch +='\n'
+                    p1 = N_start_end.append(int(re.search("N\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                    if x_max_sr > x_max:
+                        x_max = x_max_sr + 5
+                    z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                        
+        p = N_start_end[0]
+        q = N_start_end[-1]
+        code = 'G70'
+        s_fin = str('%s P%s Q%s F%s  \n' % (code,p,q,f))
+        tempfile_rw = self.config.tempfile_rw
+        rw = open(tempfile_rw, "a")
+        program += s_fin
+        if self.no_add_lines == 0 : #выводим в программу строки контура(один раз)
+            program += ch
+        rw.write(program)        
+        rw.close()
+        self.no_add_lines = 1
+        
+    def insert_gcode_line(self):
+        tempfile_rw = self.config.tempfile_rw
+        ln = str(self.ExportParas.Igl.get())
+        rw = open(tempfile_rw, "a")
+        program = ''
+        program += ln
+        rw.write(program)        
+        rw.close()        
+                        
+    def selection_cycle(self):
+         rb = self.ExportParas.g71_72.get()
+         if   rb==0:
+             return self.Add_to_File_G71()
+         elif rb==1:
+             return  self.Add_to_File_G70()
+         elif rb==4:
+             return  self.insert_gcode_line() 
+         
+################################################################################    
     def opt_export_route(self):
         
         iter =min(self.config.max_iterations,len(self.CanvasContent.Shapes)*20)
@@ -507,7 +581,7 @@ class ExportParasClass:
         self.gcode_be.insert(END,postpro.gcode_be)
         self.gcode_en.insert(END,postpro.gcode_en)
 
-        self.ccc = CanvasContentClass(self,Canvas,config)# ????????????????????????????????????????????????
+
         
 
         
@@ -589,15 +663,34 @@ class ExportParasClass:
         self.rad0 = Radiobutton(f3,text="G71",variable=self.g71_72,value=0 ,command=lambda: self.change_img71())
         self.rad0.grid(row=3,column=1,sticky=N+E)
         
-        Label(f3, text=("G72" ))\
+        Label(f3, text=("G70" ))\
         .grid(row=4,column=0,sticky=N+W,padx=4)        
-        self.rad1 = Radiobutton(f3,text="G72",variable=self.g71_72,value=1,command=lambda: self.change_img72())
+        self.rad1 = Radiobutton(f3,text="G70",variable=self.g71_72,value=1,command=lambda: self.change_img72())
         self.rad1.grid(row=4,column=1,sticky=N+E)
         
+        Label(f3, text=("G72" ))\
+        .grid(row=5,column=0,sticky=N+W,padx=4)
+        self.rad0 = Radiobutton(f3,text="G72",variable=self.g71_72,value=2 ,command=lambda: self.change_img71())
+        self.rad0.grid(row=5,column=1,sticky=N+E)
+        
+        Label(f3, text=("G73" ))\
+        .grid(row=6,column=0,sticky=N+W,padx=4)        
+        self.rad1 = Radiobutton(f3,text="G73",variable=self.g71_72,value=3,command=lambda: self.change_img72())
+        self.rad1.grid(row=6,column=1,sticky=N+E)
+        
+
+        self.rad1 = Radiobutton(f3,text="MDI",variable=self.g71_72,value=4,command=lambda: self.change_img72())
+        self.rad1.grid(row=7,column=1,sticky=N+E)
+        self.Igl = Entry(f3,width=16,textvariable=config.Igl)
+        self.Igl.grid(row=7,columnspan=1,sticky=W) 
+        
+        
+        
+        
         Label(f3, text=("Only finishing [J]" ))\
-        .grid(row=5,column=0,sticky=N+W,padx=4)        
+        .grid(row=8,column=0,sticky=N+W,padx=4)        
         self.rad2 = Checkbutton(f3,text="",variable=self.only,onvalue=1,offvalue=0)
-        self.rad2.grid(row=5,column=1,sticky=N+E)
+        self.rad2.grid(row=8,column=1,sticky=N+E)
         
         
         Label(f4, text="Diameter blank outside")\
@@ -620,8 +713,7 @@ class ExportParasClass:
         self.rad3 = Checkbutton(f4,text="",variable=self.show_blank,onvalue=1,offvalue=0)
         self.rad3.grid(row=3,column=1,sticky=N+E)
         
-    def revers_contour(self):
-        aa=self.ccc.switch_shape_dir()# ????????????????????????????????????????????????
+
  
     def change_img71( self): #при выборе 71-72 меняем картинки
         self.textbox.prt('\ncheckbutton is OK!!')
@@ -711,9 +803,6 @@ class CanvasClass:
         self.label=Label(self.master, text="Curser Coordinates: X=0.0, Y=0.0, Scale: 1.00",bg="white",anchor="w")
         self.label.grid(row=1,column=0,sticky=E+W)
         
-        self.var = IntVar()
-        self.cbutt = Checkbutton(self.master,text="Revers",variable=self.var,command=lambda: self.Content.switch_shape_dir)
-        self.cbutt.grid(row=2,column=1,sticky=E+W)
         
         self.canvas=Canvas(self.master,width=650,height=500, bg = "white")
         self.canvas.grid(row=0,column=0,sticky=N+E+S+W)
@@ -1433,7 +1522,10 @@ class ConfigClass:
             
              
             self.b_D_in = DoubleVar()
-            self.b_D_in.set(float(self.parser.get('Parameters','b_D_in')))           
+            self.b_D_in.set(float(self.parser.get('Parameters','b_D_in')))
+                       
+            self.Igl = StringVar()
+            self.Igl.set(self.parser.get('Parameters','Igl'))
                        
             
         except:
