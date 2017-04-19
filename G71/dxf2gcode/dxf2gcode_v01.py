@@ -440,12 +440,91 @@ class Erstelle_Fenster:
         rw.close()
         self.no_add_lines = 1
         
+    def Add_to_File_G73(self):
+    
+        string = self.make_gcode()
+        save_file = self.config.tempfile_gcode
+        f = open(save_file, "w")
+        f.write(string)
+        f.close()
+        
+        f = open(save_file, "r")  
+        lines = f.readlines()
+        f.close()
+        ch = '' 
+        ch1 = ''
+        program = ''
+        x_max, p, q, d, k, i, f, j, s, l, t = 0, 1, 15, 1.5, 0.3, 1, 433, 0, 0, 1, 0101
+        Dtr, Lng, Prk = 0, 0, 0
+        N_start_end = []
+        Z_start = []
+        for l in lines:
+            if  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                l=str(re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I))
+                ch1 +=l
+                ch1 +='\n'
+            elif  re.search("G\s*([0-3.]+)", l.upper() ,re.I):
+                if not  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                    l=re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I)
+                    ch +='('
+                    ch +=l
+                    ch +=')'
+                    ch +='\n'
+                    p1 = N_start_end.append(int(re.search("N\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                    if x_max_sr > x_max:
+                        x_max = x_max_sr + 5
+                    z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                        
+        p = N_start_end[0]
+        q = N_start_end[-1]
+        z0 = Z_start[0]
+        d = float(self.ExportParas.d_D.get())
+        k = float(self.ExportParas.d_K.get())
+        i = float(self.ExportParas.d_I.get())
+        f = float(self.ExportParas.d_F.get())
+        s = float(self.ExportParas.d_S.get())
+        l = float(self.ExportParas.d_L.get())
+        t = str(self.ExportParas.d_T.get())
+        rb = self.ExportParas.g71_72.get()
+
+        Dtr = float(self.ExportParas.D_out.get())
+        Lng = float(self.ExportParas.Lg.get())
+        Prk = float(self.ExportParas.D_in.get())
+        checkbutton = self.ExportParas.only.get()
+        show_blank = self.ExportParas.show_blank.get()
+        code = 'G73.3'
+        start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
+        if checkbutton :
+            j = 1           
+        program += ch1
+        blank = str('(AXIS,blank,%s,%s,%s)\n' % (Dtr, Lng, Prk))
+        if show_blank :
+            program += blank
+        program += start_point
+        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s  \n' % (code,p,q,d,k,i,f,j,s,))
+
+        program += stt
+
+        if self.no_add_lines == 0: #выводим в программу строки контура(один раз)
+            program += ch
+                       
+        tempfile_rw = self.config.tempfile_rw
+        rw = open(tempfile_rw, "a")
+        rw.write(program)
+        rw.close()
+        self.no_add_lines = 1           
+        
+        
     def insert_gcode_line(self):
         tempfile_rw = self.config.tempfile_rw
         ln = str(self.ExportParas.Igl.get())
         rw = open(tempfile_rw, "a")
         program = ''
+        
         program += ln
+        program += '\n'
         rw.write(program)        
         rw.close()        
                         
@@ -455,6 +534,8 @@ class Erstelle_Fenster:
              return self.Add_to_File_G71()
          elif rb==1:
              return  self.Add_to_File_G70()
+         elif rb==3:
+             return  self.Add_to_File_G73()             
          elif rb==4:
              return  self.insert_gcode_line() 
          
@@ -670,17 +751,17 @@ class ExportParasClass:
         
         Label(f3, text=("G72" ))\
         .grid(row=5,column=0,sticky=N+W,padx=4)
-        self.rad0 = Radiobutton(f3,text="G72",variable=self.g71_72,value=2 ,command=lambda: self.change_img71())
-        self.rad0.grid(row=5,column=1,sticky=N+E)
+        self.rad2 = Radiobutton(f3,text="G72",variable=self.g71_72,value=2 ,command=lambda: self.change_img71())
+        self.rad2.grid(row=5,column=1,sticky=N+E)
         
         Label(f3, text=("G73" ))\
         .grid(row=6,column=0,sticky=N+W,padx=4)        
-        self.rad1 = Radiobutton(f3,text="G73",variable=self.g71_72,value=3,command=lambda: self.change_img72())
-        self.rad1.grid(row=6,column=1,sticky=N+E)
+        self.rad3 = Radiobutton(f3,text="G73",variable=self.g71_72,value=3,command=lambda: self.change_img72())
+        self.rad3.grid(row=6,column=1,sticky=N+E)
         
 
-        self.rad1 = Radiobutton(f3,text="MDI",variable=self.g71_72,value=4,command=lambda: self.change_img72())
-        self.rad1.grid(row=7,column=1,sticky=N+E)
+        self.rad4 = Radiobutton(f3,text="MDI",variable=self.g71_72,value=4,command=lambda: self.change_img72())
+        self.rad4.grid(row=7,column=1,sticky=N+E)
         self.Igl = Entry(f3,width=16,textvariable=config.Igl)
         self.Igl.grid(row=7,columnspan=1,sticky=W) 
         
@@ -689,8 +770,8 @@ class ExportParasClass:
         
         Label(f3, text=("Only finishing [J]" ))\
         .grid(row=8,column=0,sticky=N+W,padx=4)        
-        self.rad2 = Checkbutton(f3,text="",variable=self.only,onvalue=1,offvalue=0)
-        self.rad2.grid(row=8,column=1,sticky=N+E)
+        self.rad5 = Checkbutton(f3,text="",variable=self.only,onvalue=1,offvalue=0)
+        self.rad5.grid(row=8,column=1,sticky=N+E)
         
         
         Label(f4, text="Diameter blank outside")\
