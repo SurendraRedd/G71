@@ -123,6 +123,25 @@ def prog(array,G,x,z,r=None):
         string=ser.join(['G3','X',str(x),'Z',str(z),'R',str(r)])        
     return array.append(string)                
 #################################################-----G71.2
+# Fanuc code:
+# Programming
+# G71 U... R...
+# G71 P... Q... U... W... F... S...
+# Parameters
+#
+# First blockParamete
+# U	Depth of cut.
+# R	Retract height.
+#
+#
+# Second blockParameter	Description
+# P	Contour start block number.
+# Q	Contour end block number.
+# U	Finishing allowance in x-axis.
+# W	Finishing allowance in z-axis.
+# F	Feedrate during G71 cycle.
+# S	Spindle speed during G71 cycle.
+#
 def g712(self, **words):
     """ remap code G71.2 """
     p = int(words['p'])    
@@ -131,9 +150,10 @@ def g712(self, **words):
     offset = float(words['k'])
     
     if words.has_key('s'):
-        rsv1 = float(words['s'])
+        sspeed = int(words['s'])
+        self.execute("S%d" % (sspeed))
     if words.has_key('l'): #только int ???
-        U = int(words['l']) #like G71 U2 R1 Fanuc
+        offset_StartZ = int(words['l']) 
     only_finishing_cut = 0    
     if words.has_key('j'):
         only_finishing_cut = int(words['j'])
@@ -141,14 +161,12 @@ def g712(self, **words):
     if words.has_key('i'):
         quantity = int(words['i'])
     if words.has_key('t'):
-        tool = int(words['t'])
-        self.execute("M6 T%d" % (tool))
+        rsv2 = int(words['t'])
+
     if words.has_key('f'):    
         fr = float(words['f'])
     s = linuxcnc.stat() 
     s.poll()
-    #backangle  =  s.tool_table #TODO 
-    #frontangle =  s.tool_table
     filename = s.file
     f = open(filename, "r")
     lines = f.readlines()
@@ -211,7 +229,7 @@ def g712(self, **words):
                         st_pointX_finishing = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
         x+=1 
         
-    coordZ_start = max(coordZ) + U   
+    #coordZ_start = max(coordZ) + offset_StartZ  
     d_m=1
     if diameter_mode:
         d_m = 2
@@ -256,17 +274,18 @@ def g712(self, **words):
     mm=len(angle)-2  
     for i in range(quantity):
         offsetX=offset*d_m
-        if line_or_arc[len(angle)-2] ==1:
+        loa = line_or_arc[len(angle)-2]
+        if loa==0 or loa==1:
             part_n+=1
             P.append([])
-            P[part_n].append(1)
+            P[part_n].append(loa)
             P[part_n].append(round(coordX[mm+1]+(cos(angle[mm]))*offsetX,10))
             P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
             P[part_n].append(round(coordX[mm+1]+(cos(angle[mm]))*offsetX,10))
             P[part_n].append(coordZ[mm+1]+(sin(angle[mm]))*offset)
             FIRST_pointZ = coordZ[mm+1]+(sin(angle[mm]))*offset
             FIRST_pointX = round(coordX[mm+1]+(cos(angle[mm]))*offsetX,10)
-            prog(program,1,FIRST_pointX,FIRST_pointZ)
+            prog(program,loa,FIRST_pointX,FIRST_pointZ)
         elif line_or_arc[len(angle)-2] ==3:
             FIRST_radius = sqrt((coordK[mm])*(coordK[mm]) + (coordI[mm])*(coordI[mm]))            
             FIRST_centreX = coordX[mm+1]/d_m + coordI[mm]            
@@ -299,23 +318,27 @@ def g712(self, **words):
             P[part_n].append(FIRST_pointX)
             P[part_n].append(FIRST_pointZ)
             prog(program,1,FIRST_pointX,FIRST_pointZ)           
-        coordZ_start =FIRST_pointZ  + U               
-        for m in (reversed(range(len(angle)-1))):   
-            if (line_or_arc[m] ==1): 
-                if (line_or_arc[m-1] ==1): 
+        coordZ_start =FIRST_pointZ
+        if words.has_key('l'): #только int ???
+            coordZ_start =FIRST_pointZ  + offset_StartZ            
+        for m in (reversed(range(len(angle)-1))):
+            loa = line_or_arc[m]
+            if loa==0 or loa==1:
+                loa_m = line_or_arc[m-1]
+                if loa_m==0 or loa_m==1: 
                     if angle[m-1] < angle[m]: 
                         print 'G01:LINE ANGLE:cw next:LINE'#OK_G7!
                         if m==0:
-                            prog(program,1,coordX[m]+cos(angle[m])*offsetX,
+                            prog(program,loa_m,coordX[m]+cos(angle[m])*offsetX,
                                  coordZ[m]+sin(angle[m])*offset)
                             part_n+=1
-                            papp(part_n,1,coordX[m]+cos(angle[m])*offsetX,
+                            papp(part_n,loa_m,coordX[m]+cos(angle[m])*offsetX,
                                   coordZ[m]+sin(angle[m])*offset,P)                             
                         else:
-                            prog(program,1,coordX[m]+cos(angle[m])*offsetX,
+                            prog(program,loa_m,coordX[m]+cos(angle[m])*offsetX,
                                  coordZ[m]+sin(angle[m])*offset)
                             part_n+=1
-                            papp(part_n,1,coordX[m]+cos(angle[m])*offsetX,coordZ[m]+sin(angle[m])*offset,P) 
+                            papp(part_n,loa_m,coordX[m]+cos(angle[m])*offsetX,coordZ[m]+sin(angle[m])*offset,P) 
                             part_n+=1
                             papp(part_n,3,coordX[m]+cos(angle[m-1])*offsetX,coordZ[m]+sin(angle[m-1])*offset,
                                    P,offset,coordX[m]/d_m,coordZ[m])                 
@@ -327,10 +350,10 @@ def g712(self, **words):
                         ggX =  offsetX / cos(angl)
                         gg =  offset / cos(angl)
                         angl1 = angle[m] - angl
-                        prog(program,1,coordX[m]+cos(angl1)*ggX,
+                        prog(program,loa_m,coordX[m]+cos(angl1)*ggX,
                                  coordZ[m]+sin(angl1)*gg)  
                         part_n+=1
-                        papp(part_n,1,coordX[m]+cos(angl1)*ggX,coordZ[m]+sin(angl1)*gg,P)
+                        papp(part_n,loa_m,coordX[m]+cos(angl1)*ggX,coordZ[m]+sin(angl1)*gg,P)
                 else: #если СЛЕДУЮЩИЙ участок "дуга"
                     NEXT_radius = sqrt((coordK[m-1])*(coordK[m-1]) + (coordI[m-1])*(coordI[m-1]))
 
@@ -417,7 +440,8 @@ def g712(self, **words):
                 else:
                     pointX=centreX+xx
                 if (line_or_arc[m] == 3): 
-                    if (line_or_arc[m-1] == 1): 
+                    loa_m = line_or_arc[m-1]
+                    if loa_m==0 or loa_m==1:
                         if (angle[m-1] - alfa < -0.00349):
                             print '(G03:ARC)(ANGLE:angle[m-1] - alfa < -0.00349)(next:LINE)'#OK!! G7
                             cw_zz = (radius+offset)*sin(alfa)
@@ -477,7 +501,8 @@ def g712(self, **words):
                             part_n+=1
                             papp(part_n,3,NEXT_X*d_m,NEXT_Z,P,radius+offset,centreX,centreZ)
                 else: #если участок "дуга" CCW  
-                    if (line_or_arc[m-1] == 1): 
+                    loa_m = line_or_arc[m-1]
+                    if loa_m==0 or loa_m==1:
                         if (angle[m-1] - alfa < -0.00349):
                             print '(G02:ARC) (angle[m-1] - alfa < -0.00349) (next:LINE)'  #OK_G7!
                             prog(program,2,pointX*d_m,pointZ,radius-offset)
@@ -574,7 +599,7 @@ def g712(self, **words):
                     d=0
                 while COORDx0 - P[i][1] >= d :
                     d = (float(words['d']))*d_m  
-                    if P[i][0] == 1:
+                    if P[i][0] == 1 or P[i][0] == 0:
                         Mz1 = P[i][2]
                         Mx1 = P[i][1]
                         Mz2 = P[i][4]
@@ -650,7 +675,7 @@ def g712(self, **words):
                             flag_micro_part = 0
                         continue
                     if COORDx0 - P[i][1] < d:
-                        if P[i][0] == 1:
+                        if P[i][0] == 1 or P[i][0] == 0:
                             Mz1 = P[i][2]
                             Mx1 = P[i][1]
                             Mz2 = P[i][4]
@@ -803,3 +828,39 @@ def g712(self, **words):
     f.close() 
     fgcode.close()               
     return INTERP_OK
+    
+def g700(self, **words):
+    """ remap code G70 """
+    p = int(words['p'])    
+    q = int(words['q'])
+
+    s = linuxcnc.stat() 
+    s.poll()
+
+    filename = s.file
+    f = open(filename, "r")
+    lines = f.readlines()    
+#####################################################                  
+    for w in lines:
+        if  re.search("^\s*[(]\s*N\d", w.upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
+                if num2 >= p and num2 <= q:
+                    try: 
+                        contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
+                        self.execute(contour)
+                    except InterpreterException,e:
+                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                        self.set_errormsg(msg) 
+                        return INTERP_ERROR  
+    self.execute("G0 Z0")                            
+    f.close()               
+    return INTERP_OK    
+    
+    
+    
+    
+    
+    
+    
+    
