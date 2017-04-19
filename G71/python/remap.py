@@ -180,6 +180,7 @@ def g712(self, **words):
     s.poll()
     x = 0
     diameter_mode = 0 
+    c_line = 0
     while x < len(lines):
         # находим начальную точку цикла по X 
         if re.search(".*\s*G71", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
@@ -211,22 +212,30 @@ def g712(self, **words):
         if  re.search("^\s*[(]\s*N\d", lines[x], re.I):
             if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]",lines[x].upper()):
                 num = int(re.search("N\s*([0-9.]+)",lines[x], re.I).group(1))
-                if num >= p and num <= q:
-                    ins = line_or_arc.insert(0,(int(re.search("G\s*([0-4.]+)",lines[x], re.I).group(1))))
-                    ins = pars(coordZ,"Z\s*([-0-9.]+)",lines[x])
-                    ins = pars(coordX,"X\s*([-0-9.]+)",lines[x])                    
-                    if  re.search("[I]", lines[x]):
-                        ins = pars(coordI,"I\s*([-0-9.]+)",lines[x])
-                        ins = pars(coordK,"K\s*([-0-9.]+)",lines[x])
-                    else:
-                        ins=coordI.insert(0,None)
-                        ins=coordK.insert(0,None)                       
-                    if  re.search("[R]", lines[x]):
-                        ins = pars(coordR,"R\s*([-0-9.]+)",lines[x])
-                    else:
-                        ins=coordR.insert(0,None)
-                    if num == p:
-                        st_pointX_finishing = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
+                if num == p: 
+                    c_line = 1
+        if c_line:
+            print c_line, num,lines[x],'c_line, num,lines[x]'
+            ins = line_or_arc.insert(0,(int(re.search("G\s*([0-4.]+)",lines[x], re.I).group(1))))
+            ins = pars(coordZ,"Z\s*([-0-9.]+)",lines[x])
+            ins = pars(coordX,"X\s*([-0-9.]+)",lines[x])                    
+            if  re.search("[I]", lines[x]):
+                ins = pars(coordI,"I\s*([-0-9.]+)",lines[x])
+                ins = pars(coordK,"K\s*([-0-9.]+)",lines[x])
+            else:
+                ins=coordI.insert(0,None)
+                ins=coordK.insert(0,None)                       
+            if  re.search("[R]", lines[x]):
+                ins = pars(coordR,"R\s*([-0-9.]+)",lines[x])
+            else:
+                ins=coordR.insert(0,None)
+            if num == p:
+                st_pointX_finishing = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
+        if  re.search("^\s*[(]\s*N\d", lines[x], re.I):
+            if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]",lines[x].upper()):
+                num = int(re.search("N\s*([0-9.]+)",lines[x], re.I).group(1))
+                if num == q: 
+                    c_line =0
         x+=1 
         
     #coordZ_start = max(coordZ) + offset_StartZ  
@@ -806,21 +815,30 @@ def g712(self, **words):
         fgcode.write("G0 Z%f\n" % (coordZ_start))   
 #####################################################
     self.execute("G40 " ) 
-    self.execute("G0 X%f Z%f" % ((st_pointX_finishing),(coordZ_start+bounce_z)))                  
+    self.execute("G0 X%f Z%f" % ((st_pointX_finishing),(coordZ_start+bounce_z))) 
+    c_line2 = 0                 
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
                 num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 >= p and num2 <= q:
-                    try: 
-                        contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                        self.execute(contour)
-                        fgcode.write(contour)
-                        fgcode.write("\n")
-                    except InterpreterException,e:
-                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                        self.set_errormsg(msg) 
-                        return INTERP_ERROR
+                if num2 == p: 
+                    c_line2 = 1
+        if c_line2:
+            try: 
+                contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
+                self.execute(contour)
+                fgcode.write(contour)
+                fgcode.write("\n")
+            except InterpreterException,e:
+                msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                self.set_errormsg(msg) 
+                return INTERP_ERROR
+        if  re.search("^\s*[(]\s*N\d", w.upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
+                if num2 == q: 
+                    c_line2 = 0 
+                                   
     self.execute("G40" )   
     self.execute("G0 Z0")
     fgcode.write("G0 Z0\n")
@@ -845,14 +863,23 @@ def g700(self, **words):
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
                 num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 >= p and num2 <= q:
-                    try: 
-                        contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                        self.execute(contour)
-                    except InterpreterException,e:
-                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                        self.set_errormsg(msg) 
-                        return INTERP_ERROR  
+                if num2 == p: 
+                    c_line2 = 1
+        if c_line2:
+            try: 
+                contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
+                self.execute(contour)
+                fgcode.write(contour)
+                fgcode.write("\n")
+            except InterpreterException,e:
+                msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                self.set_errormsg(msg) 
+                return INTERP_ERROR
+        if  re.search("^\s*[(]\s*N\d", w.upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
+                if num2 == q: 
+                    c_line2 = 0  
     self.execute("G0 Z0")                            
     f.close()               
     return INTERP_OK    
