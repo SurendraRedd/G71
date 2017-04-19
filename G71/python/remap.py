@@ -184,17 +184,17 @@ def g712(self, **words):
     while x < len(lines):
         # находим начальную точку цикла по X 
         if re.search(".*\s*G71", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
-            t_x = x
-            while not re.search(".*\s*X", lines[t_x], re.I) and t_x > 0:
-                t_x -= 1
-            ST_COORDx0 = float(re.search("X\s*([-0-9.]+)",lines[t_x], re.I).group(1))
+            t_Sx = x
+            while not re.search(".*\s*X", lines[t_Sx], re.I) and t_Sx > 0:
+                t_Sx -= 1
+            ST_COORDx0 = float(re.search("X\s*([-0-9.]+)",lines[t_Sx], re.I).group(1))
             
         # находим начальную точку цикла по Z 
         if re.search(".*\s*G71", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
-            t_z = x
-            while not re.search(".*\s*Z", lines[t_z], re.I) and t_z > 0:
-                t_z -= 1
-            ST_COORDz0 = float(re.search("Z\s*([-0-9.]+)",lines[t_z], re.I).group(1))
+            t_Sz = x
+            while not re.search(".*\s*Z", lines[t_Sz], re.I) and t_Sz > 0:
+                t_Sz -= 1
+            ST_COORDz0 = float(re.search("Z\s*([-0-9.]+)",lines[t_Sz], re.I).group(1))
                         
         # подача ,если задается до цикла   
         if re.search(".*\s*G71", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
@@ -215,10 +215,39 @@ def g712(self, **words):
                 if num == p: 
                     c_line = 1
         if c_line:
-            print c_line, num,lines[x],'c_line, num,lines[x]'
-            ins = line_or_arc.insert(0,(int(re.search("G\s*([0-4.]+)",lines[x], re.I).group(1))))
-            ins = pars(coordZ,"Z\s*([-0-9.]+)",lines[x])
-            ins = pars(coordX,"X\s*([-0-9.]+)",lines[x])                    
+            if re.search("G\s*([0-4.]+)",lines[x], re.I):
+                ins = line_or_arc.insert(0,(int(re.search("G\s*([0-4.]+)",lines[x], re.I).group(1))))
+            else:
+                t_l = x
+                while not re.search("G\s*([0-4.]+)",lines[t_l], re.I) and t_l > 0:
+                    t_l -= 1
+                try:
+                    ins = line_or_arc.insert(0,(int(re.search("G\s*([0-4.]+)",lines[t_l], re.I).group(1))))
+                except:
+                    print 'command G :something went wrong'
+                    
+            if re.search("X\s*([-0-9.]+)",lines[x], re.I):
+                ins = pars(coordX,"X\s*([-0-9.]+)",lines[x])
+            else:
+                t_x = x
+                while not re.search("X\s*([-0-9.]+)",lines[t_x], re.I) and t_x > 0:
+                    t_x -= 1
+                try:
+                    ins = pars(coordX,"X\s*([-0-9.]+)",lines[t_x])
+                except:
+                    print 'coord X :something went wrong'
+                    
+            if re.search("Z\s*([-0-9.]+)",lines[x], re.I):
+                ins = pars(coordZ,"Z\s*([-0-9.]+)",lines[x])
+            else:
+                t_z = x
+                while not re.search("Z\s*([-0-9.]+)",lines[t_z], re.I) and t_z > 0:
+                    t_z -= 1
+                try:
+                    ins = pars(coordZ,"Z\s*([-0-9.]+)",lines[t_z])
+                except:
+                    print 'coord Z :something went wrong'
+                                                                                               
             if  re.search("[I]", lines[x]):
                 ins = pars(coordI,"I\s*([-0-9.]+)",lines[x])
                 ins = pars(coordK,"K\s*([-0-9.]+)",lines[x])
@@ -230,7 +259,17 @@ def g712(self, **words):
             else:
                 ins=coordR.insert(0,None)
             if num == p:
-                st_pointX_finishing = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
+                if re.search("X\s*([-0-9.]+)",lines[x], re.I):
+                    st_pointX_finishing = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
+            else:
+                t_Sf = x
+                while not re.search("X\s*([-0-9.]+)",lines[t_Sf], re.I) and t_Sf > 0:
+                    t_Sf -= 1
+                try:
+                    st_pointX_finishing = float(re.search("X\s*([-0-9.]+)",lines[t_Sf], re.I).group(1))
+                except:
+                    print 'st_pointX_finishing :something went wrong'
+                                
         if  re.search("^\s*[(]\s*N\d", lines[x], re.I):
             if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]",lines[x].upper()):
                 num = int(re.search("N\s*([0-9.]+)",lines[x], re.I).group(1))
