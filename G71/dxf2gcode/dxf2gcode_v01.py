@@ -260,15 +260,17 @@ class Erstelle_Fenster:
         
         outlog = open(editfile, "a")
         edit_readline = open(tempfile_rw, "r")
-        for ew in edit_readline: 
-            outlog.write(ew)
+        for ew in edit_readline:
+            outlog.write(ew )
+            
         outlog.write("M2")
         outlog.close()
         edit_readline.close() 
         
         readline = open(tempfile_rw, "r")    
-        for w in readline: 
-            print w       
+        for w in readline:
+            ln = re.sub("^\s+|\n|\r|\s+$",'',w ) 
+            print ln       
         print'M2'
         readline.close()
                 
