@@ -6,6 +6,8 @@ from math import *
 import traceback
 from interpreter import *
 from emccanon import MESSAGE
+import subprocess
+import select
 
 throw_exceptions = 1 # raises InterpreterException if execute() or read() fail
 
@@ -254,6 +256,19 @@ def g710(self, **words):
     f.close()
     string += 'M30\n'
     fgcode.write(string)
+    program = "rs274"
+    toolfile = "/home/nkp/git/linuxcnc/configs/G71/lathe.tbl"
+    infilename = fgcode
+    outfilename  = "./RS274_temp.txt"
+    outfile = open(outfilename, "w")
+    runstring = "-t %s -g %s %s " %(toolfile,infilename,outfile)
+    print "runstring=" ,runstring
+    #https://pythonworld.ru/moduli/modul-subprocess.html
+    p = subprocess.Popen(["sh", "-c", "rs274  -t /home/nkp/git/linuxcnc/configs/G71_RS274/lathe.tbl -g /home/nkp/git/linuxcnc/configs/G71_RS274/fgcode.ngc  /home/nkp/git/linuxcnc/configs/G71_RS274/RS274_temp.txt"],
+                      stdin=None,
+                      stdout=outfile,
+                      stderr=None )
+                     
     fgcode.close() 
 
     
