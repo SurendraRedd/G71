@@ -177,13 +177,13 @@ def papp(n,G,x,z,App=[],r=None,xc=None,zc=None):
         App[n].append(xc)
         App[n].append(zc)
     return App 
-def prog(array,G,x,z,r=None):
+def prog(array,G,x,z,i=None,k=None):
     ser=' '
-    string=ser.join(['G1','X',str(x),'Z',str(z)])
+    string=ser.join(['G1','X',str(x*2),'Z',str(z)])
     if G==2: 
-        string=ser.join(['G2','X',str(x),'Z',str(z),'R',str(r)])
+        string=ser.join(['G2','X',str(x*2),'Z',str(z),'I',str(i),'K',str(k)])
     if G==3: 
-        string=ser.join(['G3','X',str(x),'Z',str(z),'R',str(r)])        
+        string=ser.join(['G3','X',str(x*2),'Z',str(z),'I',str(i),'K',str(k)])        
     return array.append(string)                
 #################################################-----G71.2
 # Fanuc code:
@@ -235,15 +235,15 @@ def g710(self, **words):
     lines = f.readlines()
 
     self.execute("G21 G18 G49 G40 G90 G61 G7 F1000")
-    name_file = "./fgcode.ngc " #пробел перед закр.кавычками для Popen
+    name_file = "./fgcode.ngc" 
     fgcode = open(name_file, "w") 
     string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
     string += 'T1 M6\n'
     self.execute("T1 M6")
     string += 'G1 X-30 Z30\n'
     self.execute("G1 X-30 Z30")
-    string += 'G42\n'
-    self.execute("G42")             
+    string += 'G42\n'#XXX
+    #self.execute("G42")#XXX             
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
@@ -251,7 +251,6 @@ def g710(self, **words):
                 if num2 >= p and num2 <= q:
                     try: 
                         contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                        self.execute(contour)
                         string += contour
                         string += '\n'
                     except InterpreterException,e:
@@ -265,16 +264,51 @@ def g710(self, **words):
     #self.execute("M30")
     fgcode.write(string)
     outfilename  = "./RS274_temp.txt"
+    tfile  = "./rs.tbl"
     outfile = open(outfilename, "w")
     fgcode.close() 
-    #https://pythonworld.ru/moduli/modul-subprocess.html
-    p = subprocess.Popen(["sh", "-c", ('./rs274 '+'-g '+ name_file + outfilename)],
+    p = subprocess.Popen(["sh", "-c", (' '.join(['./rs274','-t',tfile,'-g',name_file,outfilename]))],
                       stdin=None,
                       stdout=outfile,
                       stderr=None )
-                     
- 
-
+    p.wait()                 
+    outfile.close()                      
+    pr = []    
+    f1 = open(outfilename, "r")
+    ln = f1.readlines()
+    for w in ln:
+        if  re.search("STRAIGHT_TRAVERSE", w.upper()):
+            numbers = re.split('\(',w.upper())
+            number = re.split('\,',numbers[1].upper())
+            prog(pr,0,number[0],number[2])
+            old_positionX = float(number[0])
+            old_positionZ = float(number[2])             
+        elif  re.search("STRAIGHT_FEED", w.upper()):
+            numbers = re.split('\(',w.upper())
+            number = re.split('\,',numbers[1].upper())
+            prog(pr,1,float(number[0]),float(number[2]))
+            old_positionX = float(number[0])
+            old_positionZ = float(number[2])           
+        elif  re.search("ARC_FEED", w.upper()):
+            numbers = re.split('\(',w.upper())
+            number = re.split('\,',numbers[1].upper())
+            if float(number[4])>0:
+                g=3
+            elif float(number[4])<0:
+                g=2 
+            arc_I = float(number[3]) - old_positionX
+            arc_K = float(number[2]) - old_positionZ
+            prog(pr,g,float(number[1]),float(number[0]),arc_I,arc_K)
+            old_positionX = float(number[1])
+            old_positionZ = float(number[0])
+    print 'pr=', pr  
+    for w in pr:
+        try:  
+            self.execute(w)
+        except InterpreterException,e:
+                    msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                    self.set_errormsg(msg) 
+                    return INTERP_ERROR 
     
 def g700(self, **words):
     """ remap code G70 """
