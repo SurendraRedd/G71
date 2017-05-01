@@ -234,11 +234,16 @@ def g710(self, **words):
     f = open(filename, "r")
     lines = f.readlines()
 
-    self.execute("G21 G18 G49  G90 G61 G7 F1000")
-    name_file = './fgcode.ngc'
+    self.execute("G21 G18 G49 G40 G90 G61 G7 F1000")
+    name_file = "./fgcode.ngc " #пробел перед закр.кавычками для Popen
     fgcode = open(name_file, "w") 
-    string = 'G21 G18 G49  G90 G61 G7 F1000 \n'
-                  
+    string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
+    string += 'T1 M6\n'
+    self.execute("T1 M6")
+    string += 'G1 X-30 Z30\n'
+    self.execute("G1 X-30 Z30")
+    string += 'G42\n'
+    self.execute("G42")             
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
@@ -254,22 +259,21 @@ def g710(self, **words):
                         self.set_errormsg(msg) 
                         return INTERP_ERROR                             
     f.close()
+    string += 'G40\n'
+    self.execute("G40")
     string += 'M30\n'
+    #self.execute("M30")
     fgcode.write(string)
-    program = "rs274"
-    toolfile = "/home/nkp/git/linuxcnc/configs/G71/lathe.tbl"
-    infilename = fgcode
     outfilename  = "./RS274_temp.txt"
     outfile = open(outfilename, "w")
-    runstring = "-t %s -g %s %s " %(toolfile,infilename,outfile)
-    print "runstring=" ,runstring
+    fgcode.close() 
     #https://pythonworld.ru/moduli/modul-subprocess.html
-    p = subprocess.Popen(["sh", "-c", "rs274  -t /home/nkp/git/linuxcnc/configs/G71_RS274/lathe.tbl -g /home/nkp/git/linuxcnc/configs/G71_RS274/fgcode.ngc  /home/nkp/git/linuxcnc/configs/G71_RS274/RS274_temp.txt"],
+    p = subprocess.Popen(["sh", "-c", ('./rs274 '+'-g '+ name_file + outfilename)],
                       stdin=None,
                       stdout=outfile,
                       stderr=None )
                      
-    fgcode.close() 
+ 
 
     
 def g700(self, **words):
