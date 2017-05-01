@@ -228,6 +228,13 @@ def g710(self, **words):
 
     if words.has_key('f'):    
         fr = float(words['f'])
+        
+    tfile  = "./rs.tbl"
+    setline = open(tfile ,"w")
+    offs = ' '.join(['\n','T1','P1','X0','Z0','D%s' % (str(offset/12.7))])
+    setline.write(offs)
+    setline.close() 
+           
     s = linuxcnc.stat() 
     s.poll()
     filename = s.file
@@ -239,9 +246,9 @@ def g710(self, **words):
     fgcode = open(name_file, "w") 
     string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
     string += 'T1 M6\n'
-    self.execute("T1 M6")
+    #self.execute("T1 M6")
     string += 'G1 X-30 Z30\n'
-    self.execute("G1 X-30 Z30")
+    #self.execute("G1 X-30 Z30")
     string += 'G42\n'#XXX
     #self.execute("G42")#XXX             
     for w in lines:
@@ -264,8 +271,8 @@ def g710(self, **words):
     #self.execute("M30")
     fgcode.write(string)
     outfilename  = "./RS274_temp.txt"
-    tfile  = "./rs.tbl"
     outfile = open(outfilename, "w")
+    
     fgcode.close() 
     p = subprocess.Popen(["sh", "-c", (' '.join(['./rs274','-t',tfile,'-g',name_file,outfilename]))],
                       stdin=None,
@@ -302,9 +309,10 @@ def g710(self, **words):
             old_positionX = float(number[1])
             old_positionZ = float(number[0])
     print 'pr=', pr  
-    for w in pr:
+    for w in range(1,len(pr)):
+        print pr[w]
         try:  
-            self.execute(w)
+            self.execute(pr[w])
         except InterpreterException,e:
                     msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                     self.set_errormsg(msg) 
