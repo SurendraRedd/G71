@@ -165,11 +165,11 @@ def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A  ):
         A.append(a)                
         return a
                                       
-def papp(n,G,x,z,App=[],r=None,xc=None,zc=None):
+def papp(n,G,x,z,old_x,old_z,App=[],r=None,xc=None,zc=None):
     App.append([])
     App[n].append(G)
-    App[n].append(App[n-1][3])
-    App[n].append(App[n-1][4])                                               
+    App[n].append(old_x*2)
+    App[n].append(old_z)                                               
     App[n].append(x)
     App[n].append(z)
     if G>1:
@@ -179,11 +179,11 @@ def papp(n,G,x,z,App=[],r=None,xc=None,zc=None):
     return App 
 def prog(array,G,x,z,i=None,k=None):
     ser=' '
-    string=ser.join(['G1','X',str(x*2),'Z',str(z)])
+    string=ser.join(['G1','X',str(x),'Z',str(z)])
     if G==2: 
-        string=ser.join(['G2','X',str(x*2),'Z',str(z),'I',str(i),'K',str(k)])
+        string=ser.join(['G2','X',str(x),'Z',str(z),'I',str(i),'K',str(k)])
     if G==3: 
-        string=ser.join(['G3','X',str(x*2),'Z',str(z),'I',str(i),'K',str(k)])        
+        string=ser.join(['G3','X',str(x),'Z',str(z),'I',str(i),'K',str(k)])        
     return array.append(string)                
 #################################################-----G71.2
 # Fanuc code:
@@ -246,11 +246,8 @@ def g710(self, **words):
     fgcode = open(name_file, "w") 
     string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
     string += 'T1 M6\n'
-    #self.execute("T1 M6")
     string += 'G1 X-30 Z30\n'
-    #self.execute("G1 X-30 Z30")
-    string += 'G42\n'#XXX
-    #self.execute("G42")#XXX             
+    string += 'G42\n'             
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
@@ -268,7 +265,6 @@ def g710(self, **words):
     string += 'G40\n'
     self.execute("G40")
     string += 'M30\n'
-    #self.execute("M30")
     fgcode.write(string)
     outfilename  = "./RS274_temp.txt"
     outfile = open(outfilename, "w")
@@ -279,23 +275,32 @@ def g710(self, **words):
                       stdout=outfile,
                       stderr=None )
     p.wait()                 
-    outfile.close()                      
+    outfile.close()
+    P = []                      
     pr = []    
     f1 = open(outfilename, "r")
     ln = f1.readlines()
+    old_posX = 0
+    old_posZ = 0 
+    i=-1   
     for w in ln:
         if  re.search("STRAIGHT_TRAVERSE", w.upper()):
             numbers = re.split('\(',w.upper())
             number = re.split('\,',numbers[1].upper())
             prog(pr,0,number[0],number[2])
-            old_positionX = float(number[0])
-            old_positionZ = float(number[2])             
+            old_posX = float(number[0])
+            old_posZ = float(number[2])             
         elif  re.search("STRAIGHT_FEED", w.upper()):
             numbers = re.split('\(',w.upper())
             number = re.split('\,',numbers[1].upper())
-            prog(pr,1,float(number[0]),float(number[2]))
-            old_positionX = float(number[0])
-            old_positionZ = float(number[2])           
+            x1=float(number[0])*2
+            z1=float(number[2])
+            prog(pr,1,x1,z1)
+            i+=1
+            papp(i,1,x1,z1,old_posX,old_posZ,P)
+            old_posX = float(number[0])
+            old_posZ = float(number[2])
+
         elif  re.search("ARC_FEED", w.upper()):
             numbers = re.split('\(',w.upper())
             number = re.split('\,',numbers[1].upper())
@@ -303,12 +308,38 @@ def g710(self, **words):
                 g=3
             elif float(number[4])<0:
                 g=2 
-            arc_I = float(number[3]) - old_positionX
-            arc_K = float(number[2]) - old_positionZ
-            prog(pr,g,float(number[1]),float(number[0]),arc_I,arc_K)
-            old_positionX = float(number[1])
-            old_positionZ = float(number[0])
-    print 'pr=', pr  
+            x_arc=float(number[1])*2
+            z_arc=float(number[0])
+            arc_I = float(number[3]) - old_posX
+            arc_K = float(number[2]) - old_posZ
+            radius = round(hip(arc_I,arc_K),6)
+            prog(pr,g,x_arc,z_arc,arc_I,arc_K)            
+            i+=1
+            papp(i,g,x_arc,z_arc,old_posX,old_posZ,P,radius,arc_I,arc_K)
+            old_posX = float(number[1])
+            old_posZ = float(number[0])
+ 
+            
+    '''pr= ['G1 X -30.0 Z 30.0', 'G1 X 1.3976634 Z 0.8384045', 'G1 X 62.5576204 Z -8.0396538', 'G3 X 63.9312316 Z -9.2599735 I -0.2788102 K -0.9603462', 'G1 X 49.9312316 Z -35.2599735', 'G3 X 48.6834862 Z -35.9397934 I -0.9656158 K 0.2599735', 'G1 X 26.6834862 Z -39.9397934']
+
+    G1 X 1.3976634  Z 0.8384045
+    G1 X 62.5576204 Z -8.0396538
+    G3 X 63.9312316 Z -9.2599735  I -0.2788102 K -0.9603462
+    G1 X 49.9312316 Z -35.2599735
+    G3 X 48.6834862 Z -35.9397934 I -0.9656158 K 0.2599735
+    G1 X 26.6834862 Z -39.9397934'''            
+           
+    '''P= [
+    [1, 0, 0, -30.0, 30.0], 
+    [1, -30.0, 30.0, 1.3976634, 0.8384045], 
+    [1, 1.3976634, 0.8384045, 62.5576204, -8.0396538], 
+    [3, 62.5576204, -8.0396538, 63.9312316, -9.2599735, 3.333, -0.2788101999999988, -0.9603462], 
+    [1, 63.9312316, -9.2599735, 49.9312316, -35.2599735], 
+    [3, 49.9312316, -35.2599735, 48.6834862, -35.9397934, 3.333, -0.9656157999999984, 0.25997350000000097], 
+    [1, 48.6834862, -35.9397934, 26.6834862, -39.9397934]]'''
+            
+    print 'pr=', pr
+    print 'P=', P  
     for w in range(1,len(pr)):
         print pr[w]
         try:  
