@@ -68,8 +68,10 @@ class Erstelle_Fenster:
             self.Canvas.canvas.update()
             self.Load_File(self.load_filename)
             
-        self.b = Button(self.frame_u, text="Reverse",command=self.CanvasContent.switch_shape_dir)
-        self.b.grid(row=1)
+        self.b = Button(self.frame_u, text="Reverse All",command=self.CanvasContent.switch_select_shape_dir)
+        self.b.grid(row=1,sticky=E)
+        self.b = Button(self.frame_u, text="Reverse Select",command=self.CanvasContent.switch_select_shape_dir)
+        self.b.grid(row=1,sticky=W)        
         self.bt1 = Button(self.frame_l, text="Added",command=self.selection_cycle)
         self.bt1.grid(row=3,column=1,sticky=W)
         self.bt2 = Button(self.frame_l, text="Write",command=self.Write_GCode)
@@ -1377,7 +1379,13 @@ class CanvasContentClass:
             self.textbox.prt('\n\nSwitched Direction at Shape:'\
                              +str(self.Shapes[shape_nr]))
         self.plot_cut_info()
-
+        
+    def switch_select_shape_dir(self):
+        for shape_nr in self.Selected:
+            self.Shapes[shape_nr].reverse()
+            self.textbox.prt('\n\nSwitched Direction at Shape:'\
+                             +str(self.Shapes[shape_nr]),3)
+        self.plot_cut_info()
                 
     def set_cut_cor(self,correction):
         for shape_nr in self.Selected: 
