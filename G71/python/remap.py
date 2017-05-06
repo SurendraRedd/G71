@@ -387,8 +387,19 @@ def g710(self, **words):
                 #en_line_arc(P[i][0],P[i][2],P[i][4],P[i][1],P[i][3],P[len(P)-1][4],h1,P[0][4],h1,P[i][7],P[i][6],P[i][5],A)
         h1 = h1-(0.5*d)
 
-    print 'A =', A 
+    print 'A =', A ,'\n'
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO
+    #считаем - сколько раз прямая пересекла контур(max_R)
+    repeat=[]
+    r=1
+    for a in range(len(A)):
+            if A[a][1]==A[a-1][1]:
+                r+=1
+                repeat.append(r)
+            else:
+                r=1           
+    max_R= int(max(repeat) / 2)  
+    
     #находим X всех горизонталей
     L=[]
     nn=0                            
@@ -427,16 +438,17 @@ def g710(self, **words):
     def more_than_two(Arr,L,l):
         mtt=[]   
         for a in range(len(Arr)):
-            #print a 
             if Arr[a][1]==L[int(l)]:
                lz,rz=two(Arr,L,int(l)-1)
                if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
                    mtt.append(Arr[a])
-        if len(mtt) > 2:  return 3
-        if len(mtt) == 2: return 2
-        if len(mtt) == 0: return 0 
+        print len(mtt)        
+        if len(mtt) > 2:  return len(mtt)
+        if len(mtt) == 2: return len(mtt)
+        if len(mtt) == 0: return len(mtt) 
               
     # находим две точки на следующей линии между z_minL и z_minR
+    # если их ТОЛЬКО две
     def two_next(Arr,L,l):
         mtt=[]
         for a in range(len(Arr)):            
@@ -447,57 +459,52 @@ def g710(self, **words):
                    D.append(Arr[a])             
         return   mtt[0][0],mtt[1][0] , mtt[0][1]
 
-    l=1 
-    while more_than_two(A,L,l):
-        Cl,Cr,Cx = two_next(A,L,l)
+    # находим две точки на следующей линии между z_minL и z_minR
+    # если их БОЛЬШЕ чем две
+    def two_next2(Arr,L,l):
+        mtt=[]
+        for a in range(len(Arr)):            
+            if Arr[a][1]==L[int(l)]:
+               lz,rz=two(Arr,L,int(l)-1)
+               mtt=[]
+               if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
+                   mtt.append(Arr[a])
+                   D.append(Arr[a])
+                   mtt.append(Arr[a-1])
+                   D.append(Arr[a-1])                   
+        print 'D',D             
+        return   mtt[0][0],mtt[1][0] , mtt[0][1]
 
-        self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cl)))
-        self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cr)))
-        l+=1
-        
-    print 'D =', D 
-        
-    a1,a0 =two_a(A,L ,0)
-    del A[a1]
-    del A[a1]
-         
-    A1=[]
-    for a in A: 
-        if a not in D: A1.append(a)
-        
-        
-    print 'A1del =', A1
-                
-    D=[]                     
-    l=1 
-    while more_than_two(A1,L,l):
-        Cl,Cr,Cx = two_next(A1,L,l)
-        self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cl)))
-        self.execute("G1 F1000 X%f Z%f" % ((float(Cx)),(float(Cr))))
-        l+=1
-       
-    a1,a0 =two_a(A1,L ,0)
-    del A1[a1]
-    del A1[a1]        
-    A2=[]
-    for a in A1: 
-        if a not in D: A2.append(a)
-        
-    print 'A2del =', A2            
-                    
-    l=1 
-    while more_than_two(A2,L,l):
-        Cl,Cr,Cx = two_next(A2,L,l)
-        self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cl)))
-        self.execute("G1 F1000 X%f Z%f" % ((float(Cx)),(float(Cr))))
-        l+=1 
+    for i in range(4):
+        l=1 
+        while more_than_two(A,L,l):
+            if more_than_two(A,L,l)==2:
+                Cl,Cr,Cx = two_next(A,L,l)
+            elif more_than_two(A,L,l)>2:
+                Cl,Cr,Cx = two_next2(A,L,l)                
+            self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cl)))
+            self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cr)))
+            l+=1
+            
+        a1,a0 =two_a(A,L ,0)
+        del A[a1]
+        del A[a1]
+             
+        A1=[]
+        for a in A: 
+            if a not in D: A1.append(a)
+        A=[]
+        for a in A1:
+            A.append(a)                     
+        D=[] 
+
         
     #cd /home/nkp/git/linuxcnc/scripts ./linuxcnc             
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
-    print 'pr=', pr
-    print 'P=', P  
+    #print 'pr=', pr
+    #print 'P=', P  
     for w in range(1,len(pr)):
-        print pr[w]
+        #print pr[w]
         try:  
             self.execute(pr[w])
         except InterpreterException,e:
