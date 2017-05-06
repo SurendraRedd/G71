@@ -401,6 +401,16 @@ def g710(self, **words):
         except:
             pass
 
+    # находим A[a] двух точек с max Z (самые правые)
+    def two_a(Arr,L,l, z_min = -10000):
+        for a in range(len(Arr)):    
+            if Arr[a][1]==L[int(l)]:
+                if Arr[a][0] > z_min:
+                    z_minL = z_min
+                    a0 = a
+                    a1  = a-1
+        return   a1,a0
+
     # находим Z двух точек с max Z (самые правые)
     D=[]
     def two(Arr,L,l, z_min = -10000):
@@ -417,6 +427,7 @@ def g710(self, **words):
     def more_than_two(Arr,L,l):
         mtt=[]   
         for a in range(len(Arr)):
+            #print a 
             if Arr[a][1]==L[int(l)]:
                lz,rz=two(Arr,L,int(l)-1)
                if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
@@ -428,7 +439,7 @@ def g710(self, **words):
     # находим две точки на следующей линии между z_minL и z_minR
     def two_next(Arr,L,l):
         mtt=[]
-        for a in range(len(Arr)):
+        for a in range(len(Arr)):            
             if Arr[a][1]==L[int(l)]:
                lz,rz=two(Arr,L,int(l)-1)
                if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
@@ -441,38 +452,47 @@ def g710(self, **words):
         Cl,Cr,Cx = two_next(A,L,l)
 
         self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cl)))
-        self.execute("G1 F1000 X%f Z%f" % ((float(Cx)),(float(Cr))))
+        self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cr)))
         l+=1
         
-    print 'D =', D     
-    
+    print 'D =', D 
+        
+    a1,a0 =two_a(A,L ,0)
+    del A[a1]
+    del A[a1]
+         
     A1=[]
     for a in A: 
         if a not in D: A1.append(a)
         
+        
     print 'A1del =', A1
                 
     D=[]                     
-    l=2 
+    l=1 
     while more_than_two(A1,L,l):
         Cl,Cr,Cx = two_next(A1,L,l)
         self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cl)))
         self.execute("G1 F1000 X%f Z%f" % ((float(Cx)),(float(Cr))))
         l+=1
        
-        
+    a1,a0 =two_a(A1,L ,0)
+    del A1[a1]
+    del A1[a1]        
     A2=[]
     for a in A1: 
         if a not in D: A2.append(a)
         
     print 'A2del =', A2            
                     
-    l=3 
+    l=1 
     while more_than_two(A2,L,l):
         Cl,Cr,Cx = two_next(A2,L,l)
         self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cl)))
         self.execute("G1 F1000 X%f Z%f" % ((float(Cx)),(float(Cr))))
-        l+=1               
+        l+=1 
+        
+    #cd /home/nkp/git/linuxcnc/scripts ./linuxcnc             
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
     print 'pr=', pr
     print 'P=', P  
