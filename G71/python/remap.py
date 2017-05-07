@@ -353,7 +353,8 @@ def g710(self, **words):
                a1,a0=two_a(Arr,L,int(l)-0) 
                D.append(Arr[a1]) 
                D.append(Arr[a0])            
-        return   Arr[a1][0],Arr[a0][0] , Arr[a1][1]
+        #return   Arr[a1][0],Arr[a0][0] , Arr[a1][1]
+        return   Arr[a1],Arr[a0]
         
     R=[0]
     while len(A)>0 :
@@ -362,13 +363,24 @@ def g710(self, **words):
             fl=1
             while more_than_two(A,L,l,fl) :
                 if more_than_two(A,L,l,fl)==2:
-                    Cl,Cr,Cx = two_next(A,L,l)
+                    Cl,Cr = two_next(A,L,l)
                 elif more_than_two(A,L,l,fl)>2:
                     R.append(l)# запоминаем позицию для "возврата"
                     print 'R',R
-                    Cl,Cr,Cx = two_next(A,L,l)                
-                self.execute("G0  X%f Z%f" % (float(Cx),float(Cl)))
-                self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cr)))
+                    Cl,Cr = two_next(A,L,l) 
+                if  l==0 or fl:
+                    old_Cl,old_Cr = Cl,Cr
+                    self.execute("G1 F1000  X%f " % (45))#XXX 
+                    self.execute("G1 F1000  Z%f" % (float(Cr[0])))
+
+                
+                 
+                self.execute("G0 F1000  Z%f" % (float(Cr[0])))
+                self.execute("G1 F1000  X%f " % (float(Cr[1])))   
+                self.execute("G1 F1000  X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
+                self.execute("G0 F1000  X%f Z%f" % (float(Cl[1])+bounce_x,float(Cl[0])+bounce_z))  
+         
+                old_Cl,old_Cr = Cl,Cr
                 l+=1
                 fl=0 
                       
@@ -379,7 +391,7 @@ def g710(self, **words):
             for a in A1:
                 A.append(a)                     
             D=[]
-          
+    self.execute("G1 F1000  X%f " % (45))#XXX      
     #cd /home/nkp/git/linuxcnc/scripts ./linuxcnc             
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
     #print 'pr=', pr 
@@ -391,7 +403,7 @@ def g710(self, **words):
                     msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                     self.set_errormsg(msg) 
                     return INTERP_ERROR 
-    
+    self.execute("G1 F1000  X%f " % (45))#XXX    
 def g700(self, **words):
     """ remap code G70 """
     p = int(words['p'])    
