@@ -75,111 +75,6 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
             a.append(pointX1)
             A.append(a)
           return     
-    
-def en_line_arc(G,Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad):    
-    if (Mz2-Mz1)!=0:
-        K=(Mx2-Mx1)/(Mz2-Mz1)
-        B=-(K*Mz1-Mx1)           
-        a = 1 + K**2 
-        b = -2*centreZ + 2*K*B -2*K*centreX  
-        c = -rad**2 + (B-centreX)**2 + centreZ**2 
-        D = b**2 - 4*a*c 
-        if D < 0: 
-          print 'D<0'
-        if (2*a)!=0:
-          try:   
-            z1 = (-b-sqrt(D))/(2*a) 
-            z2 = (-b+sqrt(D))/(2*a)
-          except:
-            pass
-        if G==3:
-            if Mz2 < z1 < Mz1:
-              pointZ1 = z1   
-              pointX1 = K*z1+B
-              a.append(pointZ1)
-              a.append(pointX1)
-              A.append(a)
-              return  
-            else:
-              pointZ1 = z2
-              pointX1 = K*z2+B
-              a.append(pointZ1)
-              a.append(pointX1)
-              A.append(a)
-              return  
-        if G==2:
-            if Mz2 < z1 < Mz1:
-              pointZ1 = z2 
-              pointX1 = K*z2+B
-              a.append(pointZ1)
-              a.append(pointX1)
-              A.append(a)
-              return  
-            else:
-              pointZ1 = z1
-              pointX1 = K*z1+B
-              a.append(pointZ1)
-              a.append(pointX1)
-              A.append(a)              
-              return 
-                  
-def intersection_line_arc(G,Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad):    
-    if (Mz2-Mz1)!=0:
-        K=(Mx2-Mx1)/(Mz2-Mz1)
-        B=-(K*Mz1-Mx1)           
-        a = 1 + K**2 
-        b = -2*centreZ + 2*K*B -2*K*centreX  
-        c = -rad**2 + (B-centreX)**2 + centreZ**2 
-        D = b**2 - 4*a*c 
-        if D < 0: 
-          print 'D<0' 
-        z1 = (-b-sqrt(D))/(2*a) 
-        z2 = (-b+sqrt(D))/(2*a)
-        if G==3:
-            if Mz2 < z1 < Mz1:
-              pointZ1 = z1   
-              pointX1 = K*z1+B
-              return  pointZ1,pointX1
-            else:
-              pointZ1 = z2
-              pointX1 = K*z2+B
-              return  pointZ1,pointX1
-        if G==2:
-            if Mz2 < z1 < Mz1:
-              pointZ1 = z2 
-              pointX1 = K*z2+B
-              return  pointZ1,pointX1
-            else:
-              pointZ1 = z1
-              pointX1 = K*z1+B
-              return  pointZ1,pointX1 
-             
-def intersection_arc_arc(x1,z1,r1,x2,z2,r2,Px,Pz):
-    d=sqrt( pow(abs(x1-x2),2) + pow(abs(z1-z2),2))
-    if(d > r1+r2): 
-        return
-    a= (r1*r1 - r2*r2 + d*d ) / (2*d)
-    h= sqrt( pow(r1,2) - pow(a,2))
-    x0 = x1 + a*( x2 - x1 ) / d
-    z0 = z1 + a*( z2 - z1 ) / d;
-    ix1= x0 + h*( z2 - z1 ) / d
-    iz1= z0 - h*( x2 - x1 ) / d
-    ix2= x0 - h*( z2 - z1 ) / d
-    iz2= z0 + h*( x2 - x1 ) / d
-    if(a == r1 ) :
-        intscX = ix2
-        intscZ = iz2
-        return intscX , intscZ 
-
-    l1= sqrt((Px - ix1)**2+(Pz - iz1)**2)
-    l2= sqrt((Px - ix2)**2+(Pz - iz2)**2)
-    if l1>l2:
-        intscX = ix2
-        intscZ = iz2
-    else:
-       intscX = ix1
-       intscZ = iz1              
-    return  intscX , intscZ
      
 def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
               
@@ -194,13 +89,8 @@ def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
         z = p1Z + ((p2Z - p1Z) * (p3X - p1X)) / (p2X - p1X)
     elif p2X==p3X:     
         #print p1Z, p1X, p2Z, p2X, 'горизонтальный отрезок z1,x1 z2,x2'
-        a.append(p1Z)
-        a.append(-p1X)
-        A.append(a)
-        a.append(p2Z)
-        a.append(-p2X)
-        A.append(a) 
-        return
+        pass
+        return True
     else:
         #print  '?????'
         return
@@ -213,7 +103,7 @@ def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
         a.append(z)
         a.append(-p3X*2)
         A.append(a)                
-        return a
+        return False
                                       
 def papp(n,G,x,z,old_x,old_z,App=[],r=None,xc=None,zc=None):
     App.append([])
@@ -370,35 +260,40 @@ def g710(self, **words):
             old_posZ = float(number[0])
 
     # начало контура       
-    h1=45#XXX вычислять max(X)
+    h1=145#XXX вычислять max(X)
     A=[]
-    A1=[]
-    A2=[]
-    A3=[]
     coordZ_start = 2
     bounce_x = 0.5
     bounce_z = 0.5
+    #--------------------------------------------------
+    # "подбираем d , что бы линия не совпадала с 
+    # горизонтальным отрезком
+    def num(P,d,):    
+        B=[]
+        h1=145
+        while h1>=0:
+            for i in reversed(range(len(P))):                
+                if i>1 and P[i][0]==1 :
+                    par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, -85,h1, 5,B)
+                    if par == True:                   
+                        return True                  
+            h1 = h1-(0.5*d)
+    kh1= 0.0     
+    while num(P,d,):
+        kh1 += 0.01
+        d-= kh1 
+        print 'd',d 
+    #---------------------------------------------------
+    h1=145
     while h1>=0:
-        for i in reversed(range(len(P))):
-            
+        for i in reversed(range(len(P))):            
             if i>1 and P[i][0]==1 :
-                intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, -85,h1, 5,A)
-            #if i>=1 and P[i][0]>1 :                    
-                #en_line_arc(P[i][0],P[i][2],P[i][4],P[i][1],P[i][3],P[len(P)-1][4],h1,P[0][4],h1,P[i][7],P[i][6],P[i][5],A)
+                par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, -85,h1, 5,A)
         h1 = h1-(0.5*d)
-
+        
+    print 'P =', P ,'\n'
     print 'A =', A ,'\n'
-    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO
-    #считаем - сколько раз прямая пересекла контур(max_R)
-    repeat=[]
-    r=1
-    for a in range(len(A)):
-            if A[a][1]==A[a-1][1]:
-                r+=1
-                repeat.append(r)
-            else:
-                r=1           
-    max_R= int(max(repeat) / 2)  
+    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO 
     
     #находим X всех горизонталей
     L=[]
@@ -411,7 +306,8 @@ def g710(self, **words):
                 nn= ns  
         except:
             pass
-
+    L.append(0)
+    
     # находим A[a] двух точек с max Z (самые правые)
     def two_a(Arr,L,l, z_min = -10000):
         for a in range(len(Arr)):    
@@ -442,7 +338,7 @@ def g710(self, **words):
                lz,rz=two(Arr,L,int(l)-1)
                if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
                    mtt.append(Arr[a])
-        print len(mtt)        
+        #print len(mtt)        
         if len(mtt) > 2:  return len(mtt)
         if len(mtt) == 2: return len(mtt)
         if len(mtt) == 0: return len(mtt) 
@@ -463,26 +359,33 @@ def g710(self, **words):
     # если их БОЛЬШЕ чем две
     def two_next2(Arr,L,l):
         mtt=[]
+        d=[]
         for a in range(len(Arr)):            
             if Arr[a][1]==L[int(l)]:
                lz,rz=two(Arr,L,int(l)-1)
                mtt=[]
                if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
-                   mtt.append(Arr[a])
-                   D.append(Arr[a])
                    mtt.append(Arr[a-1])
-                   D.append(Arr[a-1])                   
-        print 'D',D             
+                   d.append(Arr[a])
+                   mtt.append(Arr[a])
+        D.append(mtt[0]) 
+        D.append(mtt[1])                                        
         return   mtt[0][0],mtt[1][0] , mtt[0][1]
-
-    for i in range(4):
-        l=1 
-        while more_than_two(A,L,l):
+        
+    
+    l=1
+    while len(A)>0 :
+        l=1
+        #for l in R:
+        
+        while more_than_two(A,L,l) :
             if more_than_two(A,L,l)==2:
                 Cl,Cr,Cx = two_next(A,L,l)
             elif more_than_two(A,L,l)>2:
+                R.append(l)# запоминаем позицию для "возврата"
+                print 'R',R
                 Cl,Cr,Cx = two_next2(A,L,l)                
-            self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cl)))
+            self.execute("G0  X%f Z%f" % (float(Cx),float(Cl)))
             self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cr)))
             l+=1
             
@@ -497,8 +400,32 @@ def g710(self, **words):
         for a in A1:
             A.append(a)                     
         D=[] 
-
-        
+#----------------------------------------------        
+        '''print '[Adel]',A
+        l=4
+        print 'l=R[1]',l
+        while more_than_two(A,L,l) :
+            if more_than_two(A,L,l)==2:
+                Cl,Cr,Cx = two_next(A,L,l)
+            elif more_than_two(A,L,l)>2:
+                R.append(l)# запоминаем позицию для "возврата"
+                print 'R',R
+                Cl,Cr,Cx = two_next2(A,L,l)                
+            self.execute("G0  X%f Z%f" % (float(Cx),float(Cl)))
+            self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cr)))
+            l+=1
+            
+        a1,a0 =two_a(A,L ,0)
+        del A[a1]
+        del A[a1]
+             
+        A1=[]
+        for a in A: 
+            if a not in D: A1.append(a)
+        A=[]
+        for a in A1:
+            A.append(a)                     
+        D=[] '''        
     #cd /home/nkp/git/linuxcnc/scripts ./linuxcnc             
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
     #print 'pr=', pr
