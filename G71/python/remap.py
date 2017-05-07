@@ -283,7 +283,7 @@ def g710(self, **words):
         kh1 += 0.01
         d-= kh1 
         print 'd',d 
-    #---------------------------------------------------
+    #---------------------------------------------------ищем все точки пересечения
     h1=145
     while h1>=0:
         for i in reversed(range(len(P))):            
@@ -293,8 +293,7 @@ def g710(self, **words):
         
     print 'P =', P ,'\n'
     print 'A =', A ,'\n'
-    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO 
-    
+    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO     
     #находим X всех горизонталей
     L=[]
     nn=0                            
@@ -331,105 +330,59 @@ def g710(self, **words):
 
     # сколько точек на следующей линии между z_minL и z_minR
     # ноль , две или более
-    def more_than_two(Arr,L,l):
+    def more_than_two(Arr,L,l,fl):
         mtt=[]   
         for a in range(len(Arr)):
             if Arr[a][1]==L[int(l)]:
-               lz,rz=two(Arr,L,int(l)-1)
-               if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
-                   mtt.append(Arr[a])
+                if l==0 or fl:
+                    lz,rz=two(Arr,L,int(l))
+                else:
+                    lz,rz=two(Arr,L,int(l)-1)
+                if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
+                    mtt.append(Arr[a])
         #print len(mtt)        
         if len(mtt) > 2:  return len(mtt)
         if len(mtt) == 2: return len(mtt)
         if len(mtt) == 0: return len(mtt) 
               
-    # находим две точки на следующей линии между z_minL и z_minR
-    # если их ТОЛЬКО две
+    # находим самые правые две точки на следующей линии 
     def two_next(Arr,L,l):
         mtt=[]
         for a in range(len(Arr)):            
             if Arr[a][1]==L[int(l)]:
-               lz,rz=two(Arr,L,int(l)-1)
-               if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
-                   mtt.append(Arr[a])
-                   D.append(Arr[a])             
-        return   mtt[0][0],mtt[1][0] , mtt[0][1]
-
-    # находим две точки на следующей линии между z_minL и z_minR
-    # если их БОЛЬШЕ чем две
-    def two_next2(Arr,L,l):
-        mtt=[]
-        d=[]
-        for a in range(len(Arr)):            
-            if Arr[a][1]==L[int(l)]:
-               lz,rz=two(Arr,L,int(l)-1)
-               mtt=[]
-               if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
-                   mtt.append(Arr[a-1])
-                   d.append(Arr[a])
-                   mtt.append(Arr[a])
-        D.append(mtt[0]) 
-        D.append(mtt[1])                                        
-        return   mtt[0][0],mtt[1][0] , mtt[0][1]
+               a1,a0=two_a(Arr,L,int(l)-0) 
+               D.append(Arr[a1]) 
+               D.append(Arr[a0])            
+        return   Arr[a1][0],Arr[a0][0] , Arr[a1][1]
         
-    
-    l=1
+    R=[0]
     while len(A)>0 :
-        l=1
-        #for l in R:
-        
-        while more_than_two(A,L,l) :
-            if more_than_two(A,L,l)==2:
-                Cl,Cr,Cx = two_next(A,L,l)
-            elif more_than_two(A,L,l)>2:
-                R.append(l)# запоминаем позицию для "возврата"
-                print 'R',R
-                Cl,Cr,Cx = two_next2(A,L,l)                
-            self.execute("G0  X%f Z%f" % (float(Cx),float(Cl)))
-            self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cr)))
-            l+=1
-            
-        a1,a0 =two_a(A,L ,0)
-        del A[a1]
-        del A[a1]
-             
-        A1=[]
-        for a in A: 
-            if a not in D: A1.append(a)
-        A=[]
-        for a in A1:
-            A.append(a)                     
-        D=[] 
-#----------------------------------------------        
-        '''print '[Adel]',A
-        l=4
-        print 'l=R[1]',l
-        while more_than_two(A,L,l) :
-            if more_than_two(A,L,l)==2:
-                Cl,Cr,Cx = two_next(A,L,l)
-            elif more_than_two(A,L,l)>2:
-                R.append(l)# запоминаем позицию для "возврата"
-                print 'R',R
-                Cl,Cr,Cx = two_next2(A,L,l)                
-            self.execute("G0  X%f Z%f" % (float(Cx),float(Cl)))
-            self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cr)))
-            l+=1
-            
-        a1,a0 =two_a(A,L ,0)
-        del A[a1]
-        del A[a1]
-             
-        A1=[]
-        for a in A: 
-            if a not in D: A1.append(a)
-        A=[]
-        for a in A1:
-            A.append(a)                     
-        D=[] '''        
+        fl=0 
+        for l in R:
+            fl=1
+            while more_than_two(A,L,l,fl) :
+                if more_than_two(A,L,l,fl)==2:
+                    Cl,Cr,Cx = two_next(A,L,l)
+                elif more_than_two(A,L,l,fl)>2:
+                    R.append(l)# запоминаем позицию для "возврата"
+                    print 'R',R
+                    Cl,Cr,Cx = two_next(A,L,l)                
+                self.execute("G0  X%f Z%f" % (float(Cx),float(Cl)))
+                self.execute("G1 F1000 X%f Z%f" % (float(Cx),float(Cr)))
+                l+=1
+                fl=0 
+                      
+            A1=[]
+            for a in A: 
+                if a not in D: A1.append(a)
+            A=[]
+            for a in A1:
+                A.append(a)                     
+            D=[]
+          
     #cd /home/nkp/git/linuxcnc/scripts ./linuxcnc             
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
-    #print 'pr=', pr
-    #print 'P=', P  
+    #print 'pr=', pr 
     for w in range(1,len(pr)):
         #print pr[w]
         try:  
