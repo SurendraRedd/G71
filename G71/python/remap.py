@@ -29,8 +29,11 @@ def hip(a,b):
     c = sqrt(abs(a*a + b*b))
     return c
     
-def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A): 
-    a=[]   
+def en_line_arc(G, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
+    centreX = centreX * 1
+    centreZ = centreZ * 1
+    a=[]
+    aa=[]   
     b = -2*centreZ  
     c = -rad**2 + (Mx1-centreX)**2 + centreZ**2 
     D = b**2 - 4*c 
@@ -49,32 +52,20 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
           a.append(pointX1)
           A.append(a)
           return  
-        else:
-          print z2 , hh  , 'z2 ,hh'
-          print stZ,endZ,stX,endX ,'stZ,endZ,stX,endX'
-          if stZ > z2 > endZ and stX < hh < endX :
-            pointZ1 = z2
-            pointX1 = hh
-            a.append(pointZ1)
-            a.append(pointX1)
-            A.append(a)
-          return  
+ 
     if G==2:
-        if 0:
-          pointZ1 = z1   
+        if 1:
+          pointZ1 = z1
+          pointZ2 = z2   
           pointX1 = hh
           a.append(pointZ1)
           a.append(pointX1)
           A.append(a)
+          aa.append(pointZ2)
+          aa.append(pointX1)
+          A.append(aa)
           return  
-        else:
-          if stZ > z1 > endZ and stX < hh < endX :
-            pointZ1 = z1
-            pointX1 = hh
-            a.append(pointZ1)
-            a.append(pointX1)
-            A.append(a)
-          return     
+   
      
 def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
               
@@ -114,8 +105,8 @@ def papp(n,G,x,z,old_x,old_z,App=[],r=None,xc=None,zc=None):
     App[n].append(z)
     if G>1:
         App[n].append(r)
-        App[n].append(xc)
-        App[n].append(zc)
+        App[n].append(xc+old_x)
+        App[n].append(zc+old_z)
     return App 
 def prog(array,G,x,z,i=None,k=None):
     ser=' '
@@ -260,7 +251,7 @@ def g710(self, **words):
             old_posZ = float(number[0])
 
     # начало контура       
-    h1=145#XXX вычислять max(X)
+    h1=19.8#XXX вычислять max(X)
     A=[]
     coordZ_start = 2
     bounce_x = 0.5
@@ -270,26 +261,29 @@ def g710(self, **words):
     # горизонтальным отрезком
     def num(P,d,):    
         B=[]
-        h1=145
+        h1=19.8
         while h1>=0:
             for i in reversed(range(len(P))):                
                 if i>1 and P[i][0]==1 :
                     par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, -85,h1, 5,B)
                     if par == True:                   
-                        return True                  
-            h1 = h1-(0.5*d)
+                        return True                 
+            h1 = h1-(1*d)
     kh1= 0.0     
     while num(P,d,):
         kh1 += 0.01
         d-= kh1 
         print 'd',d 
     #---------------------------------------------------ищем все точки пересечения
-    h1=145
+    h1=19.8
     while h1>=0:
         for i in reversed(range(len(P))):            
             if i>1 and P[i][0]==1 :
                 par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, -85,h1, 5,A)
-        h1 = h1-(0.5*d)
+            if i>1 and P[i][0]>1 :
+                #en_line_arc   (G    Mz1  Mx1  Mz2  Mx2  centreZ  centreX   rad     A)
+                en_line_arc(P[i][0],-85,  h1,   5,   h1, P[i][7], P[i][6], P[i][5], A)    
+        h1 = h1-(1*d)
         
     print 'P =', P ,'\n'
     print 'A =', A ,'\n'
