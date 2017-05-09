@@ -22,16 +22,25 @@ inifile = linuxcnc.ini(f_ini)
   
 def pars(array,reg ,lines): 
     a=array.insert(0,(float(re.search(reg,lines, re.I).group(1))))
+    
 def cathetus(c,b):
     a = sqrt(abs(c*c - b*b))
     return a 
+    
 def hip(a,b):
     c = sqrt(abs(a*a + b*b))
     return c
     
-def en_line_arc(G, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
+def arc_max_point(G,stZ,endZ,stX,endX):
+    pass
+    return
+        
+def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
     centreX = centreX * 1
     centreZ = centreZ * 1
+    
+    r_Xmax = centreX + rad
+    
     a=[]
     aa=[]   
     b = -2*centreZ  
@@ -45,26 +54,32 @@ def en_line_arc(G, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
     hh=Mx1*2
     print  'D=' ,D
     if G==3:
-        if 0:
-          pointZ1 = z1   
+        if stZ <= z1 <= endZ and  max(stX,endX) <= hh <= max(stX,endX,r_Xmax) :
+          pointZ1 = z1 
           pointX1 = hh
           a.append(pointZ1)
           a.append(pointX1)
           A.append(a)
-          return  
- 
-    if G==2:
-        if 1:
-          pointZ1 = z1
-          pointZ2 = z2   
-          pointX1 = hh
-          a.append(pointZ1)
-          a.append(pointX1)
-          A.append(a)
+
           aa.append(pointZ2)
           aa.append(pointX1)
           A.append(aa)
-          return  
+          return   
+ 
+    if G==2:
+        if Mz1 <= z1 <= Mz2  :
+          pointZ1 = z1 
+          pointX1 = hh
+          a.append(pointZ1)
+          a.append(pointX1)
+          A.append(a)
+        if  Mz1 < z2 < Mz2:
+          pointZ2 = z2   
+          pointX1 = hh
+          aa.append(pointZ2)
+          aa.append(pointX1)
+          A.append(aa)
+          return   
    
      
 def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
@@ -86,7 +101,7 @@ def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
         #print  '?????'
         return
 
-    if (z>max(p3Z,p4Z) or z<min(p3Z,p4Z) or z>max(p1Z,p2Z) or z<min(p1Z,p2Z)or p3X>max(p1X,p2X) or p3X<min(p1X,p2X)):
+    if (z>max(p3Z,p4Z) or z<min(p3Z,p4Z) or z>max(p1Z,p2Z) or z<min(p1Z,p2Z) or p3X>max(p1X,p2X) or p3X<min(p1X,p2X)):
         #print 'нет пересечения'
         pass
     else:
@@ -250,8 +265,17 @@ def g710(self, **words):
             old_posX = float(number[1])
             old_posZ = float(number[0])
 
-    # начало контура       
-    h1=19.8#XXX вычислять max(X)
+    # начало контура
+    tmp1=[]
+    tmp2=[] 
+    for p in P: 
+       tmp1.append(p[1])
+       tmp2.append(p[4])
+                
+    h1=max(tmp1)*0.5 + 0.1#XXX разобраться с точностью вычислений
+    z_minim = min(tmp2)
+    z_maxim = 5
+    print 'z_minim=',z_minim,'z_maxim=',z_maxim
     A=[]
     coordZ_start = 2
     bounce_x = 0.5
@@ -259,30 +283,29 @@ def g710(self, **words):
     #--------------------------------------------------
     # "подбираем d , что бы линия не совпадала с 
     # горизонтальным отрезком
-    def num(P,d,):    
+    def num(P,d,h):    
         B=[]
-        h1=19.8
-        while h1>=0:
+        while h>=0:
             for i in reversed(range(len(P))):                
                 if i>1 and P[i][0]==1 :
-                    par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, -85,h1, 5,B)
+                    par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h, z_minim,h, z_maxim,B)
                     if par == True:                   
                         return True                 
-            h1 = h1-(1*d)
+            h = h-(1*d)
     kh1= 0.0     
-    while num(P,d,):
+    while num(P,d,h1):
         kh1 += 0.01
-        d-= kh1 
+        d-= kh1 #XXX может быть нужно изменять h1
         print 'd',d 
     #---------------------------------------------------ищем все точки пересечения
-    h1=19.8
+    h1=max(tmp1)*0.5 - 0.1 
     while h1>=0:
         for i in reversed(range(len(P))):            
             if i>1 and P[i][0]==1 :
-                par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, -85,h1, 5,A)
+                par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, z_minim,h1, z_maxim,A)
             if i>1 and P[i][0]>1 :
                 #en_line_arc   (G    Mz1  Mx1  Mz2  Mx2  centreZ  centreX   rad     A)
-                en_line_arc(P[i][0],-85,  h1,   5,   h1, P[i][7], P[i][6], P[i][5], A)    
+                en_line_arc(P[i][0],P[i][2],P[i][4],P[i][1],P[i][3],z_minim,h1,z_maxim,h1,P[i][7],P[i][6],P[i][5],A)    
         h1 = h1-(1*d)
         
     print 'P =', P ,'\n'
@@ -354,7 +377,7 @@ def g710(self, **words):
     while len(A)>0 :
         fl=0 
         for l in R:
-            fl=1
+            fl=1 # флаг первого прохода
             while more_than_two(A,L,l,fl) :
                 if more_than_two(A,L,l,fl)==2:
                     Cl,Cr = two_next(A,L,l)
