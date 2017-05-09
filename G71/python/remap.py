@@ -126,6 +126,8 @@ def papp(n,G,x,z,old_x,old_z,App=[],r=None,xc=None,zc=None):
 def prog(array,G,x,z,i=None,k=None):
     ser=' '
     string=ser.join(['G1','X',str(x),'Z',str(z)])
+    if G==0: 
+        string=ser.join(['G0','X',str(x),'Z',str(z)])
     if G==2: 
         string=ser.join(['G2','X',str(x),'Z',str(z),'I',str(i),'K',str(k)])
     if G==3: 
@@ -233,9 +235,13 @@ def g710(self, **words):
         if  re.search("STRAIGHT_TRAVERSE", w.upper()):
             numbers = re.split('\(',w.upper())
             number = re.split('\,',numbers[1].upper())
-            prog(pr,0,number[0],number[2])
+            x1=float(number[0])*2
+            z1=float(number[2])
+            prog(pr,0,x1,z1)
+            i+=1
+            papp(i,0,x1,z1,old_posX,old_posZ,P)
             old_posX = float(number[0])
-            old_posZ = float(number[2])             
+            old_posZ = float(number[2])            
         elif  re.search("STRAIGHT_FEED", w.upper()):
             numbers = re.split('\(',w.upper())
             number = re.split('\,',numbers[1].upper())
@@ -304,7 +310,6 @@ def g710(self, **words):
             if i>1 and P[i][0]==1 :
                 par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, z_minim,h1, z_maxim,A)
             if i>1 and P[i][0]>1 :
-                #en_line_arc   (G    Mz1  Mx1  Mz2  Mx2  centreZ  centreX   rad     A)
                 en_line_arc(P[i][0],P[i][2],P[i][4],P[i][1],P[i][3],z_minim,h1,z_maxim,h1,P[i][7],P[i][6],P[i][5],A)    
         h1 = h1-(1*d)
         
@@ -374,53 +379,62 @@ def g710(self, **words):
         return   Arr[a1],Arr[a0]
         
     R=[0]
-    while len(A)>0 :
-        fl=0 
-        for l in R:
-            fl=1 # флаг первого прохода
-            while more_than_two(A,L,l,fl) :
-                if more_than_two(A,L,l,fl)==2:
-                    Cl,Cr = two_next(A,L,l)
-                elif more_than_two(A,L,l,fl)>2:
-                    R.append(l)# запоминаем позицию для "возврата"
-                    print 'R',R
-                    Cl,Cr = two_next(A,L,l) 
-                if  l==0 or fl:
+    err=10
+    try:
+        while len(A)>0 and err :
+            fl=0 
+            for l in R:
+                fl=1 # флаг первого прохода
+                while more_than_two(A,L,l,fl) :
+                    if more_than_two(A,L,l,fl)==2:
+                        Cl,Cr = two_next(A,L,l)
+                    elif more_than_two(A,L,l,fl)>2:
+                        R.append(l)# запоминаем позицию для "возврата"
+                        print 'R',R
+                        Cl,Cr = two_next(A,L,l) 
+                    if  l==0 or fl:
+                        old_Cl,old_Cr = Cl,Cr
+                        self.execute("G0  X%f " % (max(tmp1)+5))#XXX 
+                        self.execute("G0   Z%f" % (float(Cr[0])))                 
+                    self.execute("G0 F1000  Z%f" % (float(Cr[0])))
+                    self.execute("G1 F1000  X%f " % (float(Cr[1])))   
+                    self.execute("G1 F1000  X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
+                    #self.execute("G0 F1000  X%f Z%f" % (float(Cl[1])+bounce_x,float(Cl[0])+bounce_z))
+                    
+                    if float(Cl[0])+bounce_z > float(old_Cr[0]):
+                        self.execute("G0 X%f Z%f" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
+                    else:
+                        self.execute("G0 F1000  X%f Z%f" % (float(Cl[1])+bounce_x,float(Cl[0])+bounce_z)) 
+             
                     old_Cl,old_Cr = Cl,Cr
-                    self.execute("G1 F1000  X%f " % (45))#XXX 
-                    self.execute("G1 F1000  Z%f" % (float(Cr[0])))
-
-                
-                 
-                self.execute("G0 F1000  Z%f" % (float(Cr[0])))
-                self.execute("G1 F1000  X%f " % (float(Cr[1])))   
-                self.execute("G1 F1000  X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
-                self.execute("G0 F1000  X%f Z%f" % (float(Cl[1])+bounce_x,float(Cl[0])+bounce_z))  
-         
-                old_Cl,old_Cr = Cl,Cr
-                l+=1
-                fl=0 
-                      
-            A1=[]
-            for a in A: 
-                if a not in D: A1.append(a)
-            A=[]
-            for a in A1:
-                A.append(a)                     
-            D=[]
-    self.execute("G1 F1000  X%f " % (45))#XXX      
-    #cd /home/nkp/git/linuxcnc/scripts ./linuxcnc             
+                    l+=1
+                    fl=0 
+                          
+                A1=[]
+                for a in A: 
+                    if a not in D: A1.append(a)
+                A=[]
+                for a in A1:
+                    A.append(a)                     
+                D=[]
+        err-=1
+    except InterpreterException,e:
+            msg = "%d: '%s' - %s" % (e.line_number,e.line_text, "cr!!!!!!!!!!!!!")
+            self.execute("(AXIS,stop)")#XXX 
+            self.set_errormsg(msg) 
+            return INTERP_ERROR             
+    self.execute("G0  X%f " % (max(tmp1)+5))#XXX      
+            
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
     #print 'pr=', pr 
     for w in range(1,len(pr)):
-        #print pr[w]
         try:  
             self.execute(pr[w])
         except InterpreterException,e:
                     msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                     self.set_errormsg(msg) 
                     return INTERP_ERROR 
-    self.execute("G1 F1000  X%f " % (45))#XXX    
+    self.execute("G0  X%f " % (max(tmp1)+5))#XXX    
 def g700(self, **words):
     """ remap code G70 """
     p = int(words['p'])    
