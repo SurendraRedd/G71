@@ -350,7 +350,7 @@ class Erstelle_Fenster:
                     z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
                     x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
                     if x_max_sr > x_max:
-                        x_max = x_max_sr + 5
+                        x_max = x_max_sr
                     z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
                         
         p = N_start_end[0]
@@ -364,16 +364,18 @@ class Erstelle_Fenster:
         l = float(self.ExportParas.d_L.get())
         t = str(self.ExportParas.d_T.get())
         rb = self.ExportParas.g71_72.get()
+        sx = float(self.ExportParas.d_X0.get())
+        sz = float(self.ExportParas.d_Z0.get())
 
         Dtr = float(self.ExportParas.D_out.get())
         Lng = float(self.ExportParas.Lg.get())
         Prk = float(self.ExportParas.D_in.get())
-        checkbutton = self.ExportParas.only.get()
+        chb_ssp = self.ExportParas.ssp.get()
         show_blank = self.ExportParas.show_blank.get()
         code = 'G71'
         start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
-        if checkbutton :
-            j = 1           
+        if chb_ssp :
+            start_point = str('G1 X%s  Z%s \n' % (sx, sz))           
         program += ch1
         blank = str('(AXIS,blank,%s,%s,%s)\n' % (Dtr, Lng, Prk))
         if show_blank :
@@ -494,7 +496,7 @@ class Erstelle_Fenster:
         Dtr = float(self.ExportParas.D_out.get())
         Lng = float(self.ExportParas.Lg.get())
         Prk = float(self.ExportParas.D_in.get())
-        checkbutton = self.ExportParas.only.get()
+        checkbutton = self.ExportParas.ssp.get()
         show_blank = self.ExportParas.show_blank.get()
         code = 'G73.3'
         start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
@@ -681,11 +683,14 @@ class ExportParasClass:
         f3.grid(row=2,column=0,padx=2,pady=2,sticky=N+W+E)
         f4=Frame(self.nb_f1,relief = GROOVE,bd = 2)
         f4.grid(row=3,column=0,padx=2,pady=2,sticky=N+W+E)
+        f5=Frame(self.nb_f1,relief = GROOVE,bd = 2)
+        f5.grid(row=4,column=0,padx=2,pady=2,sticky=N+W+E)        
             
         f1.columnconfigure(0,weight=1)
         f2.columnconfigure(0,weight=1)
         f3.columnconfigure(0,weight=1) 
-        f4.columnconfigure(0,weight=1)         
+        f4.columnconfigure(0,weight=1)   
+        f5.columnconfigure(0,weight=1)                
 #########################################################################################параметры в окне              
         Label(f1, text="Depth of cut   [D]")\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
@@ -708,36 +713,27 @@ class ExportParasClass:
         self.d_F = Entry(f2,width=7,textvariable=config.feedrate_F)
         self.d_F.grid(row=0,column=1,sticky=N+E)
 
-        Label(f2, text=("Ending Block  [Q]"))\
-                .grid(row=1,column=0,sticky=N+W,padx=4)
-        self.d_Q = Entry(f2,width=7,textvariable=config.ending_block_Q)
-        self.d_Q.grid(row=1,column=1,sticky=N+E)
-
-        Label(f2, text=("Start_Z  [Z0]"))\
-                .grid(row=2,column=0,sticky=N+W,padx=4)
-        self.d_Z0 = Entry(f2,width=7,textvariable=config.start_Z0)
-        self.d_Z0.grid(row=2,column=1,sticky=N+E)
         
         Label(f2, text=("reserve  [S]" ))\
-                .grid(row=3,column=0,sticky=N+W,padx=4)
+                .grid(row=1,column=0,sticky=N+W,padx=4)
         self.d_S = Entry(f2,width=7,textvariable=config.reserve_S)
-        self.d_S.grid(row=3,column=1,sticky=N+E)
+        self.d_S.grid(row=1,column=1,sticky=N+E)
 
         Label(f2, text=("Tool  [T]" ))\
-                .grid(row=4,column=0,sticky=N+W,padx=4)
+                .grid(row=2,column=0,sticky=N+W,padx=4)
         self.d_T = Entry(f2,width=7,textvariable=config.tool_T)
-        self.d_T.grid(row=4,column=1,sticky=N+E)
+        self.d_T.grid(row=2,column=1,sticky=N+E)
 
 
         Label(f2, text=("reserve  [L]" ))\
-                .grid(row=5,column=0,sticky=N+W,padx=4)
+                .grid(row=3,column=0,sticky=N+W,padx=4)
         self.d_L = Entry(f2,width=7,textvariable=config.reserve_L)  
-        self.d_L.grid(row=5,column=1,sticky=N+E)
+        self.d_L.grid(row=3,column=1,sticky=N+E)
 
                                
         self.g71_72=IntVar()
         self.g71_72.set(0)
-        self.only=IntVar()
+        self.ssp=IntVar()
         self.show_blank=IntVar()
         self.show_blank.set(1)
         
@@ -748,12 +744,12 @@ class ExportParasClass:
         
         Label(f3, text=("G70" ))\
         .grid(row=4,column=0,sticky=N+W,padx=4)        
-        self.rad1 = Radiobutton(f3,text="G70",variable=self.g71_72,value=1,command=lambda: self.change_img72())
+        self.rad1 = Radiobutton(f3,text="G70",variable=self.g71_72,value=1,command=lambda: self.change_img71())
         self.rad1.grid(row=4,column=1,sticky=N+E)
         
         Label(f3, text=("G72" ))\
         .grid(row=5,column=0,sticky=N+W,padx=4)
-        self.rad2 = Radiobutton(f3,text="G72",variable=self.g71_72,value=2 ,command=lambda: self.change_img71())
+        self.rad2 = Radiobutton(f3,text="G72",variable=self.g71_72,value=2 ,command=lambda: self.change_img72())
         self.rad2.grid(row=5,column=1,sticky=N+E)
         
         Label(f3, text=("G73" ))\
@@ -766,41 +762,46 @@ class ExportParasClass:
         self.rad4.grid(row=7,column=1,sticky=N+E)
         self.Igl = Entry(f3,width=16,textvariable=config.Igl)
         self.Igl.grid(row=7,columnspan=1,sticky=W) 
-        
-        
-        
-        
-        Label(f3, text=("Only finishing [J]" ))\
-        .grid(row=8,column=0,sticky=N+W,padx=4)        
-        self.rad5 = Checkbutton(f3,text="",variable=self.only,onvalue=1,offvalue=0)
-        self.rad5.grid(row=8,column=1,sticky=N+E)
-        
+
+        Label(f4, text=("Show blank" ))\
+        .grid(row=0,column=0,sticky=N+W,padx=4)        
+        self.rad3 = Checkbutton(f4,text="",variable=self.show_blank,onvalue=1,offvalue=0)
+        self.rad3.grid(row=0,column=1,sticky=N+E)        
         
         Label(f4, text="Diameter blank outside")\
-        .grid(row=0,column=0,sticky=N+W,padx=4)
+        .grid(row=1,column=0,sticky=N+W,padx=4)
         self.D_out = Entry(f4,width=7,textvariable=config.b_D_out)
-        self.D_out.grid(row=0,column=1,sticky=N+E)
+        self.D_out.grid(row=1,column=1,sticky=N+E)
              
         Label(f4, text="Lenght blank")\
-        .grid(row=1,column=0,sticky=N+W,padx=4)
+        .grid(row=2,column=0,sticky=N+W,padx=4)
         self.Lg = Entry(f4,width=7,textvariable=config.b_L)
-        self.Lg.grid(row=1,column=1,sticky=N+E)        
+        self.Lg.grid(row=2,column=1,sticky=N+E)        
 
         Label(f4, text=("Blank diam. inside" ))\
-        .grid(row=2,column=0,sticky=N+W,padx=4)
+        .grid(row=3,column=0,sticky=N+W,padx=4)
         self.D_in = Entry(f4,width=7,textvariable=config.b_D_in)
-        self.D_in.grid(row=2,column=1,sticky=N+E)
-        
-        Label(f4, text=("Show blank" ))\
-        .grid(row=3,column=0,sticky=N+W,padx=4)        
-        self.rad3 = Checkbutton(f4,text="",variable=self.show_blank,onvalue=1,offvalue=0)
-        self.rad3.grid(row=3,column=1,sticky=N+E)
+        self.D_in.grid(row=3,column=1,sticky=N+E)
         
 
+
+        Label(f5, text=("Set start point" ))\
+        .grid(row=0,column=0,sticky=N+W,padx=4)        
+        self.rad5 = Checkbutton(f5,text="",variable=self.ssp,onvalue=1,offvalue=0)
+        self.rad5.grid(row=0,column=1,sticky=N+E)
+                
+        Label(f5, text=("Start_X [X0] "))\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.d_X0 = Entry(f5,width=7,textvariable=config.start_X0)
+        self.d_X0.grid(row=1,column=1,sticky=N+E)
+
+        Label(f5, text=("Start_Z  [Z0]"))\
+                .grid(row=2,column=0,sticky=N+W,padx=4)
+        self.d_Z0 = Entry(f5,width=7,textvariable=config.start_Z0)
+        self.d_Z0.grid(row=2,column=1,sticky=N+E)
  
     def change_img71( self): #при выборе 71-72 меняем картинки
-        self.textbox.prt('\ncheckbutton is OK!!')
-        self.im = PhotoImage(file='/home/nkp/dxf/G71.gif') 
+        self.im = PhotoImage(file='G71.gif') 
         f33=Frame(self.nb_f3,relief = FLAT,bd = 1)
         f33.grid(row=0,column=0,padx=2,pady=2,sticky=N+W+E)
         f33.columnconfigure(0,weight=1) 
@@ -814,7 +815,7 @@ class ExportParasClass:
         f33.rowconfigure(3,weight=0)
         
     def change_img72( self):
-        self.im = PhotoImage(file='/home/nkp/dxf/G72.gif') 
+        self.im = PhotoImage(file='G72.gif') 
         f33=Frame(self.nb_f3,relief = FLAT,bd = 1)
         f33.grid(row=0,column=0,padx=2,pady=2,sticky=N+W+E)
         f33.columnconfigure(0,weight=1) 
@@ -1528,9 +1529,9 @@ class ConfigClass:
                        
             self.feedrate_F = DoubleVar()
             self.feedrate_F.set(float(self.parser.get('Parameters','feedrate_F'))) 
-                       
-            self.ending_block_Q = DoubleVar()
-            self.ending_block_Q.set(float(self.parser.get('Parameters','ending_block_Q')))         
+
+            self.start_X0  = IntVar()
+            self.start_X0.set(float(self.parser.get('Parameters','start_X0')))                     
            
             self.start_Z0  = IntVar()
             self.start_Z0.set(float(self.parser.get('Parameters','start_Z0'))) 
