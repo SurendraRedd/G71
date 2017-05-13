@@ -39,7 +39,7 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
     centreX = centreX * 1
     centreZ = centreZ * 1
     
-    r_Xmax = centreX + rad
+    #r_Xmax = (centreX + rad)*2
     
     a=[]
     aa=[]   
@@ -47,39 +47,50 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
     c = -rad**2 + (Mx1-centreX)**2 + centreZ**2 
     D = b**2 - 4*c 
     if D < 0: 
-      print 'D<0'
+      #print 'D<0'
+      
       return
     z1 = (-b-sqrt(D))/2 
     z2 = (-b+sqrt(D))/2
+    if z1==z2: return True # если касается(не пересекает)
     hh=Mx1*2
-    print  'D=' ,D
     if G==3:
-        if stZ <= z1 <= endZ and  max(stX,endX) <= hh <= max(stX,endX,r_Xmax) :
-          pointZ1 = z1 
+        r_Xmax = (centreX + rad)*2
+        if   centreZ <= endZ or centreZ >= stZ: r_Xmax = None
+        if stZ >= z1 >= endZ and  min(stX,endX) <= hh <= max(stX,endX,r_Xmax) :#XXX  r_Xmax
+          pointZ1 = z1
+
+          print  'z1=' ,z1 
           pointX1 = hh
           a.append(pointZ1)
           a.append(pointX1)
           A.append(a)
-
+        if stZ >= z2 >= endZ and  min(stX,endX) <= hh <= max(stX,endX,r_Xmax) :
+          pointZ2 = z2 
+          pointX1 = hh
           aa.append(pointZ2)
+          print  'z2=' ,z2
           aa.append(pointX1)
           A.append(aa)
           return   
  
     if G==2:
-        if Mz1 <= z1 <= Mz2  :
+        r_Xmax = (centreX - rad)*2
+        if   centreZ <= endZ or centreZ >= stZ: r_Xmax = None
+            
+        if stZ >= z1 >= endZ and  max(stX,endX) >= hh >= min(stX,endX,r_Xmax) :#XXX  r_Xmax
           pointZ1 = z1 
           pointX1 = hh
           a.append(pointZ1)
           a.append(pointX1)
           A.append(a)
-        if  Mz1 < z2 < Mz2:
-          pointZ2 = z2   
+        if stZ >= z2 >= endZ and  max(stX,endX) >= hh >= min(stX,endX,r_Xmax) :
+          pointZ2 = z2 
           pointX1 = hh
           aa.append(pointZ2)
           aa.append(pointX1)
           A.append(aa)
-          return   
+          return 
    
      
 def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
@@ -93,13 +104,9 @@ def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
 
     if (p2X - p1X):    
         z = p1Z + ((p2Z - p1Z) * (p3X - p1X)) / (p2X - p1X)
-    elif p2X==p3X:     
-        #print p1Z, p1X, p2Z, p2X, 'горизонтальный отрезок z1,x1 z2,x2'
-        pass
+    elif p2X==p1X:     
+        #print  'горизонтальный отрезок x1 ,x2',p1X, p2X 
         return True
-    else:
-        #print  '?????'
-        return
 
     if (z>max(p3Z,p4Z) or z<min(p3Z,p4Z) or z>max(p1Z,p2Z) or z<min(p1Z,p2Z) or p3X>max(p1X,p2X) or p3X<min(p1X,p2X)):
         #print 'нет пересечения'
@@ -188,14 +195,53 @@ def g710(self, **words):
     filename = s.file
     f = open(filename, "r")
     lines = f.readlines()
+    
+    x=0
+    c_line = 0
+    while x < len(lines):
+        # находим начальную точку цикла по X 
+        if re.search(".*\s*G71", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
+            t_Sx = x
+            while not re.search(".*\s*X", lines[t_Sx], re.I) and t_Sx > 0:
+                t_Sx -= 1
+            ST_COORDx0 = float(re.search("X\s*([-0-9.]+)",lines[t_Sx], re.I).group(1))
+            
+        # находим начальную точку цикла по Z 
+        if re.search(".*\s*G71", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
+            t_Sz = x
+            while not re.search(".*\s*Z", lines[t_Sz], re.I) and t_Sz > 0:
+                t_Sz -= 1
+            ST_COORDz0 = float(re.search("Z\s*([-0-9.]+)",lines[t_Sz], re.I).group(1))    
+        x+=1
 
     self.execute("G21 G18 G49 G40 G90 G61 G7 F1000")
     name_file = "./fgcode.ngc" 
     fgcode = open(name_file, "w") 
     string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
     string += 'T1 M6\n'
+
+    
+    # добавляем в  контур "начальный отрезок"(обязательно), и "конечный"(опционально)
+    xx=[]
+    for w in lines:
+        if  re.search("^\s*[(]\s*N\d", w.upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
+                if num2 >= p :
+                    if re.search("X\s*([-0-9.]+)",w, re.I):
+                        st_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1))
+                if num2 >= p and num2 <= q:
+                    #contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
+                    if re.search("Z\s*([-0-9.]+)",w, re.I):
+                        end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
+
     string += 'G1 X-30 Z30\n'
-    string += 'G42\n'             
+    string += 'G1 X-25 Z35\n'
+    string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,ST_COORDz0)
+    print 'st_cont_X=' ,st_cont_X
+    string += 'G1 F100 X%f Z%f\n' % (st_cont_X,ST_COORDz0)
+    string += 'G42\n'    
+                     
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
@@ -210,6 +256,8 @@ def g710(self, **words):
                         self.set_errormsg(msg) 
                         return INTERP_ERROR                             
     f.close()
+
+    string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,end_cont_Z) #"конечный" отрезок
     string += 'G40\n'
     self.execute("G40")
     string += 'M30\n'
@@ -274,11 +322,10 @@ def g710(self, **words):
     # начало контура
     tmp1=[]
     tmp2=[] 
-    for p in P: 
+    for p in P: #XXX если дуга - добавлять точку максимума по X
        tmp1.append(p[1])
        tmp2.append(p[4])
                 
-    h1=max(tmp1)*0.5 + 0.1#XXX разобраться с точностью вычислений
     z_minim = min(tmp2)
     z_maxim = 5
     print 'z_minim=',z_minim,'z_maxim=',z_maxim
@@ -286,31 +333,32 @@ def g710(self, **words):
     coordZ_start = 2
     bounce_x = 0.5
     bounce_z = 0.5
-    #--------------------------------------------------
-    # "подбираем d , что бы линия не совпадала с 
-    # горизонтальным отрезком
+    h1=max(tmp1)*0.5 - 0.1 #XXX разобраться с точностью вычислений 
+    
+    # "подбираем"  d , что бы линия не совпадала с 
+    # горизонтальным отрезком 
     def num(P,d,h):    
-        B=[]
         while h>=0:
             for i in reversed(range(len(P))):                
-                if i>1 and P[i][0]==1 :
-                    par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h, z_minim,h, z_maxim,B)
-                    if par == True:                   
-                        return True                 
+                if i>2 and P[i][0]==1 :
+                    if P[i][3] == P[i][1] and P[i][3] == round(h,5):                
+                        return True                              
             h = h-(1*d)
-    kh1= 0.0     
+            
+    kh1= 0.0    
     while num(P,d,h1):
-        kh1 += 0.01
-        d-= kh1 #XXX может быть нужно изменять h1
-        print 'd',d 
+        kh1 = kh1 + 0.01
+        d = d - kh1  #XXX может быть нужно изменять (и) h1
+        print 'd=',d 
     #---------------------------------------------------ищем все точки пересечения
+    
     h1=max(tmp1)*0.5 - 0.1 
     while h1>=0:
         for i in reversed(range(len(P))):            
-            if i>1 and P[i][0]==1 :
+            if i>2 and P[i][0]==1 :
                 par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, z_minim,h1, z_maxim,A)
-            if i>1 and P[i][0]>1 :
-                en_line_arc(P[i][0],P[i][2],P[i][4],P[i][1],P[i][3],z_minim,h1,z_maxim,h1,P[i][7],P[i][6],P[i][5],A)    
+            if i>2 and P[i][0]>1 :
+                o=en_line_arc(P[i][0],P[i][2],P[i][4],P[i][1],P[i][3],z_minim,h1,z_maxim,h1,P[i][7],P[i][6],P[i][5],A)    
         h1 = h1-(1*d)
         
     print 'P =', P ,'\n'
@@ -427,14 +475,15 @@ def g710(self, **words):
             
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
     #print 'pr=', pr 
-    for w in range(1,len(pr)):
+    for w in range(2,len(pr)):
         try:  
             self.execute(pr[w])
         except InterpreterException,e:
                     msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                     self.set_errormsg(msg) 
                     return INTERP_ERROR 
-    self.execute("G0  X%f " % (max(tmp1)+5))#XXX    
+    self.execute("G0  X%f " % (max(tmp1)+5))#XXX  
+    self.execute("G0  Z0 ")#XXX   
 def g700(self, **words):
     """ remap code G70 """
     p = int(words['p'])    
@@ -449,7 +498,7 @@ def g700(self, **words):
 ##################################################### 
     if words.has_key('f'):    
         fr = float(words['f'])
-    self.execute("F%f" % fr)#TODO
+        self.execute("F%f" % fr)#TODO
     c_line2 = 0               
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
@@ -472,7 +521,7 @@ def g700(self, **words):
                     c_line2 = 0
 #------------------------------------------------------#XXX                    
     self.execute("G91") 
-    self.execute("G0 X%f Z%f" % ((0.5),(-0.5))) 
+    self.execute("G0 X%f Z%f" % ((0.5),(0.5))) 
     self.execute("G0 X%f " % (25))
     self.execute("G90") 
     self.execute("G0  Z0")                       
