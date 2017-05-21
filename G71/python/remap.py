@@ -42,16 +42,19 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
     #r_Xmax = (centreX + rad)*2
     
     a=[]
-    aa=[]   
+    aa=[]
+    
+    
+       
     b = -2*centreZ  
     c = -rad**2 + (Mx1-centreX)**2 + centreZ**2 
     D = b**2 - 4*c 
     if D < 0: 
-      #print 'D<0'
-      
+      #print 'D<0'      
       return
     z1 = (-b-sqrt(D))/2 
     z2 = (-b+sqrt(D))/2
+    #print 'z1=',z1,'z2=',z2
     if z1==z2: return True # если касается(не пересекает)
     hh=Mx1*2
     if G==3:
@@ -60,7 +63,7 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
         if stZ >= z1 >= endZ and  min(stX,endX) <= hh <= max(stX,endX,r_Xmax) :#XXX  r_Xmax
           pointZ1 = z1
 
-          print  'z1=' ,z1 
+          #print  'z1=' ,z1 
           pointX1 = hh
           a.append(pointZ1)
           a.append(pointX1)
@@ -69,7 +72,7 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
           pointZ2 = z2 
           pointX1 = hh
           aa.append(pointZ2)
-          print  'z2=' ,z2
+          #print  'z2=' ,z2
           aa.append(pointX1)
           A.append(aa)
           return   
@@ -91,7 +94,33 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
           aa.append(pointX1)
           A.append(aa)
           return 
-   
+
+def intersect_vertic(stZ,endZ,stX,endX, h,centreZ,centreX,rad,A):
+
+    centreX = centreX * 2
+    rad = rad * 1
+        
+    a=[]
+
+    cat = abs(h-centreZ)
+    b=sqrt(abs(rad*rad - cat*cat))
+    
+    x1 = centreX + b*2
+    x2 = centreX - b*2
+
+    r_Xmin = (centreX - rad)*2
+        
+    if 40 >= x1 >= 0 and  max(stZ,endZ) >= h >= min(stZ,endZ):
+        a.append(x1)
+        a.append(h)
+        A.append(a)
+        return   
+ 
+    elif 40 >= x2 >= 0 and  max(stZ,endZ) >= h >= min(stZ,endZ):
+        a.append(x2)
+        a.append(h)
+        A.append(a)
+        return   
      
 def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
               
@@ -115,6 +144,31 @@ def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
         #print z, -p3X, 'Z, X'
         a.append(z)
         a.append(-p3X*2)
+        A.append(a)                
+        return False
+
+def in_line_line_G72( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
+              
+    p1X = p1X *(-0.5)        
+    p2X = p2X *(-0.5)        
+    p3X = p3X *(-1)       
+    p4X = p4X *(-1) 
+                      
+    a = []
+
+    if (p2Z - p1Z):    
+        z = p1X + ((p2X - p1X) * (p3Z - p1Z)) / (p2Z - p1Z);
+    elif p2Z == p1Z:     
+        #print  'вертикальный отрезок x1 ,x2',p1X, p2X 
+        return True
+
+    if (z>max(p3X,p4X) or z<min(p3X,p4X) or z>max(p1X,p2X) or z<min(p1X,p2X) or p3Z>max(p1Z,p2Z) or p3Z<min(p1Z,p2Z)):
+        #print 'нет пересечения'
+        pass
+    else:
+        #print z, -p3Z, 'Z, X'
+        a.append(-z*2)
+        a.append(p3Z)
         A.append(a)                
         return False
                                       
@@ -164,7 +218,7 @@ def g710(self, **words):
     """ remap code G71.2 """
     p = int(words['p'])    
     q = int(words['q'])
-    d = float(words['d'])
+    d = abs(float(words['d']))
     offset = float(words['k'])
     
     if words.has_key('s'):
@@ -227,20 +281,31 @@ def g710(self, **words):
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
                 num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 >= p :
+                if num2 == p :
                     if re.search("X\s*([-0-9.]+)",w, re.I):
                         st_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1))
+                        st_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
                 if num2 >= p and num2 <= q:
                     #contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
                     if re.search("Z\s*([-0-9.]+)",w, re.I):
                         end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
+                        end_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1))
 
+    if float(words['d'])<0 : # если расточка(d со знаком минус)  
+        if ST_COORDx0 - end_cont_X > d :
+            print 'error cycle start point '
+            self.execute("(AXIS,notify, %s)" % ("error cycle start point"))
+            return
+    
     string += 'G1 X-30 Z30\n'
     string += 'G1 X-25 Z35\n'
-    string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,ST_COORDz0)
-    print 'st_cont_X=' ,st_cont_X
-    string += 'G1 F100 X%f Z%f\n' % (st_cont_X,ST_COORDz0)
-    string += 'G42\n'    
+    if float(words['d'])>=0 : # если НЕ расточка(d со знаком минус)
+        string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,ST_COORDz0)
+        string += 'G1 F100 X%f Z%f\n' % (st_cont_X+d,ST_COORDz0)
+    if float(words['d'])<0 :
+        string += 'G41\n' 
+    else:
+        string += 'G42\n'  
                      
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
@@ -327,10 +392,9 @@ def g710(self, **words):
        tmp2.append(p[4])
                 
     z_minim = min(tmp2)
-    z_maxim = 5
-    print 'z_minim=',z_minim,'z_maxim=',z_maxim
+    z_maxim = 50  #XXX вынести в INI ??
+
     A=[]
-    coordZ_start = 2
     bounce_x = 0.5
     bounce_z = 0.5
     h1=max(tmp1)*0.5 - 0.1 #XXX разобраться с точностью вычислений 
@@ -363,6 +427,24 @@ def g710(self, **words):
         
     print 'P =', P ,'\n'
     print 'A =', A ,'\n'
+    #------------------------------------------------------------------ID
+    if float(words['d'])<0 : # если расточка(d со знаком минус)
+        for i in reversed(range(len(A))) : 
+            self.execute("G1 F1000  X%f" % (A[i][1]))                          
+            self.execute("G1 F1000  Z%f" % (A[i][0]))
+            self.execute("G0 X%f Z%f" % (float(A[i][1]) - d + bounce_x,float(A[i][0])+bounce_z) )
+            self.execute("G0 Z%f" % (ST_COORDz0))
+
+        for w in range(2,len(pr)):
+            try:  
+                self.execute(pr[w])
+            except InterpreterException,e:
+                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                        self.set_errormsg(msg) 
+                        return INTERP_ERROR 
+        self.execute("G0 Z%f" % (ST_COORDz0))
+        return
+    #------------------------------------------------------------------ID    
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO     
     #находим X всех горизонталей
     L=[]
@@ -376,7 +458,7 @@ def g710(self, **words):
         except:
             pass
     L.append(0)
-    
+    print 'L=',L
     # находим A[a] двух точек с max Z (самые правые)
     def two_a(Arr,L,l, z_min = -10000):
         for a in range(len(Arr)):    
@@ -388,7 +470,7 @@ def g710(self, **words):
         return   a1,a0
 
     # находим Z двух точек с max Z (самые правые)
-    D=[]
+
     def two(Arr,L,l, z_min = -10000):
         for a in range(len(Arr)):    
             if Arr[a][1]==L[int(l)]:
@@ -416,27 +498,31 @@ def g710(self, **words):
         if len(mtt) == 0: return len(mtt) 
               
     # находим самые правые две точки на следующей линии 
+    D=[]
     def two_next(Arr,L,l):
         mtt=[]
         for a in range(len(Arr)):            
             if Arr[a][1]==L[int(l)]:
-               a1,a0=two_a(Arr,L,int(l)-0) 
+               a1,a0=two_a(Arr,L,int(l)-0)
+               print 'a1=',a1,'a0=',a0
                D.append(Arr[a1]) 
                D.append(Arr[a0])            
-        #return   Arr[a1][0],Arr[a0][0] , Arr[a1][1]
+
         return   Arr[a1],Arr[a0]
         
     R=[0]
-    err=10
     try:
-        while len(A)>0 and err :
+        while len(A)>0  :
             fl=0 
             for l in R:
                 fl=1 # флаг первого прохода
                 while more_than_two(A,L,l,fl) :
+                    print '1='
                     if more_than_two(A,L,l,fl)==2:
+                        print '2='
                         Cl,Cr = two_next(A,L,l)
                     elif more_than_two(A,L,l,fl)>2:
+                        print '3='
                         R.append(l)# запоминаем позицию для "возврата"
                         print 'R',R
                         Cl,Cr = two_next(A,L,l) 
@@ -447,7 +533,6 @@ def g710(self, **words):
                     self.execute("G0 F1000  Z%f" % (float(Cr[0])))
                     self.execute("G1 F1000  X%f " % (float(Cr[1])))   
                     self.execute("G1 F1000  X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
-                    #self.execute("G0 F1000  X%f Z%f" % (float(Cl[1])+bounce_x,float(Cl[0])+bounce_z))
                     
                     if float(Cl[0])+bounce_z > float(old_Cr[0]):
                         self.execute("G0 X%f Z%f" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
@@ -465,16 +550,12 @@ def g710(self, **words):
                 for a in A1:
                     A.append(a)                     
                 D=[]
-        err-=1
-    except InterpreterException,e:
-            msg = "%d: '%s' - %s" % (e.line_number,e.line_text, "cr!!!!!!!!!!!!!")
-            self.execute("(AXIS,stop)")#XXX 
-            self.set_errormsg(msg) 
-            return INTERP_ERROR             
+    except :
+        return             
     self.execute("G0  X%f " % (max(tmp1)+5))#XXX      
             
     #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
-    #print 'pr=', pr 
+    print 'pr=', pr 
     for w in range(2,len(pr)):
         try:  
             self.execute(pr[w])
@@ -483,27 +564,41 @@ def g710(self, **words):
                     self.set_errormsg(msg) 
                     return INTERP_ERROR 
     self.execute("G0  X%f " % (max(tmp1)+5))#XXX  
-    self.execute("G0  Z0 ")#XXX   
+    self.execute("G0  Z%f " % (ST_COORDz0))#XXX 
+   
 def g700(self, **words):
     """ remap code G70 """
     p = int(words['p'])    
     q = int(words['q'])
-
+    
+    if words.has_key('f'):
+        fr = float(words['f'])
+        self.execute("F%f" % (fr))
+    if words.has_key('d'):
+        d = float(words['d'])
+   
     s = linuxcnc.stat() 
     s.poll()
 
     filename = s.file
     f = open(filename, "r")
-    lines = f.readlines()    
+    lines = f.readlines()
+    
+    bounce_x = 0.5
+    bounce_z = 0.5    
 ##################################################### 
-    if words.has_key('f'):    
-        fr = float(words['f'])
-        self.execute("F%f" % fr)#TODO
+
     c_line2 = 0               
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
                 num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
+                
+                if num2 >= p and num2 <= q:
+                    if re.search("Z\s*([-0-9.]+)",w, re.I):
+                        end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
+                        end_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1))
+                
                 if num2 == p: 
                     c_line2 = 1
         if c_line2:
@@ -519,14 +614,15 @@ def g700(self, **words):
                 num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
                 if num2 == q: 
                     c_line2 = 0
-#------------------------------------------------------#XXX                    
-    self.execute("G91") 
-    self.execute("G0 X%f Z%f" % ((0.5),(0.5))) 
-    self.execute("G0 X%f " % (25))
-    self.execute("G90") 
-    self.execute("G0  Z0")                       
-    self.execute("G0 Z0") 
-#------------------------------------------------------#XXX                                 
+            
+                   
+#  завершающий отход (в зависимости : OD или ID)
+    if words.has_key('d'):
+        if d<0:
+            self.execute("G0 F1000  X%f Z%f" % (float(end_cont_X)-bounce_x,float(end_cont_Z)+bounce_z))
+            return
+    self.execute("G0 F1000  X%f Z%f" % (float(end_cont_X)+bounce_x,float(end_cont_Z)+bounce_z))  
+                                
     f.close()               
     return INTERP_OK    
 #######################################################################
@@ -654,13 +750,261 @@ def g733(self, **words):
         offset_mem -= offset/quantity
         pr = []
         self.execute("G91") 
-        self.execute("G0 X%f Z%f" % ((0.5),(-0.5))) 
+        self.execute("G0 X%f Z%f" % ((0.5),(0.5))) 
         self.execute("G0 X%f " % (25))
         self.execute("G90") 
         self.execute("G0  Z0") 
     
+#################################################-----G72
+
+def g720(self, **words):
+    """ remap code G71.2 """
+    p = int(words['p'])    
+    q = int(words['q'])
+    d = float(words['d'])
+    offset = float(words['k'])
+    
+    if words.has_key('s'):
+        sspeed = int(words['s'])
+        self.execute("S%d" % (sspeed))
+    if words.has_key('l'): #только int ???
+        offset_StartZ = int(words['l']) 
+    only_finishing_cut = 0    
+    if words.has_key('j'):
+        only_finishing_cut = int(words['j'])
+    quantity = 1    
+    if words.has_key('i'):
+        quantity = int(words['i'])
+    if words.has_key('t'):
+        R_Fanuc = float(words['t'])
+
+    if words.has_key('f'):    
+        fr = float(words['f'])
+        
+    tfile  = "./rs.tbl"
+    setline = open(tfile ,"w")
+    offs = ' '.join(['\n','T1','P1','X0','Z0','D%s' % (str(offset/12.7))])
+    setline.write(offs)
+    setline.close() 
+           
+    s = linuxcnc.stat() 
+    s.poll()
+    filename = s.file
+    f = open(filename, "r")
+    lines = f.readlines()
+    
+    x=0
+    c_line = 0
+    while x < len(lines):
+        # находим начальную точку цикла по X 
+        if re.search(".*\s*G72", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
+            t_Sx = x
+            while not re.search(".*\s*X", lines[t_Sx], re.I) and t_Sx > 0:
+                t_Sx -= 1
+            ST_COORDx0 = float(re.search("X\s*([-0-9.]+)",lines[t_Sx], re.I).group(1))
+            
+        # находим начальную точку цикла по Z 
+        if re.search(".*\s*G72", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
+            t_Sz = x
+            while not re.search(".*\s*Z", lines[t_Sz], re.I) and t_Sz > 0:
+                t_Sz -= 1
+            ST_COORDz0 = float(re.search("Z\s*([-0-9.]+)",lines[t_Sz], re.I).group(1))    
+        x+=1
+
+    self.execute("G21 G18 G49 G40 G90 G61 G7 F1000")
+    name_file = "./fgcode.ngc" 
+    fgcode = open(name_file, "w") 
+    string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
+    string += 'T1 M6\n'
+
+    
+    # добавляем в  контур "начальный отрезок"(обязательно), и "конечный"(опционально)
+    xx=[]
+    for w in lines:
+        if  re.search("^\s*[(]\s*N\d", w.upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
+                if num2 == p :
+                    if re.search("X\s*([-0-9.]+)",w, re.I):
+                        st_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1))
+                if num2 >= p and num2 <= q:
+                    #contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
+                    if re.search("Z\s*([-0-9.]+)",w, re.I):
+                        end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
+
+    string += 'G1 X-30 Z30\n'
+    string += 'G1 X-25 Z35\n'
+    #string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,ST_COORDz0)
+    #print 'st_cont_X=' ,st_cont_X
+    #string += 'G1 F100 X%f Z%f\n' % (st_cont_X,ST_COORDz0)
+    string += 'G42\n'    
+                     
+    for w in lines:
+        if  re.search("^\s*[(]\s*N\d", w.upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
+                if num2 >= p and num2 <= q:
+                    try: 
+                        contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
+                        string += contour
+                        string += '\n'
+                    except InterpreterException,e:
+                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                        self.set_errormsg(msg) 
+                        return INTERP_ERROR                             
+    f.close()
+
+    #string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,end_cont_Z) #"конечный" отрезок
+    string += 'G40\n'
+    self.execute("G40")
+    string += 'M30\n'
+    fgcode.write(string)
+    outfilename  = "./RS274_temp.txt"
+    outfile = open(outfilename, "w")
+    
+    fgcode.close() 
+    p = subprocess.Popen(["sh", "-c", (' '.join(['./rs274','-t',tfile,'-g',name_file,outfilename]))],
+                      stdin=None,
+                      stdout=outfile,
+                      stderr=None )
+    p.wait()                 
+    outfile.close()
+    P = []                      
+    pr = []    
+    f1 = open(outfilename, "r")
+    ln = f1.readlines()
+    old_posX = 0
+    old_posZ = 0 
+    i=-1   
+    for w in ln:
+        if  re.search("STRAIGHT_TRAVERSE", w.upper()):
+            numbers = re.split('\(',w.upper())
+            number = re.split('\,',numbers[1].upper())
+            x1=float(number[0])*2
+            z1=float(number[2])
+            prog(pr,0,x1,z1)
+            i+=1
+            papp(i,0,x1,z1,old_posX,old_posZ,P)
+            old_posX = float(number[0])
+            old_posZ = float(number[2])            
+        elif  re.search("STRAIGHT_FEED", w.upper()):
+            numbers = re.split('\(',w.upper())
+            number = re.split('\,',numbers[1].upper())
+            x1=float(number[0])*2
+            z1=float(number[2])
+            prog(pr,1,x1,z1)
+            i+=1
+            papp(i,1,x1,z1,old_posX,old_posZ,P)
+            old_posX = float(number[0])
+            old_posZ = float(number[2])
+
+        elif  re.search("ARC_FEED", w.upper()):
+            numbers = re.split('\(',w.upper())
+            number = re.split('\,',numbers[1].upper())
+            if float(number[4])>0:
+                g=3
+            elif float(number[4])<0:
+                g=2 
+            x_arc=float(number[1])*2
+            z_arc=float(number[0])
+            arc_I = float(number[3]) - old_posX
+            arc_K = float(number[2]) - old_posZ
+            radius = round(hip(arc_I,arc_K),6)
+            prog(pr,g,x_arc,z_arc,arc_I,arc_K)            
+            i+=1
+            papp(i,g,x_arc,z_arc,old_posX,old_posZ,P,radius,arc_I,arc_K)
+            old_posX = float(number[1])
+            old_posZ = float(number[0])
+
+    # начало контура
+    tmp1=[]
+    tmp2=[] 
+    for p in P: #XXX если дуга - добавлять точку максимума по X
+       tmp1.append(p[1])
+       tmp2.append(p[4])
+                
+    z_minim = min(tmp2)
+    z_maxim = 5
+    print 'z_minim=',z_minim,'z_maxim=',z_maxim
+    A=[]
+    bounce_x = 0.5
+    bounce_z = 0.5
+    #---------------------------------------------------ищем все точки пересечения
+    
+    h1=0
+    while h1>=z_minim :
+        for i in range(len(P)):            
+            if i>2 and P[i][0]==1 :
+                par=in_line_line_G72( P[i][3], P[i][4], P[i][1], P[i][2],   0 ,h1, 1000 ,h1,A)
+            if i>2 and P[i][0]>1 :
+                intersect_vertic(P[i][2],P[i][4],P[i][1],P[i][3],h1,P[i][7],P[i][6],P[i][5],A)    
+        h1 = h1-(1*d)
+        
+    print 'P =', P ,'\n'
+    print 'A =', A ,'\n'
+    explicit = 'ngc/explicit.ngc'
+    expcode = open(explicit, "w")
+    expcode.write("G21 G18 G49  G90 G61 G7\n")
+    expcode.write("F%f \n" % fr)
+    self.execute("G1 F1000  X%f Z%f" % (ST_COORDx0,0))
+    expcode.write("G1 F1000  X%f Z%f\n" % (ST_COORDx0,0))
+    for i in range(len(A)) :
+        self.execute("G1 F1000  Z%f" % (A[i][1]))
+        expcode.write("G1 F1000  Z%f\n" % (A[i][1]))
+        
+        self.execute("G1 F1000  X%f Z%f" % (A[i][0],A[i][1])) 
+        expcode.write("G1 F1000  X%f Z%f\n" % (A[i][0],A[i][1])) 
+                       
+        self.execute("G1 F1000  X%f" % (ST_COORDx0))
+        expcode.write("G1 F1000  X%f\n" % (ST_COORDx0))
+        
+    self.execute("G1 F1000  X%f" % (ST_COORDx0)) 
+    expcode.write("G1 F1000  X%f\n" % (ST_COORDx0)) 
+       
+    self.execute("G0   Z0")
+    expcode.write("G0   Z0\n")
+    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
+    print 'pr=', pr 
+    for w in range(2,len(pr)):
+        try:  
+            self.execute(pr[w])
+            expcode.write(pr[w])
+            expcode.write("\n")
+        except InterpreterException,e:
+                    msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                    self.set_errormsg(msg) 
+                    return INTERP_ERROR 
+    
+    self.execute("G1 F1000  X%f " % (ST_COORDx0))
+    expcode.write("G1 F1000  X%f\n " % (ST_COORDx0))    
+    self.execute("G0   Z0")
+    expcode.write("G0   Z0\n") 
+    expcode.write("M02\n")                             
+    expcode.close()   
     
     
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+        
     
     
     
