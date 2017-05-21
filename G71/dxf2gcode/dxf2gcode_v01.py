@@ -430,11 +430,12 @@ class Erstelle_Fenster:
                     if x_max_sr > x_max:
                         x_max = x_max_sr + 5
                     z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
-                        
+                    
+        d = float(self.ExportParas.d_D.get())                
         p = N_start_end[0]
         q = N_start_end[-1]
         code = 'G70'
-        s_fin = str('%s P%s Q%s F%s  \n' % (code,p,q,f))
+        s_fin = str('%s P%s Q%s F%s D%s  \n' % (code,p,q,f,d))
         tempfile_rw = self.config.tempfile_rw
         rw = open(tempfile_rw, "a")
         program += s_fin
@@ -519,7 +520,83 @@ class Erstelle_Fenster:
         rw.write(program)
         rw.close()
         self.no_add_lines = 1           
+
+    def Add_to_File_G72(self):
+        string = self.make_gcode()
+        save_file = self.config.tempfile_gcode
+        f = open(save_file, "w")
+        f.write(string)
+        f.close()
         
+        f = open(save_file, "r")  
+        lines = f.readlines()
+        f.close()
+        ch = '' 
+        ch1 = ''
+        program = ''
+        x_max, p, q, d, k, i, f, j, s, l, t = 0, 1, 15, 1.5, 0.3, 1, 433, 0, 0, 1, 0101
+        Dtr, Lng, Prk = 0, 0, 0
+        N_start_end = []
+        Z_start = []
+        for l in lines:
+            if  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                l=str(re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I))
+                ch1 +=l
+                ch1 +='\n'
+            elif  re.search("G\s*([0-3.]+)", l.upper() ,re.I):
+                if not  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                    l=re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I)
+                    ch +='('
+                    ch +=l
+                    ch +=')'
+                    ch +='\n'
+                    p1 = N_start_end.append(int(re.search("N\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                    if x_max_sr > x_max:
+                        x_max = x_max_sr
+                    z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                        
+        p = N_start_end[0]
+        q = N_start_end[-1]
+        z0 = Z_start[0]
+        d = float(self.ExportParas.d_D.get())
+        k = float(self.ExportParas.d_K.get())
+        i = float(self.ExportParas.d_I.get())
+        f = float(self.ExportParas.d_F.get())
+        s = float(self.ExportParas.d_S.get())
+        l = float(self.ExportParas.d_L.get())
+        t = str(self.ExportParas.d_T.get())
+        rb = self.ExportParas.g71_72.get()
+        sx = float(self.ExportParas.d_X0.get())
+        sz = float(self.ExportParas.d_Z0.get())
+
+        Dtr = float(self.ExportParas.D_out.get())
+        Lng = float(self.ExportParas.Lg.get())
+        Prk = float(self.ExportParas.D_in.get())
+        chb_ssp = self.ExportParas.ssp.get()
+        show_blank = self.ExportParas.show_blank.get()
+        code = 'G72'
+        start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
+        if chb_ssp :
+            start_point = str('G1 X%s  Z%s \n' % (sx, sz))           
+        program += ch1
+        blank = str('(AXIS,blank,%s,%s,%s)\n' % (Dtr, Lng, Prk))
+        if show_blank :
+            program += blank
+        program += start_point
+        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s \n' % (code,p,q,d,k,i,f,j,s,l,))
+
+        program += stt
+
+        if self.no_add_lines == 0: #выводим в программу строки контура(один раз)
+            program += ch
+                       
+        tempfile_rw = self.config.tempfile_rw
+        rw = open(tempfile_rw, "a")
+        rw.write(program)
+        rw.close()
+        self.no_add_lines = 1
         
     def insert_gcode_line(self):
         tempfile_rw = self.config.tempfile_rw
@@ -538,6 +615,8 @@ class Erstelle_Fenster:
              return self.Add_to_File_G71()
          elif rb==1:
              return  self.Add_to_File_G70()
+         elif rb==2:
+             return  self.Add_to_File_G72()
          elif rb==3:
              return  self.Add_to_File_G73()             
          elif rb==4:
@@ -732,7 +811,7 @@ class ExportParasClass:
 
                                
         self.g71_72=IntVar()
-        self.g71_72.set(0)
+        self.g71_72.set(2)
         self.ssp=IntVar()
         self.show_blank=IntVar()
         self.show_blank.set(1)
