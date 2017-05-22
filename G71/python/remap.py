@@ -249,7 +249,7 @@ def num(P,d,h):
                     return True                              
         h = h-(1*d)  
         
-def go(self,Ar,Lr,D,R):
+def go(self,Ar,Lr,D,R,expcode):
     repeat = 100        
     try:
         while len(Ar)>0 and repeat:
@@ -265,15 +265,27 @@ def go(self,Ar,Lr,D,R):
                         Cl,Cr = two_next(Ar,Lr,l,D) 
                     if  l==0 or fl:
                         old_Cl,old_Cr = Cl,Cr
-                        self.execute("G0  X%f " % (Lr[l]+5))#XXX 
-                        self.execute("G0   Z%f" % (float(Cr[0])))                 
-                    self.execute("G0 F1000  Z%f" % (float(Cr[0])))
-                    self.execute("G1 F1000  X%f " % (float(Cr[1])))   
-                    self.execute("G1 F1000  X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
+                        self.execute("G0  X%f " % (Lr[l]+5))
+                        expcode.write("G0 X%f\n" % (Lr[l]+5))
+                         
+                        self.execute("G0   Z%f" % (float(Cr[0])))
+                        expcode.write("G0 Z%f\n" % (float(Cr[0])))
+                                         
+                    self.execute("G0   Z%f" % (float(Cr[0])))
+                    expcode.write("G0  Z%f\n" % (float(Cr[0])))
+                    
+                    self.execute("G1   X%f " % (float(Cr[1])))
+                    expcode.write("G1  X%f\n" % (float(Cr[1])))
+                       
+                    self.execute("G1   X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
+                    expcode.write("G1   X%f Z%f\n" % (float(Cl[1]),float(Cl[0])))  
+                    
                     if float(Cl[0])+0.5 > float(old_Cr[0]):
                         self.execute("G0 X%f Z%f" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
+                        expcode.write("G1   X%f Z%f\n" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
                     else:
-                        self.execute("G0 F1000  X%f Z%f" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
+                        self.execute("G0   X%f Z%f" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
+                        expcode.write("G1   X%f Z%f\n" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
                     old_Cl,old_Cr = Cl,Cr
                     l+=1
                     fl=0      
@@ -282,8 +294,7 @@ def go(self,Ar,Lr,D,R):
                     if a not in D: A1.append(a)
                 Ar=[]
                 for a in A1:
-                    Ar.append(a)
-                print 'A_n',Ar                     
+                    Ar.append(a)                    
             repeat -= 1               
     except :
         if len(Ar):
@@ -335,7 +346,7 @@ def g710(self, **words):
 
     if words.has_key('f'):    
         fr = float(words['f'])
-        
+        self.execute("F%f" % (fr))
     tfile  = "./rs.tbl"
     setline = open(tfile ,"w")
     offs = ' '.join(['\n','T1','P1','X0','Z0','D%s' % (str(offset/12.7))])
@@ -366,7 +377,7 @@ def g710(self, **words):
             ST_COORDz0 = float(re.search("Z\s*([-0-9.]+)",lines[t_Sz], re.I).group(1))    
         x+=1
 
-    self.execute("G21 G18 G49 G40 G90 G61 G7 F1000")
+    self.execute("G21 G18 G49 G40 G90 G61 G7 ")
     name_file = "./fgcode.ngc" 
     fgcode = open(name_file, "w") 
     string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
@@ -544,21 +555,34 @@ def g710(self, **words):
             pass
     L.append(0)
 
+    explicit = 'ngc/explicit.ngc'
+    expcode = open(explicit, "w")
+    expcode.write("G21 G18 G49  G90 G61 G7\n")
+    if words.has_key('f'):    
+        fr = float(words['f'])
+        expcode.write("F%f \n" % fr)
+
     D=[]              
     R=[0]
-    go(self,A,L,D,R)            
-    self.execute("G0  X%f " % (max(tmp1)+5))#XXX      
-           
+    go(self,A,L,D,R,expcode)            
+    self.execute("G0  X%f" % (max(tmp1)+5))#XXX 
+    expcode.write("G0  X%f\n" % (max(tmp1)+5))
+                   
     print 'pr=', pr 
     for w in range(2,len(pr)):
         try:  
             self.execute(pr[w])
+            expcode.write(pr[w])
+            expcode.write("\n")
         except InterpreterException,e:
                     msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                     self.set_errormsg(msg) 
                     return INTERP_ERROR 
-    self.execute("G0  X%f " % (max(tmp1)+5))#XXX  
-    self.execute("G0  Z%f " % (ST_COORDz0))#XXX 
+    self.execute("G0  X%f " % (max(tmp1)+5))#XXX 
+    expcode.write("G0  X%f\n" % (max(tmp1)+5)) 
+    self.execute("G0  Z%f " % (ST_COORDz0))#XXX
+    expcode.write("G0  Z%f\n" % (ST_COORDz0))     
+    expcode.write("M02\n") 
    
 def g700(self, **words):
     """ remap code G70 """
@@ -976,4 +1000,3 @@ def g720(self, **words):
     expcode.write("M02\n")                             
     expcode.close()   
     
-  
