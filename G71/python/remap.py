@@ -22,10 +22,7 @@ inifile = linuxcnc.ini(f_ini)
   
 def pars(array,reg ,lines): 
     a=array.insert(0,(float(re.search(reg,lines, re.I).group(1))))
-    
-def cathetus(c,b):
-    a = sqrt(abs(c*c - b*b))
-    return a 
+
     
 def hip(a,b):
     c = sqrt(abs(a*a + b*b))
@@ -43,9 +40,7 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
     
     a=[]
     aa=[]
-    
-    
-       
+               
     b = -2*centreZ  
     c = -rad**2 + (Mx1-centreX)**2 + centreZ**2 
     D = b**2 - 4*c 
@@ -54,7 +49,6 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
       return
     z1 = (-b-sqrt(D))/2 
     z2 = (-b+sqrt(D))/2
-    #print 'z1=',z1,'z2=',z2
     if z1==z2: return True # если касается(не пересекает)
     hh=Mx1*2
     if G==3:
@@ -62,8 +56,6 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
         if   centreZ <= endZ or centreZ >= stZ: r_Xmax = None
         if stZ >= z1 >= endZ and  min(stX,endX) <= hh <= max(stX,endX,r_Xmax) :#XXX  r_Xmax
           pointZ1 = z1
-
-          #print  'z1=' ,z1 
           pointX1 = hh
           a.append(pointZ1)
           a.append(pointX1)
@@ -72,7 +64,6 @@ def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
           pointZ2 = z2 
           pointX1 = hh
           aa.append(pointZ2)
-          #print  'z2=' ,z2
           aa.append(pointX1)
           A.append(aa)
           return   
@@ -133,15 +124,12 @@ def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
 
     if (p2X - p1X):    
         z = p1Z + ((p2Z - p1Z) * (p3X - p1X)) / (p2X - p1X)
-    elif p2X==p1X:     
-        #print  'горизонтальный отрезок x1 ,x2',p1X, p2X 
+    elif p2X==p1X:      
         return True
 
     if (z>max(p3Z,p4Z) or z<min(p3Z,p4Z) or z>max(p1Z,p2Z) or z<min(p1Z,p2Z) or p3X>max(p1X,p2X) or p3X<min(p1X,p2X)):
-        #print 'нет пересечения'
         pass
     else:
-        #print z, -p3X, 'Z, X'
         a.append(z)
         a.append(-p3X*2)
         A.append(a)                
@@ -158,15 +146,13 @@ def in_line_line_G72( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
 
     if (p2Z - p1Z):    
         z = p1X + ((p2X - p1X) * (p3Z - p1Z)) / (p2Z - p1Z);
-    elif p2Z == p1Z:     
-        #print  'вертикальный отрезок x1 ,x2',p1X, p2X 
+    elif p2Z == p1Z:      
         return True
 
     if (z>max(p3X,p4X) or z<min(p3X,p4X) or z>max(p1X,p2X) or z<min(p1X,p2X) or p3Z>max(p1Z,p2Z) or p3Z<min(p1Z,p2Z)):
-        #print 'нет пересечения'
+        print 'нет пересечения'
         pass
     else:
-        #print z, -p3Z, 'Z, X'
         a.append(-z*2)
         a.append(p3Z)
         A.append(a)                
@@ -193,7 +179,120 @@ def prog(array,G,x,z,i=None,k=None):
         string=ser.join(['G2','X',str(x),'Z',str(z),'I',str(i),'K',str(k)])
     if G==3: 
         string=ser.join(['G3','X',str(x),'Z',str(z),'I',str(i),'K',str(k)])        
-    return array.append(string)                
+    return array.append(string) 
+    
+# находим A[a] двух точек с max Z (самые правые)    
+def two_a(Arr,L,l, z_min = -10000):
+    try: 
+        for a in range(len(Arr)):    
+            if Arr[a][1]==L[int(l)]:
+                if Arr[a][0] > z_min:
+                    z_minL = z_min
+                    a0 = a
+                    a1  = a-1
+        return   a1,a0
+    except:
+        print 'error two_a'
+        
+# находим Z двух точек с max Z (самые правые)
+def two(Arr,L,l, z_min = -10000):
+    try:    
+        for a in range(len(Arr)):    
+            if Arr[a][1]==L[int(l)]:
+                if Arr[a][0] > z_min:
+                    z_minL = z_min
+                    z_minR = Arr[a][0]
+                    z_min  = z_minR
+        return   z_minL,z_minR
+    except:
+        print 'error two'
+        
+# сколько точек на следующей линии между z_minL и z_minR
+# ноль , две или более
+def more_than_two(Arr,L,l,fl):
+    try:
+        mtt=[]   
+        for a in range(len(Arr)):
+            if Arr[a][1]==L[int(l)]:
+                if l==0 or fl:
+                    lz,rz=two(Arr,L,int(l))
+                else:
+                    lz,rz=two(Arr,L,int(l)-1)
+                if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
+                    mtt.append(Arr[a])       
+        if len(mtt) > 2:  return len(mtt)
+        if len(mtt) == 2: return len(mtt)
+        if len(mtt) == 0: return len(mtt)
+    except:
+        print 'error more_than_two'            
+          
+# находим самые правые две точки на следующей линии 
+
+def two_next(Arr,L,l,D):
+    try:
+        for a in range(len(Arr)):            
+            if Arr[a][1]==L[int(l)]:
+               a1,a0=two_a(Arr,L,int(l)-0)
+               D.append(Arr[a1]) 
+               D.append(Arr[a0])            
+        return   Arr[a1],Arr[a0]
+    except:
+        print 'two_next' 
+            
+# "подбираем"  d , что бы линия не совпадала с 
+# горизонтальным отрезком 
+def num(P,d,h):    
+    while h>=0:
+        for i in reversed(range(len(P))):                
+            if i>2 and P[i][0]==1 :
+                if P[i][3] == P[i][1] and P[i][3] == round(h,5):                
+                    return True                              
+        h = h-(1*d)  
+        
+def go(self,Ar,Lr,D,R):
+    repeat = 100        
+    try:
+        while len(Ar)>0 and repeat:
+            fl=0 
+            for l in R:
+                fl=1 # флаг первого прохода
+                while more_than_two(Ar,Lr,l,fl) :
+                    if more_than_two(Ar,Lr,l,fl)==2:
+                        Cl,Cr = two_next(Ar,Lr,l,D)
+                    elif more_than_two(Ar,Lr,l,fl)>2:
+                        #R.append(l)# запоминаем позицию для "возврата"
+                        R.insert(1,l)# запоминаем позицию для "возврата"
+                        Cl,Cr = two_next(Ar,Lr,l,D) 
+                    if  l==0 or fl:
+                        old_Cl,old_Cr = Cl,Cr
+                        self.execute("G0  X%f " % (Lr[l]+5))#XXX 
+                        self.execute("G0   Z%f" % (float(Cr[0])))                 
+                    self.execute("G0 F1000  Z%f" % (float(Cr[0])))
+                    self.execute("G1 F1000  X%f " % (float(Cr[1])))   
+                    self.execute("G1 F1000  X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
+                    if float(Cl[0])+0.5 > float(old_Cr[0]):
+                        self.execute("G0 X%f Z%f" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
+                    else:
+                        self.execute("G0 F1000  X%f Z%f" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
+                    old_Cl,old_Cr = Cl,Cr
+                    l+=1
+                    fl=0      
+                A1=[]
+                for a in Ar: 
+                    if a not in D: A1.append(a)
+                Ar=[]
+                for a in A1:
+                    Ar.append(a)
+                print 'A_n',Ar                     
+            repeat -= 1               
+    except :
+        if len(Ar):
+            self.execute("(AXIS,notify, %s)" % ("something went wrong"))
+        return 
+    if repeat==0:        
+        self.execute("(AXIS,notify, %s)" % ("something went wrong!"))
+        return    
+                         
 #################################################-----G71.2
 # Fanuc code:
 # Programming
@@ -204,7 +303,6 @@ def prog(array,G,x,z,i=None,k=None):
 # First blockParamete
 # U	Depth of cut.
 # R	Retract height.
-#
 #
 # Second blockParameter	Description
 # P	Contour start block number.
@@ -273,7 +371,6 @@ def g710(self, **words):
     fgcode = open(name_file, "w") 
     string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
     string += 'T1 M6\n'
-
     
     # добавляем в  контур "начальный отрезок"(обязательно), и "конечный"(опционально)
     xx=[]
@@ -394,28 +491,17 @@ def g710(self, **words):
     z_minim = min(tmp2)
     z_maxim = 50  #XXX вынести в INI ??
 
-    A=[]
+    A=[]    
     bounce_x = 0.5
     bounce_z = 0.5
     h1=max(tmp1)*0.5 - 0.1 #XXX разобраться с точностью вычислений 
-    
-    # "подбираем"  d , что бы линия не совпадала с 
-    # горизонтальным отрезком 
-    def num(P,d,h):    
-        while h>=0:
-            for i in reversed(range(len(P))):                
-                if i>2 and P[i][0]==1 :
-                    if P[i][3] == P[i][1] and P[i][3] == round(h,5):                
-                        return True                              
-            h = h-(1*d)
-            
+                
     kh1= 0.0    
     while num(P,d,h1):
         kh1 = kh1 + 0.01
         d = d - kh1  #XXX может быть нужно изменять (и) h1
         print 'd=',d 
-    #---------------------------------------------------ищем все точки пересечения
-    
+    #---------------------------------------------------ищем все точки пересечения    
     h1=max(tmp1)*0.5 - 0.1 
     while h1>=0:
         for i in reversed(range(len(P))):            
@@ -443,9 +529,8 @@ def g710(self, **words):
                         self.set_errormsg(msg) 
                         return INTERP_ERROR 
         self.execute("G0 Z%f" % (ST_COORDz0))
-        return
-    #------------------------------------------------------------------ID    
-    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO     
+        return    
+    
     #находим X всех горизонталей
     L=[]
     nn=0                            
@@ -458,103 +543,12 @@ def g710(self, **words):
         except:
             pass
     L.append(0)
-    print 'L=',L
-    # находим A[a] двух точек с max Z (самые правые)
-    def two_a(Arr,L,l, z_min = -10000):
-        for a in range(len(Arr)):    
-            if Arr[a][1]==L[int(l)]:
-                if Arr[a][0] > z_min:
-                    z_minL = z_min
-                    a0 = a
-                    a1  = a-1
-        return   a1,a0
 
-    # находим Z двух точек с max Z (самые правые)
-
-    def two(Arr,L,l, z_min = -10000):
-        for a in range(len(Arr)):    
-            if Arr[a][1]==L[int(l)]:
-                if Arr[a][0] > z_min:
-                    z_minL = z_min
-                    z_minR = Arr[a][0]
-                    z_min  = z_minR
-        return   z_minL,z_minR
-
-    # сколько точек на следующей линии между z_minL и z_minR
-    # ноль , две или более
-    def more_than_two(Arr,L,l,fl):
-        mtt=[]   
-        for a in range(len(Arr)):
-            if Arr[a][1]==L[int(l)]:
-                if l==0 or fl:
-                    lz,rz=two(Arr,L,int(l))
-                else:
-                    lz,rz=two(Arr,L,int(l)-1)
-                if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
-                    mtt.append(Arr[a])
-        #print len(mtt)        
-        if len(mtt) > 2:  return len(mtt)
-        if len(mtt) == 2: return len(mtt)
-        if len(mtt) == 0: return len(mtt) 
-              
-    # находим самые правые две точки на следующей линии 
-    D=[]
-    def two_next(Arr,L,l):
-        mtt=[]
-        for a in range(len(Arr)):            
-            if Arr[a][1]==L[int(l)]:
-               a1,a0=two_a(Arr,L,int(l)-0)
-               print 'a1=',a1,'a0=',a0
-               D.append(Arr[a1]) 
-               D.append(Arr[a0])            
-
-        return   Arr[a1],Arr[a0]
-        
+    D=[]              
     R=[0]
-    try:
-        while len(A)>0  :
-            fl=0 
-            for l in R:
-                fl=1 # флаг первого прохода
-                while more_than_two(A,L,l,fl) :
-                    print '1='
-                    if more_than_two(A,L,l,fl)==2:
-                        print '2='
-                        Cl,Cr = two_next(A,L,l)
-                    elif more_than_two(A,L,l,fl)>2:
-                        print '3='
-                        R.append(l)# запоминаем позицию для "возврата"
-                        print 'R',R
-                        Cl,Cr = two_next(A,L,l) 
-                    if  l==0 or fl:
-                        old_Cl,old_Cr = Cl,Cr
-                        self.execute("G0  X%f " % (max(tmp1)+5))#XXX 
-                        self.execute("G0   Z%f" % (float(Cr[0])))                 
-                    self.execute("G0 F1000  Z%f" % (float(Cr[0])))
-                    self.execute("G1 F1000  X%f " % (float(Cr[1])))   
-                    self.execute("G1 F1000  X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
-                    
-                    if float(Cl[0])+bounce_z > float(old_Cr[0]):
-                        self.execute("G0 X%f Z%f" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
-                    else:
-                        self.execute("G0 F1000  X%f Z%f" % (float(Cl[1])+bounce_x,float(Cl[0])+bounce_z)) 
-             
-                    old_Cl,old_Cr = Cl,Cr
-                    l+=1
-                    fl=0 
-                          
-                A1=[]
-                for a in A: 
-                    if a not in D: A1.append(a)
-                A=[]
-                for a in A1:
-                    A.append(a)                     
-                D=[]
-    except :
-        return             
+    go(self,A,L,D,R)            
     self.execute("G0  X%f " % (max(tmp1)+5))#XXX      
-            
-    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
+           
     print 'pr=', pr 
     for w in range(2,len(pr)):
         try:  
@@ -982,29 +976,4 @@ def g720(self, **words):
     expcode.write("M02\n")                             
     expcode.close()   
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-        
-    
-    
-    
+  
