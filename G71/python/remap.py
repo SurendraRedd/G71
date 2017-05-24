@@ -384,20 +384,26 @@ def g710(self, **words):
     string += 'T1 M6\n'
     
     # добавляем в  контур "начальный отрезок"(обязательно), и "конечный"(опционально)
-    xx=[]
-    for w in lines:
-        if  re.search("^\s*[(]\s*N\d", w.upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
+    for x in range(len(lines)):
+        if  re.search("^\s*[(]\s*N\d", lines[x].upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", lines[x].upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',lines[x].upper())[1]))[0])
                 if num2 == p :
-                    if re.search("X\s*([-0-9.]+)",w, re.I):
-                        st_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1))
-                        st_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
-                if num2 >= p and num2 <= q:
-                    #contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                    if re.search("Z\s*([-0-9.]+)",w, re.I):
-                        end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
-                        end_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1))
+                    c_line = 1
+                    if re.search("X\s*([-0-9.]+)",lines[x], re.I):
+                        st_cont_X = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
+        if c_line:
+            if re.search("Z\s*([-0-9.]+)",lines[x], re.I):
+                end_cont_Z = float(re.search("Z\s*([-0-9.]+)",lines[x], re.I).group(1))
+            if re.search("X\s*([-0-9.]+)",lines[x], re.I):   
+                end_cont_X = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
+        if  re.search("^\s*[(]\s*N\d", lines[x].upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", lines[x].upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',lines[x].upper())[1]))[0])
+                if num2 == q :
+                    c_line = 0                  
+                
+                
 
     if float(words['d'])<0 : # если расточка(d со знаком минус)  
         if ST_COORDx0 - end_cont_X > d :
@@ -419,15 +425,21 @@ def g710(self, **words):
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
                 num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 >= p and num2 <= q:
-                    try: 
-                        contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                        string += contour
-                        string += '\n'
-                    except InterpreterException,e:
-                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                        self.set_errormsg(msg) 
-                        return INTERP_ERROR                             
+                if num2 == p :
+                    c_line = 1
+        if c_line:    
+            try: 
+                contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
+                string += contour
+                string += '\n'
+            except :
+                print 'error_for w in lines'
+
+        if  re.search("^\s*[(]\s*N\d", w.upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
+                if num2 == q :
+                    c_line = 0                                                    
     f.close()
 
     string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,end_cont_Z) #"конечный" отрезок
@@ -837,7 +849,6 @@ def g720(self, **words):
 
     
     # добавляем в  контур "начальный отрезок"(обязательно), и "конечный"(опционально)
-    xx=[]
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
@@ -951,7 +962,7 @@ def g720(self, **words):
     
     h1=0
     while h1>=z_minim :
-        for i in range(len(P)):            
+        for i in range(len(P)):          
             if i>2 and P[i][0]==1 :
                 par=in_line_line_G72( P[i][3], P[i][4], P[i][1], P[i][2],   0 ,h1, 1000 ,h1,A)
             if i>2 and P[i][0]>1 :
