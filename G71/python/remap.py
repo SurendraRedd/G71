@@ -268,24 +268,24 @@ def go(self,Ar,Lr,D,R,expcode):
                         self.execute("G0  X%f " % (Lr[l]+5))
                         expcode.write("G0 X%f\n" % (Lr[l]+5))
                          
-                        self.execute("G0   Z%f" % (float(Cr[0])))
+                        self.execute("G0  Z%f" % (float(Cr[0])))
                         expcode.write("G0 Z%f\n" % (float(Cr[0])))
                                          
                     self.execute("G0   Z%f" % (float(Cr[0])))
-                    expcode.write("G0  Z%f\n" % (float(Cr[0])))
+                    expcode.write("G0 Z%f\n" % (float(Cr[0])))
                     
                     self.execute("G1   X%f " % (float(Cr[1])))
-                    expcode.write("G1  X%f\n" % (float(Cr[1])))
+                    expcode.write("G1 X%f\n" % (float(Cr[1])))
                        
                     self.execute("G1   X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
-                    expcode.write("G1   X%f Z%f\n" % (float(Cl[1]),float(Cl[0])))  
+                    expcode.write("G1 X%f Z%f\n" % (float(Cl[1]),float(Cl[0])))  
                     
                     if float(Cl[0])+0.5 > float(old_Cr[0]):
                         self.execute("G0 X%f Z%f" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
-                        expcode.write("G1   X%f Z%f\n" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
+                        expcode.write("G0 X%f Z%f\n" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
                     else:
                         self.execute("G0   X%f Z%f" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
-                        expcode.write("G1   X%f Z%f\n" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
+                        expcode.write("G0 X%f Z%f\n" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
                     old_Cl,old_Cr = Cl,Cr
                     l+=1
                     fl=0      
@@ -414,8 +414,8 @@ def g710(self, **words):
     string += 'G1 X-30 Z30\n'
     string += 'G1 X-25 Z35\n'
     if float(words['d'])>=0 : # если НЕ расточка(d со знаком минус)
-        string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,ST_COORDz0)
-        string += 'G1 F100 X%f Z%f\n' % (st_cont_X+d,ST_COORDz0)
+        string += 'G0 X%f Z%f\n' % (ST_COORDx0,ST_COORDz0)
+        string += 'G0 X%f Z%f\n' % (st_cont_X+d,ST_COORDz0)
     if float(words['d'])<0 :
         string += 'G41\n' 
     else:
@@ -441,8 +441,9 @@ def g710(self, **words):
                 if num2 == q :
                     c_line = 0                                                    
     f.close()
-
-    string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,end_cont_Z) #"конечный" отрезок
+    
+    string += 'G1 F100 Z%f\n' % (end_cont_Z-offset*2) #"конечный" отрезок
+    string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,end_cont_Z-offset*2) #"конечный" отрезок
     string += 'G40\n'
     self.execute("G40")
     string += 'M30\n'
@@ -528,7 +529,7 @@ def g710(self, **words):
     h1=max(tmp1)*0.5 - 0.1 
     while h1>=0:
         for i in reversed(range(len(P))):            
-            if i>2 and P[i][0]==1 :
+            if i>2 and P[i][0]<=1 :
                 par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, z_minim,h1, z_maxim,A)
             if i>2 and P[i][0]>1 :
                 o=en_line_arc(P[i][0],P[i][2],P[i][4],P[i][1],P[i][3],z_minim,h1,z_maxim,h1,P[i][7],P[i][6],P[i][5],A)    
@@ -568,17 +569,28 @@ def g710(self, **words):
     L.append(0)
 
     explicit = 'ngc/explicit.ngc'
-    expcode = open(explicit, "w")
+    expcode = open(explicit, "r")
+    exp_lines = expcode.readlines()
+    exp_string=''
+    if len(exp_lines):
+        for el in exp_lines:
+            exp_string += el
+        es1=exp_string.split('M02')[0]
+        expcode = open(explicit, "w")
+        expcode.write(es1)
+        expcode = open(explicit, "a")
+    else:
+        expcode = open(explicit, "w")
     expcode.write("G21 G18 G49  G90 G61 G7\n")
     if words.has_key('f'):    
         fr = float(words['f'])
-        expcode.write("F%f \n" % fr)
+        expcode.write("F%f\n" % fr)
 
     D=[]              
     R=[0]
     go(self,A,L,D,R,expcode)            
     self.execute("G0  X%f" % (max(tmp1)+5))#XXX 
-    expcode.write("G0  X%f\n" % (max(tmp1)+5))
+    expcode.write("G0 X%f\n" % (max(tmp1)+5))
                    
     print 'pr=', pr 
     for w in range(2,len(pr)):
@@ -590,12 +602,12 @@ def g710(self, **words):
                     msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                     self.set_errormsg(msg) 
                     return INTERP_ERROR 
-    self.execute("G0  X%f " % (max(tmp1)+5))#XXX 
-    expcode.write("G0  X%f\n" % (max(tmp1)+5)) 
-    self.execute("G0  Z%f " % (ST_COORDz0))#XXX
-    expcode.write("G0  Z%f\n" % (ST_COORDz0))     
+    self.execute("G0 X%f " % (max(tmp1)+5))#XXX 
+    expcode.write("G0 X%f\n" % (max(tmp1)+5)) 
+    self.execute("G0 Z%f " % (ST_COORDz0))#XXX
+    expcode.write("G0 Z%f\n" % (ST_COORDz0))     
     expcode.write("M02\n") 
-   
+    expcode.close()
 def g700(self, **words):
     """ remap code G70 """
     p = int(words['p'])    
@@ -615,46 +627,65 @@ def g700(self, **words):
     lines = f.readlines()
     
     bounce_x = 0.5
-    bounce_z = 0.5    
+    bounce_z = 0.5 
+    
+    explicit = 'ngc/explicit.ngc'
+    expcode = open(explicit, "r")
+    exp_lines = expcode.readlines()
+    exp_string=''
+    if len(exp_lines):
+        for el in exp_lines:
+            exp_string += el
+        es1=exp_string.split('M02')[0]
+        expcode = open(explicit, "w")
+        expcode.write(es1)
+        expcode = open(explicit, "a")
+    else:
+        expcode = open(explicit, "w")
+    expcode.write("G21 G18 G49  G90 G61 G7\n")
+    if words.has_key('f'):    
+        fr = float(words['f'])
+        expcode.write("F%f\n" % fr)   
 ##################################################### 
 
     c_line2 = 0               
     for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                
-                if num2 >= p and num2 <= q:
-                    if re.search("Z\s*([-0-9.]+)",w, re.I):
-                        end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
-                        end_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1))
-                
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])                
                 if num2 == p: 
                     c_line2 = 1
         if c_line2:
             try: 
                 contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
                 self.execute(contour)
-            except InterpreterException,e:
-                msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                self.set_errormsg(msg) 
-                return INTERP_ERROR
+                expcode.write(contour)
+                expcode.write("\n")
+            except :
+                print 'G700_error'
+            if re.search("Z\s*([-0-9.]+)",w, re.I):
+                end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
+            if re.search("X\s*([-0-9.]+)",w, re.I):   
+                end_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1)) 
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
                 num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
                 if num2 == q: 
                     c_line2 = 0
-            
-                   
+                              
 #  завершающий отход (в зависимости : OD или ID)
     if words.has_key('d'):
         if d<0:
-            self.execute("G0 F1000  X%f Z%f" % (float(end_cont_X)-bounce_x,float(end_cont_Z)+bounce_z))
+            self.execute("G0 X%f Z%f" % (float(end_cont_X)-bounce_x,float(end_cont_Z)+0.1))
+            expcode.write("G0 X%f Z%f\n" % (float(end_cont_X)-bounce_x,float(end_cont_Z)+0.1))
             return
-    self.execute("G0 F1000  X%f Z%f" % (float(end_cont_X)+bounce_x,float(end_cont_Z)+bounce_z))  
+    self.execute("G0 X%f Z%f" % (float(end_cont_X)+bounce_x,float(end_cont_Z)+0.1))
+    expcode.write("G0 X%f Z%f\n" % (float(end_cont_X)+bounce_x,float(end_cont_Z)+0.1))  
                                 
-    f.close()               
-    return INTERP_OK    
+    f.close()
+    expcode.write("M02\n")                
+    expcode.close()
+    return INTERP_OK           
 #######################################################################
 def g733(self, **words):
     """ remap code G73.3 """
@@ -768,15 +799,35 @@ def g733(self, **words):
                 prog(pr,g,x_arc,z_arc,arc_I,arc_K)            
                 old_posX = float(number[1])
                 old_posZ = float(number[0])        
-        f1.close()       
+        f1.close() 
+        
+        explicit = 'ngc/explicit.ngc'
+        expcode = open(explicit, "r")
+        exp_lines = expcode.readlines()
+        exp_string=''
+        if len(exp_lines):
+            for el in exp_lines:
+                exp_string += el
+            es1=exp_string.split('M02')[0]
+            expcode = open(explicit, "w")
+            expcode.write(es1)
+            expcode = open(explicit, "a")
+        else:
+            expcode = open(explicit, "w")
+        expcode.write("G21 G18 G49  G90 G61 G7\n")
+        if words.has_key('f'):    
+            fr = float(words['f'])
+            expcode.write("F%f\n" % fr)        
+              
         print 'pr=', pr 
         for w in range(1,len(pr)):
             try:  
                 self.execute(pr[w])
-            except InterpreterException,e:
-                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                        self.set_errormsg(msg) 
-                        return INTERP_ERROR     
+                expcode.write(pr[w])
+                expcode.write("\n")
+            except:
+                print 'G733_error'
+                return INTERP_ERROR     
         offset_mem -= offset/quantity
         pr = []
         self.execute("G91") 
@@ -971,10 +1022,25 @@ def g720(self, **words):
         
     print 'P =', P ,'\n'
     print 'A =', A ,'\n'
+    
     explicit = 'ngc/explicit.ngc'
-    expcode = open(explicit, "w")
+    expcode = open(explicit, "r")
+    exp_lines = expcode.readlines()
+    exp_string=''
+    if len(exp_lines):
+        for el in exp_lines:
+            exp_string += el
+        es1=exp_string.split('M02')[0]
+        expcode = open(explicit, "w")
+        expcode.write(es1)
+        expcode = open(explicit, "a")
+    else:
+        expcode = open(explicit, "w")
     expcode.write("G21 G18 G49  G90 G61 G7\n")
-    expcode.write("F%f \n" % fr)
+    if words.has_key('f'):    
+        fr = float(words['f'])
+        expcode.write("F%f\n" % fr)
+    
     self.execute("G1 F1000  X%f Z%f" % (ST_COORDx0,0))
     expcode.write("G1 F1000  X%f Z%f\n" % (ST_COORDx0,0))
     for i in range(len(A)) :
