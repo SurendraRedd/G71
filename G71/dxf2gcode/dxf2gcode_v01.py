@@ -479,7 +479,7 @@ class Erstelle_Fenster:
                     z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
                     x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
                     if x_max_sr > x_max:
-                        x_max = x_max_sr + 5
+                        x_max = x_max_sr + 0 #XXX
                     z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
                         
         p = N_start_end[0]
@@ -493,14 +493,20 @@ class Erstelle_Fenster:
         l = float(self.ExportParas.d_L.get())
         t = str(self.ExportParas.d_T.get())
         rb = self.ExportParas.g71_72.get()
-
+        sx = float(self.ExportParas.d_X0.get())
+        sz = float(self.ExportParas.d_Z0.get())
+        
         Dtr = float(self.ExportParas.D_out.get())
         Lng = float(self.ExportParas.Lg.get())
         Prk = float(self.ExportParas.D_in.get())
         checkbutton = self.ExportParas.ssp.get()
+        chb_ssp = self.ExportParas.ssp.get()        
         show_blank = self.ExportParas.show_blank.get()
         code = 'G73.3'
         start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
+        if chb_ssp :
+            start_point = str('G1 X%s  Z%s \n' % (sx, sz))
+                    
         if checkbutton :
             j = 1           
         program += ch1
@@ -811,8 +817,9 @@ class ExportParasClass:
 
                                
         self.g71_72=IntVar()
-        self.g71_72.set(2)
+        self.g71_72.set(0)
         self.ssp=IntVar()
+        self.ssp.set(1)
         self.show_blank=IntVar()
         self.show_blank.set(1)
         
