@@ -413,7 +413,7 @@ def g710(self, **words):
     
     string += 'G1 X-30 Z30\n'
     string += 'G1 X-25 Z35\n'
-    if float(words['d'])>=0 : # если НЕ расточка(d со знаком минус)
+    if float(words['d'])>=0 : # если НЕ расточка(d НЕ со знаком минус)
         string += 'G0 X%f Z%f\n' % (ST_COORDx0,ST_COORDz0)
         string += 'G0 X%f Z%f\n' % (st_cont_X+d,ST_COORDz0)
     if float(words['d'])<0 :
@@ -537,37 +537,7 @@ def g710(self, **words):
         
     print 'P =', P ,'\n'
     print 'A =', A ,'\n'
-    #------------------------------------------------------------------ID
-    if float(words['d'])<0 : # если расточка(d со знаком минус)
-        for i in reversed(range(len(A))) : 
-            self.execute("G1 F1000  X%f" % (A[i][1]))                          
-            self.execute("G1 F1000  Z%f" % (A[i][0]))
-            self.execute("G0 X%f Z%f" % (float(A[i][1]) - d + bounce_x,float(A[i][0])+bounce_z) )
-            self.execute("G0 Z%f" % (ST_COORDz0))
-
-        for w in range(2,len(pr)):
-            try:  
-                self.execute(pr[w])
-            except InterpreterException,e:
-                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                        self.set_errormsg(msg) 
-                        return INTERP_ERROR 
-        self.execute("G0 Z%f" % (ST_COORDz0))
-        return    
     
-    #находим X всех горизонталей
-    L=[]
-    nn=0                            
-    for a in range(len(A)):
-        try:
-            if A[a][1]!=nn:
-                ns=A[a][1]
-                L.append(A[a][1])
-                nn= ns  
-        except:
-            pass
-    L.append(0)
-
     explicit = 'ngc/explicit.ngc'
     expcode = open(explicit, "r")
     exp_lines = expcode.readlines()
@@ -585,6 +555,46 @@ def g710(self, **words):
     if words.has_key('f'):    
         fr = float(words['f'])
         expcode.write("F%f\n" % fr)
+        
+    #------------------------------------------------------------------ID
+    if float(words['d'])<0 : # если расточка(d со знаком минус)
+        for i in reversed(range(len(A))) : 
+            self.execute("G1 F1000  X%f" % (A[i][1]))
+            expcode.write("G1 F1000  X%f" % (A[i][1]))                          
+            self.execute("G1 F1000  Z%f" % (A[i][0]))
+            expcode.write("G1 F1000  Z%f" % (A[i][0]))
+            self.execute("G0 X%f Z%f" % (float(A[i][1]) - d + bounce_x,float(A[i][0])+bounce_z))
+            expcode.write("G0 X%f Z%f" % (float(A[i][1]) - d + bounce_x,float(A[i][0])+bounce_z))
+            self.execute("G0 Z%f" % (ST_COORDz0))
+            expcode.write("G0 Z%f" % (ST_COORDz0))
+
+        for w in range(2,len(pr)):
+            try:  
+                self.execute(pr[w])
+                expcode.write(pr[w])
+                expcode.write("\n")
+            except InterpreterException,e:
+                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
+                        self.set_errormsg(msg) 
+                        return INTERP_ERROR 
+        self.execute("G0 Z%f" % (ST_COORDz0))
+        
+        return    
+    
+    #находим X всех горизонталей
+    L=[]
+    nn=0                            
+    for a in range(len(A)):
+        try:
+            if A[a][1]!=nn:
+                ns=A[a][1]
+                L.append(A[a][1])
+                nn= ns  
+        except:
+            pass
+    L.append(0)
+
+
 
     D=[]              
     R=[0]
@@ -602,12 +612,13 @@ def g710(self, **words):
                     msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                     self.set_errormsg(msg) 
                     return INTERP_ERROR 
-    self.execute("G0 X%f " % (max(tmp1)+5))#XXX 
-    expcode.write("G0 X%f\n" % (max(tmp1)+5)) 
+    self.execute("G0 X%f " % (max(tmp1)+0))#XXX 
+    expcode.write("G0 X%f\n" % (max(tmp1)+0)) 
     self.execute("G0 Z%f " % (ST_COORDz0))#XXX
     expcode.write("G0 Z%f\n" % (ST_COORDz0))     
     expcode.write("M02\n") 
     expcode.close()
+    
 def g700(self, **words):
     """ remap code G70 """
     p = int(words['p'])    
@@ -678,20 +689,20 @@ def g700(self, **words):
         if d<0:
             self.execute("G0 X%f Z%f" % (float(end_cont_X)-bounce_x,float(end_cont_Z)+0.1))
             expcode.write("G0 X%f Z%f\n" % (float(end_cont_X)-bounce_x,float(end_cont_Z)+0.1))
-            return
-    self.execute("G0 X%f Z%f" % (float(end_cont_X)+bounce_x,float(end_cont_Z)+0.1))
-    expcode.write("G0 X%f Z%f\n" % (float(end_cont_X)+bounce_x,float(end_cont_Z)+0.1))  
+        else:
+            self.execute("G0 X%f Z%f" % (float(end_cont_X)+bounce_x,float(end_cont_Z)+0.1))
+            expcode.write("G0 X%f Z%f\n" % (float(end_cont_X)+bounce_x,float(end_cont_Z)+0.1))  
                                 
     f.close()
     expcode.write("M02\n")                
     expcode.close()
     return INTERP_OK           
 #######################################################################
+
 def g733(self, **words):
     """ remap code G73.3 """
     p = int(words['p'])    
     q = int(words['q'])
-    #d = float(words['d'])
     offset = float(words['k'])
     
     if words.has_key('s'):
@@ -707,10 +718,10 @@ def g733(self, **words):
         quantity = int(words['i'])
     if words.has_key('t'):
         R_Fanuc = float(words['t'])
-
     if words.has_key('f'):    
         fr = float(words['f'])
-        
+    if words.has_key('d'):
+        d = float(words['d'])        
 
            
     s = linuxcnc.stat() 
@@ -719,14 +730,37 @@ def g733(self, **words):
     f = open(filename, "r")
     lines = f.readlines()
     pr = []
+    
+    x=0
+    while x < len(lines):
+        # находим начальную точку цикла по X 
+        if re.search(".*\s*G73.3", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
+            t_Sx = x
+            while not re.search(".*\s*X", lines[t_Sx], re.I) and t_Sx > 0:
+                t_Sx -= 1
+            ST_COORDx0 = float(re.search("X\s*([-0-9.]+)",lines[t_Sx], re.I).group(1))
+            
+        # находим начальную точку цикла по Z 
+        if re.search(".*\s*G73.3", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
+            t_Sz = x
+            while not re.search(".*\s*Z", lines[t_Sz], re.I) and t_Sz > 0:
+                t_Sz -= 1
+            ST_COORDz0 = float(re.search("Z\s*([-0-9.]+)",lines[t_Sz], re.I).group(1))    
+        x+=1    
+    
     self.execute("G21 G18 G49 G40 G90 G61 G7 F1000")
     name_file = "./fgcode.ngc" 
     fgcode = open(name_file, "w") 
     string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
     string += 'T1 M6\n'
     string += 'G1 X-30 Z30\n'
-    string += 'G42\n'             
-    for w in lines:
+    string += 'G1 X-25 Z35\n'#XXX
+    if float(words['d'])<0 :
+        string += 'G41\n' 
+    else:
+        string += 'G42\n'
+                      
+    '''for w in lines:
         if  re.search("^\s*[(]\s*N\d", w.upper()):
             if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
                 num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
@@ -738,8 +772,33 @@ def g733(self, **words):
                     except InterpreterException,e:
                         msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
                         self.set_errormsg(msg) 
-                        return INTERP_ERROR                             
+                        return INTERP_ERROR'''                             
     f.close()
+    
+    c_line2 = 0               
+    for w in lines:
+        if  re.search("^\s*[(]\s*N\d", w.upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])                
+                if num2 == p: 
+                    c_line2 = 1
+        if c_line2:
+            try: 
+                contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
+                string += contour
+                string += '\n'
+            except :
+                print 'G700_error'
+            if re.search("Z\s*([-0-9.]+)",w, re.I):
+                end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
+            if re.search("X\s*([-0-9.]+)",w, re.I):   
+                end_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1)) 
+        if  re.search("^\s*[(]\s*N\d", w.upper()):
+            if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
+                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
+                if num2 == q: 
+                    c_line2 = 0    
+    
     string += 'G40\n'
     self.execute("G40")
     string += 'M30\n'
@@ -818,9 +877,14 @@ def g733(self, **words):
         if words.has_key('f'):    
             fr = float(words['f'])
             expcode.write("F%f\n" % fr)        
+
+        bounce_x = 0.5
+        bounce_z = 0.5 
               
         print 'pr=', pr 
-        for w in range(1,len(pr)):
+        self.execute("G0  Z%f" % (ST_COORDz0))
+        expcode.write("G0  Z%f\n" % (ST_COORDz0))
+        for w in range(2,len(pr)):
             try:  
                 self.execute(pr[w])
                 expcode.write(pr[w])
@@ -830,11 +894,30 @@ def g733(self, **words):
                 return INTERP_ERROR     
         offset_mem -= offset/quantity
         pr = []
-        self.execute("G91") 
-        self.execute("G0 X%f Z%f" % ((0.5),(0.5))) 
-        self.execute("G0 X%f " % (25))
-        self.execute("G90") 
-        self.execute("G0  Z0") 
+        
+        #  завершающий отход (в зависимости : OD или ID)
+        if words.has_key('d'):
+            d = float(words['d'])
+            if d<0:
+                self.execute("G91")
+                expcode.write("G91\n")
+                self.execute("G0 X%f Z%f" % (-bounce_x,0.1))
+                expcode.write("G0 X%f Z%f\n" % (-bounce_x,0.1))
+                self.execute("G90")
+                expcode.write("G90\n")
+                self.execute("G0  Z0")
+                expcode.write("G0 Z0\n")
+            else:
+                self.execute("G91")
+                expcode.write("G91\n")                
+                self.execute("G0 X%f Z%f" % (bounce_x,0.1))
+                expcode.write("G0 X%f Z%f\n" % (bounce_x,0.1))
+                self.execute("G90")
+                expcode.write("G90\n")
+                self.execute("G0  Z0")
+                expcode.write("G0 Z0\n")
+        expcode.write("M02\n")                
+        expcode.close()   
     
 #################################################-----G72
 
