@@ -560,13 +560,13 @@ def g710(self, **words):
     if float(words['d'])<0 : # если расточка(d со знаком минус)
         for i in reversed(range(len(A))) : 
             self.execute("G1 F1000  X%f" % (A[i][1]))
-            expcode.write("G1 F1000  X%f" % (A[i][1]))                          
+            expcode.write("G1 F1000  X%f\n" % (A[i][1]))                          
             self.execute("G1 F1000  Z%f" % (A[i][0]))
-            expcode.write("G1 F1000  Z%f" % (A[i][0]))
+            expcode.write("G1 F1000  Z%f\n" % (A[i][0]))
             self.execute("G0 X%f Z%f" % (float(A[i][1]) - d + bounce_x,float(A[i][0])+bounce_z))
-            expcode.write("G0 X%f Z%f" % (float(A[i][1]) - d + bounce_x,float(A[i][0])+bounce_z))
+            expcode.write("G0 X%f Z%f\n" % (float(A[i][1]) - d + bounce_x,float(A[i][0])+bounce_z))
             self.execute("G0 Z%f" % (ST_COORDz0))
-            expcode.write("G0 Z%f" % (ST_COORDz0))
+            expcode.write("G0 Z%f\n" % (ST_COORDz0))
 
         for w in range(2,len(pr)):
             try:  
@@ -882,6 +882,7 @@ def g733(self, **words):
         bounce_z = 0.5 
               
         print 'pr=', pr 
+        print 'ST_COORDz0  G73=', ST_COORDz0 
         self.execute("G0  Z%f" % (ST_COORDz0))
         expcode.write("G0  Z%f\n" % (ST_COORDz0))
         for w in range(2,len(pr)):
