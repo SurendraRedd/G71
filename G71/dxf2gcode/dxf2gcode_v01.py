@@ -90,11 +90,6 @@ class Erstelle_Fenster:
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.ende)
 
-        self.exportmenu = Menu(self.menu,tearoff=0)
-        self.menu.add_cascade(label="Export", menu=self.exportmenu)
-        self.exportmenu.add_command(label="Write G-Code", command=self.Write_GCode)
-        self.exportmenu.entryconfig(0,state=DISABLED)
-
         self.viewmenu=Menu(self.menu,tearoff=0)
         self.menu.add_cascade(label="View",menu=self.viewmenu)
         self.viewmenu.add_checkbutton(label="Show workpiece zero",\
@@ -176,8 +171,6 @@ class Erstelle_Fenster:
         self.viewmenu.entryconfig(1,state=NORMAL)
         self.viewmenu.entryconfig(2,state=NORMAL)
         self.viewmenu.entryconfig(4,state=NORMAL)
-
-        self.exportmenu.entryconfig(0,state=NORMAL)
 
         self.optionmenu.entryconfig(2,state=NORMAL)
         self.optionmenu.entryconfig(3,state=NORMAL)        
