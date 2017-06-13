@@ -116,12 +116,12 @@ class UI(Frame):
         self.rad2v = Radiobutton(f3,text="inc",variable=self.abs_inc,value=1 )
         self.rad2v.grid(row=1,column=2)
 
-        self.undoV = Button(f3,command=self.undo)
-        self.undoV.grid(row=3,column=2)
+        self.cancelV = Button(f3,command=self.cancel)
+        self.cancelV.grid(row=3,column=2)
 
         self.im = PhotoImage(file='images/tool_estop.gif')
-        self.undoV.config(image=self.im)
-        self.undoV.im = self.im                     
+        self.cancelV.config(image=self.im)
+        self.cancelV.im = self.im                     
  #----------------------------------------------------------- G           
         Label(f2, text="Next point   Z")\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
@@ -146,12 +146,12 @@ class UI(Frame):
         self.rad2g = Radiobutton(f2,text="inc",variable=self.abs_inc,value=1 )
         self.rad2g.grid(row=1,column=2) 
         
-        self.undoG = Button(f2,command=self.undo)
-        self.undoG.grid(row=3,column=2)
+        self.cancelG = Button(f2,command=self.cancel)
+        self.cancelG.grid(row=3,column=2)
 
         self.im = PhotoImage(file='images/tool_estop.gif')
-        self.undoG.config(image=self.im)
-        self.undoG.im = self.im                        
+        self.cancelG.config(image=self.im)
+        self.cancelG.im = self.im                        
 #-------------------------------------------------- N
         Label(f4, text="Next point  X")\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
@@ -180,12 +180,12 @@ class UI(Frame):
         self.rad2n = Radiobutton(f4,text="inc",variable=self.abs_inc,value=1 )
         self.rad2n.grid(row=1,column=2) 
         
-        self.undoN = Button(f4,command=self.undo)
-        self.undoN.grid(row=3,column=2)
+        self.cancelN = Button(f4,command=self.cancel)
+        self.cancelN.grid(row=3,column=2)
 
         self.im = PhotoImage(file='images/tool_estop.gif')
-        self.undoN.config(image=self.im)
-        self.undoN.im = self.im 
+        self.cancelN.config(image=self.im)
+        self.cancelN.im = self.im 
         
 #--------------------------------------------------  
                
@@ -202,7 +202,7 @@ class UI(Frame):
         self.x_old = 250
         self.z_old = 325
         
-    def undo(self):
+    def cancel(self):
     
         self.nb.add(self.nb_f1)
         self.nb.add(self.nb_f2)
