@@ -28,13 +28,7 @@ class UI(Frame):
         self.frame_d=Frame(master) 
         self.frame_d.grid(row=1,column=1,padx=4,sticky=E+W+S)
 
-        #self.textbox=TextboxClass(frame=self.frame_d,master=self.master)
-        #self.Canvas =CanvasClass(self.frame_c)
-        #self.ExportParas =ExportParasClass(self.frame_r)
-
-
-
-        
+        #self.textbox=TextboxClass(frame=self.frame_d,master=self.master)       
         
 #######################################################################
         self.nb = Notebook(self.frame_r)
@@ -42,10 +36,12 @@ class UI(Frame):
         self.nb_f1 = Frame(self.nb)
         self.nb_f2 = Frame(self.nb)
         self.nb_f3 = Frame(self.nb)
+        self.nb_f4 = Frame(self.nb)
         
         self.nb.add(self.nb_f1,)
         self.nb.add(self.nb_f2,)
         self.nb.add(self.nb_f3,)
+        self.nb.add(self.nb_f4,)
         self.nb.pack()
        
         f1=Frame(self.nb_f1,relief = GROOVE,)
@@ -54,10 +50,14 @@ class UI(Frame):
         f2.grid(row=1,column=0,padx=2,pady=2,sticky=N+W+E)
         f3=Frame(self.nb_f3,relief = GROOVE,)
         f3.grid(row=2,column=0,padx=2,pady=2,sticky=N+W+E)
+        f4=Frame(self.nb_f4,relief = GROOVE,)
+        f4.grid(row=3,column=0,padx=2,pady=2,sticky=N+W+E)        
+        
     
         f1.columnconfigure(0,weight=1)
         f2.columnconfigure(0,weight=1)
         f3.columnconfigure(0,weight=1)
+        f4.columnconfigure(0,weight=1)        
                 
         self.var_st_X = DoubleVar()
         self.var_st_X.set(float(0))
@@ -80,7 +80,13 @@ class UI(Frame):
         self.b_g.config(image=self.im)
         self.b_g.im = self.im
 
-             
+        self.b_g = Button(f1,command=self.preview_N)
+        self.b_g.grid(row=2)
+
+        self.im = PhotoImage(file='images/down.gif')
+        self.b_g.config(image=self.im)
+        self.b_g.im = self.im
+                     
         Label(f3, text="Starting point   X")\
                 .grid(row=0,column=0,sticky=N+W,padx=4)
         self.st_X = Entry(f3,width=7,textvariable=self.var_st_X)
@@ -120,54 +126,139 @@ class UI(Frame):
         self.im = PhotoImage(file='images/tool_run.gif')
         self.b_added2.config(image=self.im)
         self.b_added2.im = self.im         
+#-------------------------------------------------- 
+        Label(f4, text="Starting point Nx  X")\
+                .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.st_X = Entry(f4,width=7,textvariable=self.var_st_X)
+        self.st_X.grid(row=0,column=1,sticky=N+E)
+       
+        Label(f4, text="Starting point N  Z")\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.st_Z = Entry(f4,width=7,textvariable=self.var_st_Z)
+        self.st_Z.grid(row=1,column=1,sticky=N+E)       
+
+        Label(f4, text=("Chamfer"))\
+                .grid(row=2,column=0,sticky=N+W,padx=4)
+        self.Ch3 = Entry(f4,width=7,textvariable=self.var_Ch)
+        self.Ch3.grid(row=2,column=1,sticky=N+E)
         
+        self.b_added3 = Button(f4,command=self.draw_line)
+        self.b_added3.grid(row=2,column=2)
 
-        self.canvas=Canvas(self.frame_c,width=650,height=500, bg = "white")
+        self.im = PhotoImage(file='images/tool_run.gif')
+        self.b_added3.config(image=self.im)
+        self.b_added3.im = self.im 
+        
+        
+        self.canvas=Canvas(self.frame_c,width=650,height=500,bg="red")
         self.canvas.grid(row=0,column=0,sticky=N+E+S+W)
-
+        self.canvas.config(background="#D4DDE3",bd=2)
+        
+        self.x = 0
+        self.z = 0       
         self.x_old = 250
         self.z_old = 325
+
+        
+    def chamfer(self):
+
+        self.x = self.x_old + float(self.var_Ch.get()) 
+        self.z = self.z_old - float(self.var_Ch.get()) 
+                        
+        self.canvas.create_line(self.z_old,self.x_old,self.z,self.x, width=2,fill="blue",)
+        self.x_old = self.x
+        self.z_old = self.z
+        
+        self.canvas.pack(fill=BOTH, expand=1) 
+               
+        print "C.x=",self.x,"C.z=",self.z
+        print "C.x_old=",self.x_old,"C.z_old=",self.z_old
+        print "\n"
+        
+                
     def draw_line(self):
     
         self.nb.add(self.nb_f1)
         self.nb.add(self.nb_f2)
         self.nb.add(self.nb_f3)
+        self.nb.add(self.nb_f4)
         self.nb.select(self.nb_f1)
         
-        x = float(self.st_X.get()) + 250
-        z = float(self.st_Z.get()) + 325
-
-        self.canvas.create_line(self.z_old,self.x_old,z,x, width=2,fill="blue",)
-        self.x_old = x
-        self.z_old = z
-        #arrow=LAST
+        if self.fset:
+            self.x = self.x_old
+            self.z = float(self.st_Z.get()) + 325
+        else:
+            self.z = self.z_old
+            self.x = float(self.st_X.get()) + 250  
+        
+        self.canvas.create_line(self.z_old,self.x_old,self.z,self.x, width=2,fill="blue",)
+        self.x_old = self.x
+        self.z_old = self.z
+        print "L.x=",self.x,"L.z=",self.z
+        print "L.x_old=",self.x_old,"L.z_old=",self.z_old
+        print "\n"
         self.canvas.pack(fill=BOTH, expand=1)
         self.canvas.delete(self.pv)
         
+        if float(self.var_Ch.get()):
+            self.chamfer()       
+            print "chamfer"
+            print "\n" 
+
+                     
     def preview_G(self):
     
+        self.var_st_Z.set(0.00)
+        self.var_st_X.set(0.00)
+        self.var_Ch.set(0.00)
+                
         self.nb.hide(0)
         self.nb.hide(2)
-        x = float(self.st_X.get()) + 250
-        z = float(self.st_Z.get()) + 325
-        self.pv = self.canvas.create_line(0,x,650,x,width=1,fill="blue",stipple="gray50")        
-        self.x_old = x
-        self.z_old = z
-        #arrow=LAST
-        self.canvas.pack(fill=BOTH, expand=1)        
+        self.x = self.x_old  
+        self.z = self.z_old 
+        self.pv = self.canvas.create_line(0,self.x,650,self.x,width=1,fill="blue",stipple="gray50")        
 
+        print "G.x=",self.x,"G.z=",self.z
+        print "G.x_old=",self.x_old,"G.z_old=",self.z_old
+        print "\n"
+        self.canvas.pack(fill=BOTH, expand=1)
+
+        self.fset = 1
+        
     def preview_V(self):
     
+        self.var_st_X.set(0.00)
+        self.var_st_Z.set(0.00)
+        self.var_Ch.set(0.00)
+        
         self.nb.hide(1)
         self.nb.hide(0)
-        x = float(self.st_X.get()) + 250
-        z = float(self.st_Z.get()) + 325
-        self.pv = self.canvas.create_line(z,0,z,500,width=1,fill="blue",stipple="gray50")        
-        self.x_old = x
-        self.z_old = z
-        #arrow=LAST
-        self.canvas.pack(fill=BOTH, expand=1)        
+        self.x = self.x_old  
+        self.z = self.z_old 
+        self.pv = self.canvas.create_line(self.z,0,self.z,500,width=1,fill="blue",stipple="gray50")        
+
+        print "V.x=",self.x-250,"V.z=",self.z-325
+        print "V.x_old=",self.x_old,"V.z_old=",self.z_old
+        print "\n"
+        self.canvas.pack(fill=BOTH, expand=1)
+
+        self.fset = 0
         
+    def preview_N(self):
+        print "ok"
+        self.nb.hide(1)
+        self.nb.hide(0)
+        self.nb.hide(2)
+        self.x = self.x_old  
+        self.z = self.z_old 
+        self.pv = self.canvas.create_line(self.z,self.x,0,500,width=1,fill="blue",stipple="gray50")        
+
+        print "N.x=",self.x,"N.z=",self.z
+        print "N.x_old=",self.x_old,"N.z_old=",self.z_old
+        print "\n"
+        self.canvas.pack(fill=BOTH, expand=1)
+        
+                        
 class TextboxClass:
     def __init__(self,frame=None,master=None):
             
@@ -189,7 +280,7 @@ def main():
     master = Tk()
     master.title("Contour Editor")
     ui = UI(master)
-    #master.geometry("700x500+300+300")
+    master.geometry("900x500+200+200")
     master.mainloop()  
 if __name__ == '__main__':
     main()  
