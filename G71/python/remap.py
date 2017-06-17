@@ -50,13 +50,15 @@ class UI(Frame):
         self.nb_f4 = Frame(self.nb)
         self.nb_f5 = Frame(self.nb)
         self.nb_f6 = Frame(self.nb)
+        self.nb_f7 = Frame(self.nb)
         
         self.nb.add(self.nb_f1,)
         self.nb.add(self.nb_f2,)
         self.nb.add(self.nb_f3,)
         self.nb.add(self.nb_f4,)
         self.nb.add(self.nb_f5,)
-        self.nb.add(self.nb_f6,)        
+        self.nb.add(self.nb_f6,)
+        self.nb.add(self.nb_f7,)        
         self.nb.pack()
        
         f1=Frame(self.nb_f1,relief = GROOVE,)
@@ -70,14 +72,17 @@ class UI(Frame):
         f5=Frame(self.nb_f5,relief = GROOVE,)
         f5.grid(row=4,column=0,padx=2,pady=2,sticky=N+W+E)  
         f6=Frame(self.nb_f6,relief = GROOVE,)
-        f6.grid(row=5,column=0,padx=2,pady=2,sticky=N+W+E)       
+        f6.grid(row=5,column=0,padx=2,pady=2,sticky=N+W+E) 
+        f7=Frame(self.nb_f7,relief = GROOVE,)
+        f7.grid(row=6,column=0,padx=2,pady=2,sticky=N+W+E)              
     
         f1.columnconfigure(0,weight=1)
         f2.columnconfigure(0,weight=1)
         f3.columnconfigure(0,weight=1)
         f4.columnconfigure(0,weight=1)        
         f5.columnconfigure(0,weight=1) 
-        f6.columnconfigure(0,weight=1) 
+        f6.columnconfigure(0,weight=1)
+        f7.columnconfigure(0,weight=1) 
         
         self.f6 = f6
                         
@@ -88,35 +93,35 @@ class UI(Frame):
         self.var_Ch = DoubleVar()
         self.var_Ch.set(float(0))                
 
-        self.b_v = Button(f1,command=self.preview_G)
+        self.b_v = Button(f7,command=self.preview_G)
         self.b_v.grid(row=0)
 
         self.im = PhotoImage(file='images/07.gif')
         self.b_v.config(image=self.im)
         self.b_v.im = self.im
 
-        self.b_g = Button(f1,command=self.preview_V)
+        self.b_g = Button(f7,command=self.preview_V)
         self.b_g.grid(row=1)
 
         self.im = PhotoImage(file='images/08.gif')
         self.b_g.config(image=self.im)
         self.b_g.im = self.im
 
-        self.b_n = Button(f1,command=self.preview_N)
+        self.b_n = Button(f7,command=self.preview_N)
         self.b_n.grid(row=2)
 
         self.im = PhotoImage(file='images/06.gif')
         self.b_n.config(image=self.im)
         self.b_n.im = self.im
         
-        self.b_c = Button(f1,command=self.preview_C)
+        self.b_c = Button(f7,command=self.preview_C)
         self.b_c.grid(row=3)
 
         self.im = PhotoImage(file='images/09.gif')
         self.b_c.config(image=self.im)
         self.b_c.im = self.im 
         
-        self.run = Button(f1,command=self.run)
+        self.run = Button(f7,command=self.run)
         self.run.grid(row=4)
 
         self.im = PhotoImage(file='images/09.gif')
@@ -239,12 +244,12 @@ class UI(Frame):
         self.Ch3 = Entry(f5,width=7,textvariable=self.var_Ch)
         self.Ch3.grid(row=2,column=1,sticky=N+E)
         
-        self.b_added3 = Button(f5,command=self.draw_line)
-        self.b_added3.grid(row=2,column=2)
+        self.b_added4 = Button(f5,command=self.draw_line)
+        self.b_added4.grid(row=2,column=2)
 
         self.im = PhotoImage(file='images/tool_run.gif')
-        self.b_added3.config(image=self.im)
-        self.b_added3.im = self.im
+        self.b_added4.config(image=self.im)
+        self.b_added4.im = self.im
 
         self.rad1n = Radiobutton(f5,text="abs",variable=self.abs_inc,value=0 )
         self.rad1n.grid(row=0,column=2)
@@ -257,7 +262,33 @@ class UI(Frame):
         self.im = PhotoImage(file='images/tool_estop.gif')
         self.cancelN.config(image=self.im)
         self.cancelN.im = self.im 
+
+#-------------------------------------------------- ST
+        Label(f1, text="Start point  X")\
+                .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.zero_X = Entry(f1,width=7,textvariable=self.var_st_X)
+        self.zero_X.grid(row=0,column=1,sticky=N+E)
+       
+        Label(f1, text="Start  point  Z")\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.zero_Z = Entry(f1,width=7,textvariable=self.var_st_Z)
+        self.zero_Z.grid(row=1,column=1,sticky=N+E)       
+
         
+        self.b_added5 = Button(f1,command=self.start_point)
+        self.b_added5.grid(row=2,column=2)
+
+        self.im = PhotoImage(file='images/tool_run.gif')
+        self.b_added5.config(image=self.im)
+        self.b_added5.im = self.im
+ 
+        
+        self.cancelN = Button(f1,command=self.cancel)
+        self.cancelN.grid(row=3,column=2)
+
+        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.cancelN.config(image=self.im)
+        self.cancelN.im = self.im         
 #--------------------------------------------------                
         self.canvas=Canvas(self.frame_c,width=650,height=500,bg="red")
         self.canvas.grid(row=0,column=0,sticky=N+E+S+W)
@@ -288,37 +319,47 @@ class UI(Frame):
         self.canvas.create_text(75,416,text="Z",font="Verdana 8",anchor="w",justify=CENTER,) 
         self.canvas.create_text(32,460,text="X",font="Verdana 8",anchor="w",justify=CENTER,)        
                               
-        if self.abs_inc.get():
-            self.x = 250
-            self.z = 325 
-        else:
-            self.x = 0
-            self.z = 0               
-        self.x_old = 250
-        self.z_old = 325
-        
-        self.A.append([1,0,20])
         
         self.string = 'F1000\n'
          
+        
         self.page_make_gcode()
         
         self.no_add_lines = 0
-                
+        
+    def start_point(self):
+   
+        self.z_old = float(self.zero_Z.get()) + 325            
+        self.x_old = float(self.zero_X.get()) + 250
+        
+        self.A.append([1,self.z_old-325,self.x_old-250])
+        
+        self.canvas.create_oval([self.z_old-2, self.x_old-2],[self.z_old+2, self.x_old+2],fill="blue")
+        
+        self.nb.add(self.nb_f1)
+        self.nb.add(self.nb_f2)
+        self.nb.add(self.nb_f3)
+        self.nb.add(self.nb_f4)
+        self.nb.add(self.nb_f5)
+        self.nb.add(self.nb_f6)
+        self.nb.add(self.nb_f7)
+        self.nb.select(self.nb_f7) 
+                 
     def run(self):
         self.nb.hide(0)
         self.nb.hide(1)
         self.nb.hide(2)
         self.nb.hide(3)
         self.nb.hide(4)
+        self.nb.hide(6)
         ns=1
         for n in self.A: 
-            self.string +=str('N%s G1 X%s Z%s \n' % (ns,n[2], n[1]))
+            self.string +=str('N%s G1 X%s Z%s \n' % (ns,n[2]*2, n[1]))
             ns += 1
         #print  'string=',self.string
             
     def add(self,A):
-        if self.fset < 2:
+        if self.fset <= 2:
             part=[1,(self.z-325),(self.x-250)]
             A.append(part)       
         
@@ -330,7 +371,8 @@ class UI(Frame):
         self.nb.add(self.nb_f4)
         self.nb.add(self.nb_f5)
         self.nb.add(self.nb_f6)
-        self.nb.select(self.nb_f1)
+        self.nb.add(self.nb_f7)
+        self.nb.select(self.nb_f7)
         try:
             self.canvas.delete(self.pv)
         except:
@@ -356,7 +398,9 @@ class UI(Frame):
         self.nb.add(self.nb_f3)
         self.nb.add(self.nb_f4)
         self.nb.add(self.nb_f5)
-        self.nb.select(self.nb_f1)
+        self.nb.add(self.nb_f6)
+        self.nb.add(self.nb_f7)
+        self.nb.select(self.nb_f7)
         
         if self.fset==1: #флаг ,показывает после какой функции выбора сработали
             self.x = self.x_old
@@ -398,11 +442,15 @@ class UI(Frame):
                 
         self.nb.hide(0)
         self.nb.hide(2)
+        self.nb.hide(3)
         self.nb.hide(4)
+        self.nb.hide(5)
+        self.nb.hide(6)
+        
         self.x = self.x_old  
         self.z = self.z_old 
         self.pv = self.canvas.create_line(0,self.x,650,self.x,width=1,fill="blue",stipple="gray50")        
-
+        print 'self.x=',self.x
         self.canvas.pack(fill=BOTH, expand=1)
 
         self.fset = 1
@@ -413,9 +461,13 @@ class UI(Frame):
         self.var_st_Z.set(0.00)
         self.var_Ch.set(0.00)
         
-        self.nb.hide(1)
         self.nb.hide(0)
+        self.nb.hide(1)
+        self.nb.hide(3)
         self.nb.hide(4)
+        self.nb.hide(5)
+        self.nb.hide(6)
+        
         self.x = self.x_old  
         self.z = self.z_old 
         self.pv = self.canvas.create_line(self.z,0,self.z,500,width=1,fill="blue",stipple="gray50")        
@@ -430,10 +482,13 @@ class UI(Frame):
         self.var_st_Z.set(0.00)
         self.var_Ch.set(0.00)
             
-        self.nb.hide(1)
         self.nb.hide(0)
+        self.nb.hide(1)
         self.nb.hide(2)
         self.nb.hide(4)
+        self.nb.hide(5)
+        self.nb.hide(6)
+        
         self.x = self.x_old  
         self.z = self.z_old 
         self.pv = self.canvas.create_line(self.z,self.x,0,500,width=1,fill="blue",stipple="gray50")        
@@ -448,11 +503,12 @@ class UI(Frame):
         self.var_st_Z.set(0.00)
         self.var_Ch.set(0.00)
         
-        self.nb.hide(0)            
+        self.nb.hide(0)
         self.nb.hide(1)
         self.nb.hide(2)
         self.nb.hide(3)
-        self.nb.hide(5) 
+        self.nb.hide(5)
+        self.nb.hide(6)
                
         self.x = self.x_old  
         self.z = self.z_old 
@@ -462,7 +518,7 @@ class UI(Frame):
 
         self.canvas.pack(fill=BOTH, expand=1)
         
-        self.fset = 2
+        self.fset = 3
 
     def selection_cycle(self):
         pass
