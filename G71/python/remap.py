@@ -1,1163 +1,1015 @@
+#!/usr/bin/python
 # --*-- coding:utf-8 --*--
-import linuxcnc
+
+#http://infohost.nmt.edu/tcc/help/pubs/tkinter/web/index.html
+from Tkconstants import END, INSERT, ALL, N, S, E, W, RAISED, RIDGE, GROOVE, FLAT, DISABLED, NORMAL, ACTIVE, LEFT
+
+from Tkinter import *
+from ttk import Notebook
 import re
-import os
-from math import *
-import traceback
-from interpreter import *
-from emccanon import MESSAGE
-import subprocess
-import select
-from itertools import chain
-import time
 
-throw_exceptions = 1 # raises InterpreterException if execute() or read() fail
-
-dir_ini = str(os.getcwd())
-all_files = os.listdir(os.getcwd()) 
-n_ini = filter(lambda x: x.endswith('.ini'),all_files)
-if len(n_ini)>1 : print 'ini file > 1'
-f_ini = os.path.join(dir_ini, n_ini[0])
-inifile = linuxcnc.ini(f_ini)
+class UI(Frame):
   
-def pars(array,reg ,lines): 
-    a=array.insert(0,(float(re.search(reg,lines, re.I).group(1))))
-
-    
-def hip(a,b):
-    c = sqrt(abs(a*a + b*b))
-    return c
-    
-def arc_max_point(G,stZ,endZ,stX,endX):
-    pass
-    return
+    def __init__(self, master):
+        Frame.__init__(self, master)   
         
-def en_line_arc(G,stZ,endZ,stX,endX, Mz1,Mx1,Mz2,Mx2,centreZ,centreX,rad,A):
-    centreX = centreX * 1
-    centreZ = centreZ * 1
-    
-    #r_Xmax = (centreX + rad)*2
-    
-    a=[]
-    aa=[]
-               
-    b = -2*centreZ  
-    c = -rad**2 + (Mx1-centreX)**2 + centreZ**2 
-    D = b**2 - 4*c 
-    if D < 0: 
-      #print 'D<0'      
-      return
-    z1 = (-b-sqrt(D))/2 
-    z2 = (-b+sqrt(D))/2
-    if z1==z2: return True # если касается(не пересекает)
-    hh=Mx1*2
-    if G==3:
-        r_Xmax = (centreX + rad)*2
-        if   centreZ <= endZ or centreZ >= stZ: r_Xmax = None
-        if stZ >= z1 >= endZ and  min(stX,endX) <= hh <= max(stX,endX,r_Xmax) :#XXX  r_Xmax
-          pointZ1 = z1
-          pointX1 = hh
-          a.append(pointZ1)
-          a.append(pointX1)
-          A.append(a)
-        if stZ >= z2 >= endZ and  min(stX,endX) <= hh <= max(stX,endX,r_Xmax) :
-          pointZ2 = z2 
-          pointX1 = hh
-          aa.append(pointZ2)
-          aa.append(pointX1)
-          A.append(aa)
-          return   
- 
-    if G==2:
-        r_Xmax = (centreX - rad)*2
-        if   centreZ <= endZ or centreZ >= stZ: r_Xmax = None
-            
-        if stZ >= z1 >= endZ and  max(stX,endX) >= hh >= min(stX,endX,r_Xmax) :#XXX  r_Xmax
-          pointZ1 = z1 
-          pointX1 = hh
-          a.append(pointZ1)
-          a.append(pointX1)
-          A.append(a)
-        if stZ >= z2 >= endZ and  max(stX,endX) >= hh >= min(stX,endX,r_Xmax) :
-          pointZ2 = z2 
-          pointX1 = hh
-          aa.append(pointZ2)
-          aa.append(pointX1)
-          A.append(aa)
-          return 
-
-def intersect_vertic(stZ,endZ,stX,endX, h,centreZ,centreX,rad,A):
-
-    centreX = centreX * 2
-    rad = rad * 1
-        
-    a=[]
-
-    cat = abs(h-centreZ)
-    b=sqrt(abs(rad*rad - cat*cat))
-    
-    x1 = centreX + b*2
-    x2 = centreX - b*2
-
-    r_Xmin = (centreX - rad)*2
-        
-    if 40 >= x1 >= 0 and  max(stZ,endZ) >= h >= min(stZ,endZ):
-        a.append(x1)
-        a.append(h)
-        A.append(a)
-        return   
- 
-    elif 40 >= x2 >= 0 and  max(stZ,endZ) >= h >= min(stZ,endZ):
-        a.append(x2)
-        a.append(h)
-        A.append(a)
-        return   
-     
-def intersection_line_line( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
-              
-    p1X = p1X *(-0.5)        
-    p2X = p2X *(-0.5)        
-    p3X = p3X *(-1)       
-    p4X = p4X *(-1) 
-                      
-    a = []
-
-    if (p2X - p1X):    
-        z = p1Z + ((p2Z - p1Z) * (p3X - p1X)) / (p2X - p1X)
-    elif p2X==p1X:      
-        return True
-
-    if (z>max(p3Z,p4Z) or z<min(p3Z,p4Z) or z>max(p1Z,p2Z) or z<min(p1Z,p2Z) or p3X>max(p1X,p2X) or p3X<min(p1X,p2X)):
-        pass
-    else:
-        a.append(z)
-        a.append(-p3X*2)
-        A.append(a)                
-        return False
-
-def in_line_line_G72( p1X, p1Z, p2X, p2Z ,p3X, p3Z, p4X, p4Z,A   ):
-              
-    p1X = p1X *(-0.5)        
-    p2X = p2X *(-0.5)        
-    p3X = p3X *(-1)       
-    p4X = p4X *(-1) 
-                      
-    a = []
-
-    if (p2Z - p1Z):    
-        z = p1X + ((p2X - p1X) * (p3Z - p1Z)) / (p2Z - p1Z);
-    elif p2Z == p1Z:      
-        return True
-
-    if (z>max(p3X,p4X) or z<min(p3X,p4X) or z>max(p1X,p2X) or z<min(p1X,p2X) or p3Z>max(p1Z,p2Z) or p3Z<min(p1Z,p2Z)):
-        print 'нет пересечения'
-        pass
-    else:
-        a.append(-z*2)
-        a.append(p3Z)
-        A.append(a)                
-        return False
-                                      
-def papp(n,G,x,z,old_x,old_z,App=[],r=None,xc=None,zc=None):
-    App.append([])
-    App[n].append(G)
-    App[n].append(old_x*2)
-    App[n].append(old_z)                                               
-    App[n].append(x)
-    App[n].append(z)
-    if G>1:
-        App[n].append(r)
-        App[n].append(xc+old_x)
-        App[n].append(zc+old_z)
-    return App 
-def prog(array,G,x,z,i=None,k=None):
-    ser=' '
-    string=ser.join(['G1','X',str(x),'Z',str(z)])
-    if G==0: 
-        string=ser.join(['G0','X',str(x),'Z',str(z)])
-    if G==2: 
-        string=ser.join(['G2','X',str(x),'Z',str(z),'I',str(i),'K',str(k)])
-    if G==3: 
-        string=ser.join(['G3','X',str(x),'Z',str(z),'I',str(i),'K',str(k)])        
-    return array.append(string) 
-    
-# находим A[a] двух точек с max Z (самые правые)    
-def two_a(Arr,L,l, z_min = -10000):
-    try: 
-        for a in range(len(Arr)):    
-            if Arr[a][1]==L[int(l)]:
-                if Arr[a][0] > z_min:
-                    z_minL = z_min
-                    a0 = a
-                    a1  = a-1
-        return   a1,a0
-    except:
-        print 'error two_a'
-        
-# находим Z двух точек с max Z (самые правые)
-def two(Arr,L,l, z_min = -10000):
-    try:    
-        for a in range(len(Arr)):    
-            if Arr[a][1]==L[int(l)]:
-                if Arr[a][0] > z_min:
-                    z_minL = z_min
-                    z_minR = Arr[a][0]
-                    z_min  = z_minR
-        return   z_minL,z_minR
-    except:
-        print 'error two'
-        
-# сколько точек на следующей линии между z_minL и z_minR
-# ноль , две или более
-def more_than_two(Arr,L,l,fl):
-    try:
-        mtt=[]   
-        for a in range(len(Arr)):
-            if Arr[a][1]==L[int(l)]:
-                if l==0 or fl:
-                    lz,rz=two(Arr,L,int(l))
-                else:
-                    lz,rz=two(Arr,L,int(l)-1)
-                if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
-                    mtt.append(Arr[a])       
-        if len(mtt) > 2:  return len(mtt)
-        if len(mtt) == 2: return len(mtt)
-        if len(mtt) == 0: return len(mtt)
-    except:
-        print 'error more_than_two'            
-          
-# находим самые правые две точки на следующей линии 
-
-def two_next(Arr,L,l,D):
-    try:
-        for a in range(len(Arr)):            
-            if Arr[a][1]==L[int(l)]:
-               a1,a0=two_a(Arr,L,int(l)-0)
-               D.append(Arr[a1]) 
-               D.append(Arr[a0])            
-        return   Arr[a1],Arr[a0]
-    except:
-        print 'two_next' 
-            
-# "подбираем"  d , что бы линия не совпадала с 
-# горизонтальным отрезком 
-def num(P,d,h):    
-    while h>=0:
-        for i in reversed(range(len(P))):                
-            if i>2 and P[i][0]==1 :
-                if P[i][3] == P[i][1] and P[i][3] == round(h,5):                
-                    return True                              
-        h = h-(1*d)  
-        
-def go(self,Ar,Lr,D,R,expcode):
-    repeat = 100        
-    try:
-        while len(Ar)>0 and repeat:
-            fl=0 
-            for l in R:
-                fl=1 # флаг первого прохода
-                while more_than_two(Ar,Lr,l,fl) :
-                    if more_than_two(Ar,Lr,l,fl)==2:
-                        Cl,Cr = two_next(Ar,Lr,l,D)
-                    elif more_than_two(Ar,Lr,l,fl)>2:
-                        #R.append(l)# запоминаем позицию для "возврата"
-                        R.insert(1,l)# запоминаем позицию для "возврата"
-                        Cl,Cr = two_next(Ar,Lr,l,D) 
-                    if  l==0 or fl:
-                        old_Cl,old_Cr = Cl,Cr
-                        self.execute("G0  X%f " % (Lr[l]+5))
-                        expcode.write("G0 X%f\n" % (Lr[l]+5))
-                         
-                        self.execute("G0  Z%f" % (float(Cr[0])))
-                        expcode.write("G0 Z%f\n" % (float(Cr[0])))
-                                         
-                    self.execute("G0   Z%f" % (float(Cr[0])))
-                    expcode.write("G0 Z%f\n" % (float(Cr[0])))
-                    
-                    self.execute("G1   X%f " % (float(Cr[1])))
-                    expcode.write("G1 X%f\n" % (float(Cr[1])))
-                       
-                    self.execute("G1   X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
-                    expcode.write("G1 X%f Z%f\n" % (float(Cl[1]),float(Cl[0])))  
-                    
-                    if float(Cl[0])+0.5 > float(old_Cr[0]):
-                        self.execute("G0 X%f Z%f" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
-                        expcode.write("G0 X%f Z%f\n" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
-                    else:
-                        self.execute("G0   X%f Z%f" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
-                        expcode.write("G0 X%f Z%f\n" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
-                    old_Cl,old_Cr = Cl,Cr
-                    l+=1
-                    fl=0      
-                A1=[]
-                for a in Ar: 
-                    if a not in D: A1.append(a)
-                Ar=[]
-                for a in A1:
-                    Ar.append(a)                    
-            repeat -= 1               
-    except :
-        if len(Ar):
-            self.execute("(AXIS,notify, %s)" % ("something went wrong"))
-        return 
-    if repeat==0:        
-        self.execute("(AXIS,notify, %s)" % ("something went wrong!"))
-        return    
-                         
-#################################################-----G71.2
-# Fanuc code:
-# Programming
-# G71 U... R...
-# G71 P... Q... U... W... F... S...
-# Parameters
-#
-# First blockParamete
-# U	Depth of cut.
-# R	Retract height.
-#
-# Second blockParameter	Description
-# P	Contour start block number.
-# Q	Contour end block number.
-# U	Finishing allowance in x-axis.
-# W	Finishing allowance in z-axis.
-# F	Feedrate during G71 cycle.
-# S	Spindle speed during G71 cycle.
-#
-def g710(self, **words):
-    """ remap code G71.2 """
-    p = int(words['p'])    
-    q = int(words['q'])
-    d = abs(float(words['d']))
-    offset = float(words['k'])
-    
-    if words.has_key('s'):
-        sspeed = int(words['s'])
-        self.execute("S%d" % (sspeed))
-    if words.has_key('l'): #только int ???
-        offset_StartZ = int(words['l']) 
-    only_finishing_cut = 0    
-    if words.has_key('j'):
-        only_finishing_cut = int(words['j'])
-    quantity = 1    
-    if words.has_key('i'):
-        quantity = int(words['i'])
-    if words.has_key('t'):
-        R_Fanuc = float(words['t'])
-
-    if words.has_key('f'):    
-        fr = float(words['f'])
-        self.execute("F%f" % (fr))
-    tfile  = "./rs.tbl"
-    setline = open(tfile ,"w")
-    offs = ' '.join(['\n','T1','P1','X0','Z0','D%s' % (str(offset/12.7))])
-    setline.write(offs)
-    setline.close() 
-           
-    s = linuxcnc.stat() 
-    s.poll()
-    filename = s.file
-    f = open(filename, "r")
-    lines = f.readlines()
-    
-    x=0
-    c_line = 0
-    while x < len(lines):
-        # находим начальную точку цикла по X 
-        if re.search(".*\s*G71", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
-            t_Sx = x
-            while not re.search(".*\s*X", lines[t_Sx], re.I) and t_Sx > 0:
-                t_Sx -= 1
-            ST_COORDx0 = float(re.search("X\s*([-0-9.]+)",lines[t_Sx], re.I).group(1))
-            
-        # находим начальную точку цикла по Z 
-        if re.search(".*\s*G71", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
-            t_Sz = x
-            while not re.search(".*\s*Z", lines[t_Sz], re.I) and t_Sz > 0:
-                t_Sz -= 1
-            ST_COORDz0 = float(re.search("Z\s*([-0-9.]+)",lines[t_Sz], re.I).group(1))    
-        x+=1
-
-    self.execute("G21 G18 G49 G40 G90 G61 G7 ")
-    name_file = "./fgcode.ngc" 
-    fgcode = open(name_file, "w") 
-    string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
-    string += 'T1 M6\n'
-    
-    # добавляем в  контур "начальный отрезок"(обязательно), и "конечный"(опционально)
-    for x in range(len(lines)):
-        if  re.search("^\s*[(]\s*N\d", lines[x].upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", lines[x].upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',lines[x].upper())[1]))[0])
-                if num2 == p :
-                    c_line = 1
-                    if re.search("X\s*([-0-9.]+)",lines[x], re.I):
-                        st_cont_X = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
-        if c_line:
-            if re.search("Z\s*([-0-9.]+)",lines[x], re.I):
-                end_cont_Z = float(re.search("Z\s*([-0-9.]+)",lines[x], re.I).group(1))
-            if re.search("X\s*([-0-9.]+)",lines[x], re.I):   
-                end_cont_X = float(re.search("X\s*([-0-9.]+)",lines[x], re.I).group(1))
-        if  re.search("^\s*[(]\s*N\d", lines[x].upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", lines[x].upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',lines[x].upper())[1]))[0])
-                if num2 == q :
-                    c_line = 0                  
+        self.master = master 
                 
-                
+        self.frame_c=Frame(master) 
+        self.frame_c.grid(row=0,column=1,)
 
-    if float(words['d'])<0 : # если расточка(d со знаком минус)  
-        if ST_COORDx0 - end_cont_X > d :
-            print 'error cycle start point '
-            self.execute("(AXIS,notify, %s)" % ("error cycle start point"))
-            return
-    
-    string += 'G1 X-30 Z30\n'
-    string += 'G1 X-25 Z35\n'
-    if float(words['d'])>=0 : # если НЕ расточка(d НЕ со знаком минус)
-        string += 'G0 X%f Z%f\n' % (ST_COORDx0,ST_COORDz0)
-        string += 'G0 X%f Z%f\n' % (st_cont_X+d,ST_COORDz0)
-    if float(words['d'])<0 :
-        string += 'G41\n' 
-    else:
-        string += 'G42\n'  
-                     
-    for w in lines:
-        if  re.search("^\s*[(]\s*N\d", w.upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 == p :
-                    c_line = 1
-        if c_line:    
-            try: 
-                contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                string += contour
-                string += '\n'
-            except :
-                print 'error_for w in lines'
+        self.frame_l=Frame(master,relief = RIDGE,)
+        self.frame_l.grid(row=0,column=0,padx=4,pady=4,sticky=N+E+S+W)
 
-        if  re.search("^\s*[(]\s*N\d", w.upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 == q :
-                    c_line = 0                                                    
-    f.close()
-    
-    string += 'G1 F100 Z%f\n' % (end_cont_Z-offset*2) #"конечный" отрезок
-    string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,end_cont_Z-offset*2) #"конечный" отрезок
-    string += 'G40\n'
-    self.execute("G40")
-    string += 'M30\n'
-    fgcode.write(string)
-    outfilename  = "./RS274_temp.txt"
-    outfile = open(outfilename, "w")
-    
-    fgcode.close() 
-    p = subprocess.Popen(["sh", "-c", (' '.join(['./rs274','-t',tfile,'-g',name_file,outfilename]))],
-                      stdin=None,
-                      stdout=outfile,
-                      stderr=None )
-    p.wait()                 
-    outfile.close()
-    P = []                      
-    pr = []    
-    f1 = open(outfilename, "r")
-    ln = f1.readlines()
-    old_posX = 0
-    old_posZ = 0 
-    i=-1   
-    for w in ln:
-        if  re.search("STRAIGHT_TRAVERSE", w.upper()):
-            numbers = re.split('\(',w.upper())
-            number = re.split('\,',numbers[1].upper())
-            x1=float(number[0])*2
-            z1=float(number[2])
-            prog(pr,0,x1,z1)
-            i+=1
-            papp(i,0,x1,z1,old_posX,old_posZ,P)
-            old_posX = float(number[0])
-            old_posZ = float(number[2])            
-        elif  re.search("STRAIGHT_FEED", w.upper()):
-            numbers = re.split('\(',w.upper())
-            number = re.split('\,',numbers[1].upper())
-            x1=float(number[0])*2
-            z1=float(number[2])
-            prog(pr,1,x1,z1)
-            i+=1
-            papp(i,1,x1,z1,old_posX,old_posZ,P)
-            old_posX = float(number[0])
-            old_posZ = float(number[2])
+        self.frame_r=Frame(master,relief = RIDGE,)
+        self.frame_r.grid(row=0,column=2,padx=4,pady=4,sticky=N+E+S+W)        
 
-        elif  re.search("ARC_FEED", w.upper()):
-            numbers = re.split('\(',w.upper())
-            number = re.split('\,',numbers[1].upper())
-            if float(number[4])>0:
-                g=3
-            elif float(number[4])<0:
-                g=2 
-            x_arc=float(number[1])*2
-            z_arc=float(number[0])
-            arc_I = float(number[3]) - old_posX
-            arc_K = float(number[2]) - old_posZ
-            radius = round(hip(arc_I,arc_K),6)
-            prog(pr,g,x_arc,z_arc,arc_I,arc_K)            
-            i+=1
-            papp(i,g,x_arc,z_arc,old_posX,old_posZ,P,radius,arc_I,arc_K)
-            old_posX = float(number[1])
-            old_posZ = float(number[0])
+        self.frame_r1=Frame(master,relief = RIDGE,)
+        #self.frame_r1.grid(row=0,column=3,padx=4,pady=4,sticky=N+E+S+W) 
 
-    # начало контура
-    tmp1=[]
-    tmp2=[] 
-    for p in P: #XXX если дуга - добавлять точку максимума по X
-       tmp1.append(p[1])
-       tmp2.append(p[4])
-                
-    z_minim = min(tmp2)
-    z_maxim = 50  #XXX вынести в INI ??
+        self.frame_d=Frame(master) 
+        self.frame_d.grid(row=1,column=1,padx=4,sticky=E+S+W)
 
-    A=[]    
-    bounce_x = 0.5
-    bounce_z = 0.5
-    h1=max(tmp1)*0.5 - 0.1 #XXX разобраться с точностью вычислений 
-                
-    kh1= 0.0    
-    while num(P,d,h1):
-        kh1 = kh1 + 0.01
-        d = d - kh1  #XXX может быть нужно изменять (и) h1
-        print 'd=',d 
-    #---------------------------------------------------ищем все точки пересечения    
-    h1=max(tmp1)*0.5 - 0.1 
-    while h1>=0:
-        for i in reversed(range(len(P))):            
-            if i>2 and P[i][0]<=1 :
-                par=intersection_line_line( P[i][3], P[i][4], P[i][1], P[i][2],  h1, z_minim,h1, z_maxim,A)
-            if i>2 and P[i][0]>1 :
-                o=en_line_arc(P[i][0],P[i][2],P[i][4],P[i][1],P[i][3],z_minim,h1,z_maxim,h1,P[i][7],P[i][6],P[i][5],A)    
-        h1 = h1-(1*d)
-        
-    print 'P =', P ,'\n'
-    print 'A =', A ,'\n'
-    
-    explicit = 'ngc/explicit.ngc'
-    expcode = open(explicit, "r")
-    exp_lines = expcode.readlines()
-    exp_string=''
-    if len(exp_lines):
-        for el in exp_lines:
-            exp_string += el
-        es1=exp_string.split('M02')[0]
-        expcode = open(explicit, "w")
-        expcode.write(es1)
-        expcode = open(explicit, "a")
-    else:
-        expcode = open(explicit, "w")
-    expcode.write("G21 G18 G49  G90 G61 G7\n")
-    if words.has_key('f'):    
-        fr = float(words['f'])
-        expcode.write("F%f\n" % fr)
-        
-    #------------------------------------------------------------------ID
-    if float(words['d'])<0 : # если расточка(d со знаком минус)
-        for i in reversed(range(len(A))) : 
-            self.execute("G1 F1000  X%f" % (A[i][1]))
-            expcode.write("G1 F1000  X%f\n" % (A[i][1]))                          
-            self.execute("G1 F1000  Z%f" % (A[i][0]))
-            expcode.write("G1 F1000  Z%f\n" % (A[i][0]))
-            self.execute("G0 X%f Z%f" % (float(A[i][1]) - d + bounce_x,float(A[i][0])+bounce_z))
-            expcode.write("G0 X%f Z%f\n" % (float(A[i][1]) - d + bounce_x,float(A[i][0])+bounce_z))
-            self.execute("G0 Z%f" % (ST_COORDz0))
-            expcode.write("G0 Z%f\n" % (ST_COORDz0))
-
-        for w in range(2,len(pr)):
-            try:  
-                self.execute(pr[w])
-                expcode.write(pr[w])
-                expcode.write("\n")
-            except InterpreterException,e:
-                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                        self.set_errormsg(msg) 
-                        return INTERP_ERROR 
-        self.execute("G0 Z%f" % (ST_COORDz0))
-        
-        return    
-    
-    #находим X всех горизонталей
-    L=[]
-    nn=0                            
-    for a in range(len(A)):
-        try:
-            if A[a][1]!=nn:
-                ns=A[a][1]
-                L.append(A[a][1])
-                nn= ns  
-        except:
-            pass
-    L.append(0)
-
-
-
-    D=[]              
-    R=[0]
-    go(self,A,L,D,R,expcode)            
-    self.execute("G0  X%f" % (max(tmp1)+5))#XXX 
-    expcode.write("G0 X%f\n" % (max(tmp1)+5))
-                   
-    print 'pr=', pr 
-    for w in range(2,len(pr)):
-        try:  
-            self.execute(pr[w])
-            expcode.write(pr[w])
-            expcode.write("\n")
-        except InterpreterException,e:
-                    msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                    self.set_errormsg(msg) 
-                    return INTERP_ERROR 
-    self.execute("G0 X%f " % (max(tmp1)+0))#XXX 
-    expcode.write("G0 X%f\n" % (max(tmp1)+0)) 
-    self.execute("G0 Z%f " % (ST_COORDz0))#XXX
-    expcode.write("G0 Z%f\n" % (ST_COORDz0))     
-    expcode.write("M02\n") 
-    expcode.close()
-    
-def g700(self, **words):
-    """ remap code G70 """
-    p = int(words['p'])    
-    q = int(words['q'])
-    
-    if words.has_key('f'):
-        fr = float(words['f'])
-        self.execute("F%f" % (fr))
-    if words.has_key('d'):
-        d = float(words['d'])
-   
-    s = linuxcnc.stat() 
-    s.poll()
-
-    filename = s.file
-    f = open(filename, "r")
-    lines = f.readlines()
-    
-    bounce_x = 0.5
-    bounce_z = 0.5 
-    
-    explicit = 'ngc/explicit.ngc'
-    expcode = open(explicit, "r")
-    exp_lines = expcode.readlines()
-    exp_string=''
-    if len(exp_lines):
-        for el in exp_lines:
-            exp_string += el
-        es1=exp_string.split('M02')[0]
-        expcode = open(explicit, "w")
-        expcode.write(es1)
-        expcode = open(explicit, "a")
-    else:
-        expcode = open(explicit, "w")
-    expcode.write("G21 G18 G49  G90 G61 G7\n")
-    if words.has_key('f'):    
-        fr = float(words['f'])
-        expcode.write("F%f\n" % fr)   
-##################################################### 
-
-    c_line2 = 0               
-    for w in lines:
-        if  re.search("^\s*[(]\s*N\d", w.upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])                
-                if num2 == p: 
-                    c_line2 = 1
-        if c_line2:
-            try: 
-                contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                self.execute(contour)
-                expcode.write(contour)
-                expcode.write("\n")
-            except :
-                print 'G700_error'
-            if re.search("Z\s*([-0-9.]+)",w, re.I):
-                end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
-            if re.search("X\s*([-0-9.]+)",w, re.I):   
-                end_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1)) 
-        if  re.search("^\s*[(]\s*N\d", w.upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 == q: 
-                    c_line2 = 0
-                              
-#  завершающий отход (в зависимости : OD или ID)
-    if words.has_key('d'):
-        if d<0:
-            self.execute("G0 X%f Z%f" % (float(end_cont_X)-bounce_x,float(end_cont_Z)+0.1))
-            expcode.write("G0 X%f Z%f\n" % (float(end_cont_X)-bounce_x,float(end_cont_Z)+0.1))
-        else:
-            self.execute("G0 X%f Z%f" % (float(end_cont_X)+bounce_x,float(end_cont_Z)+0.1))
-            expcode.write("G0 X%f Z%f\n" % (float(end_cont_X)+bounce_x,float(end_cont_Z)+0.1))  
-                                
-    f.close()
-    expcode.write("M02\n")                
-    expcode.close()
-    return INTERP_OK           
+        self.textbox=TextboxClass(frame=self.frame_d,master=self.master)       
+        self.A=[]       
 #######################################################################
+        #self.l1 = Button(self.frame_l,command=None)
+        #self.l1.grid(row=0)
+        #self.l_end = Button(self.frame_l,text="END", command=None)
+        #self.l_end.grid(row=1)
 
-def g733(self, **words):
-    """ remap code G73.3 """
-    p = int(words['p'])    
-    q = int(words['q'])
-    offset = float(words['k'])
-    
-    if words.has_key('s'):
-        sspeed = int(words['s'])
-        self.execute("S%d" % (sspeed))
-    if words.has_key('l'): #только int ???
-        offset_StartZ = int(words['l']) 
-    only_finishing_cut = 0    
-    if words.has_key('j'):
-        only_finishing_cut = int(words['j'])
-    quantity = 1    
-    if words.has_key('i'):
-        quantity = int(words['i'])
-    if words.has_key('t'):
-        R_Fanuc = float(words['t'])
-    if words.has_key('f'):    
-        fr = float(words['f'])
-    if words.has_key('d'):
-        d = float(words['d'])        
 
-           
-    s = linuxcnc.stat() 
-    s.poll()
-    filename = s.file
-    f = open(filename, "r")
-    lines = f.readlines()
-    pr = []
-    
-    x=0
-    while x < len(lines):
-        # находим начальную точку цикла по X 
-        if re.search(".*\s*G73.3", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
-            t_Sx = x
-            while not re.search(".*\s*X", lines[t_Sx], re.I) and t_Sx > 0:
-                t_Sx -= 1
-            ST_COORDx0 = float(re.search("X\s*([-0-9.]+)",lines[t_Sx], re.I).group(1))
-            
-        # находим начальную точку цикла по Z 
-        if re.search(".*\s*G73.3", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
-            t_Sz = x
-            while not re.search(".*\s*Z", lines[t_Sz], re.I) and t_Sz > 0:
-                t_Sz -= 1
-            ST_COORDz0 = float(re.search("Z\s*([-0-9.]+)",lines[t_Sz], re.I).group(1))    
-        x+=1    
-    
-    self.execute("G21 G18 G49 G40 G90 G61 G7 F1000")
-    name_file = "./fgcode.ngc" 
-    fgcode = open(name_file, "w") 
-    string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
-    string += 'T1 M6\n'
-    string += 'G1 X-30 Z30\n'
-    string += 'G1 X-25 Z35\n'#XXX
-    if float(words['d'])<0 :
-        string += 'G41\n' 
-    else:
-        string += 'G42\n'
-                      
-    '''for w in lines:
-        if  re.search("^\s*[(]\s*N\d", w.upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 >= p and num2 <= q:
-                    try: 
-                        contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                        string += contour
-                        string += '\n'
-                    except InterpreterException,e:
-                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                        self.set_errormsg(msg) 
-                        return INTERP_ERROR'''                             
-    f.close()
-    
-    c_line2 = 0               
-    for w in lines:
-        if  re.search("^\s*[(]\s*N\d", w.upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])                
-                if num2 == p: 
-                    c_line2 = 1
-        if c_line2:
-            try: 
-                contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                string += contour
-                string += '\n'
-            except :
-                print 'G700_error'
-            if re.search("Z\s*([-0-9.]+)",w, re.I):
-                end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
-            if re.search("X\s*([-0-9.]+)",w, re.I):   
-                end_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1)) 
-        if  re.search("^\s*[(]\s*N\d", w.upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIKSF\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 == q: 
-                    c_line2 = 0    
-    
-    string += 'G40\n'
-    self.execute("G40")
-    string += 'M30\n'
-    fgcode.write(string)
-    outfilename  = "./RS274_temp.txt"
-    outfile = open(outfilename, "w")    
-    fgcode.close() 
-    offset = offset/12.7
-    offset_mem = offset
-#============================================================================    
-    for i in range(quantity):
-        tfile  = "./rs.tbl"
-        setline = open(tfile ,"w")
-        offs = ' '.join(['\n','T1','P1','X0','Z0','D%s' % (str(offset_mem))])
-        setline.write(offs)
-        setline.close()
-     
-        p = subprocess.Popen(["sh", "-c", (' '.join(['./rs274','-t',tfile,'-g',name_file,outfilename]))],
-                          stdin=None,
-                          stdout=None,
-                          stderr=None )
-        p.wait()                
-        outfile.close()                      
+
+
+#############################
+        self.nb = Notebook(self.frame_r)
+
+        self.nb_f1 = Frame(self.nb)
+        self.nb_f2 = Frame(self.nb)
+        self.nb_f3 = Frame(self.nb)
+        self.nb_f4 = Frame(self.nb)
+        self.nb_f5 = Frame(self.nb)
+        self.nb_f6 = Frame(self.nb)
         
-        f1 = open(outfilename, "r")
-        ln = f1.readlines()
-        old_posX = 0
-        old_posZ = 0   
-        for w in ln:
-            if  re.search("STRAIGHT_TRAVERSE", w.upper()):
-                numbers = re.split('\(',w.upper())
-                number = re.split('\,',numbers[1].upper())
-                prog(pr,0,number[0],number[2])
-                old_posX = float(number[0])
-                old_posZ = float(number[2])             
-            elif  re.search("STRAIGHT_FEED", w.upper()):
-                numbers = re.split('\(',w.upper())
-                number = re.split('\,',numbers[1].upper())
-                x1=float(number[0])*2
-                z1=float(number[2])
-                prog(pr,1,x1,z1)
-                old_posX = float(number[0])
-                old_posZ = float(number[2])
-
-            elif  re.search("ARC_FEED", w.upper()):
-                numbers = re.split('\(',w.upper())
-                number = re.split('\,',numbers[1].upper())
-                if float(number[4])>0:
-                    g=3
-                elif float(number[4])<0:
-                    g=2 
-                x_arc=float(number[1])*2
-                z_arc=float(number[0])
-                arc_I = float(number[3]) - old_posX
-                arc_K = float(number[2]) - old_posZ
-                radius = round(hip(arc_I,arc_K),6)
-                prog(pr,g,x_arc,z_arc,arc_I,arc_K)            
-                old_posX = float(number[1])
-                old_posZ = float(number[0])        
-        f1.close() 
-        
-        explicit = 'ngc/explicit.ngc'
-        expcode = open(explicit, "r")
-        exp_lines = expcode.readlines()
-        exp_string=''
-        if len(exp_lines):
-            for el in exp_lines:
-                exp_string += el
-            es1=exp_string.split('M02')[0]
-            expcode = open(explicit, "w")
-            expcode.write(es1)
-            expcode = open(explicit, "a")
-        else:
-            expcode = open(explicit, "w")
-        expcode.write("G21 G18 G49  G90 G61 G7\n")
-        if words.has_key('f'):    
-            fr = float(words['f'])
-            expcode.write("F%f\n" % fr)        
-
-        bounce_x = 0.5
-        bounce_z = 0.5 
-              
-        print 'pr=', pr 
-        print 'ST_COORDz0  G73=', ST_COORDz0 
-        self.execute("G0  Z%f" % (ST_COORDz0))
-        expcode.write("G0  Z%f\n" % (ST_COORDz0))
-        for w in range(2,len(pr)):
-            try:  
-                self.execute(pr[w])
-                expcode.write(pr[w])
-                expcode.write("\n")
-            except:
-                print 'G733_error'
-                return INTERP_ERROR     
-        offset_mem -= offset/quantity
-        pr = []
-        
-        #  завершающий отход (в зависимости : OD или ID)
-        if words.has_key('d'):
-            d = float(words['d'])
-            if d<0:
-                self.execute("G91")
-                expcode.write("G91\n")
-                self.execute("G0 X%f Z%f" % (-bounce_x,0.1))
-                expcode.write("G0 X%f Z%f\n" % (-bounce_x,0.1))
-                self.execute("G90")
-                expcode.write("G90\n")
-                self.execute("G0  Z0")
-                expcode.write("G0 Z0\n")
-            else:
-                self.execute("G91")
-                expcode.write("G91\n")                
-                self.execute("G0 X%f Z%f" % (bounce_x,0.1))
-                expcode.write("G0 X%f Z%f\n" % (bounce_x,0.1))
-                self.execute("G90")
-                expcode.write("G90\n")
-                self.execute("G0  Z0")
-                expcode.write("G0 Z0\n")
-        expcode.write("M02\n")                
-        expcode.close()   
-    
-#################################################-----G72
-
-def g720(self, **words):
-    """ remap code G71.2 """
-    p = int(words['p'])    
-    q = int(words['q'])
-    d = float(words['d'])
-    offset = float(words['k'])
-    
-    if words.has_key('s'):
-        sspeed = int(words['s'])
-        self.execute("S%d" % (sspeed))
-    if words.has_key('l'): #только int ???
-        offset_StartZ = int(words['l']) 
-    only_finishing_cut = 0    
-    if words.has_key('j'):
-        only_finishing_cut = int(words['j'])
-    quantity = 1    
-    if words.has_key('i'):
-        quantity = int(words['i'])
-    if words.has_key('t'):
-        R_Fanuc = float(words['t'])
-
-    if words.has_key('f'):    
-        fr = float(words['f'])
-        
-    tfile  = "./rs.tbl"
-    setline = open(tfile ,"w")
-    offs = ' '.join(['\n','T1','P1','X0','Z0','D%s' % (str(offset/12.7))])
-    setline.write(offs)
-    setline.close() 
-           
-    s = linuxcnc.stat() 
-    s.poll()
-    filename = s.file
-    f = open(filename, "r")
-    lines = f.readlines()
-    
-    x=0
-    c_line = 0
-    while x < len(lines):
-        # находим начальную точку цикла по X 
-        if re.search(".*\s*G72", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
-            t_Sx = x
-            while not re.search(".*\s*X", lines[t_Sx], re.I) and t_Sx > 0:
-                t_Sx -= 1
-            ST_COORDx0 = float(re.search("X\s*([-0-9.]+)",lines[t_Sx], re.I).group(1))
-            
-        # находим начальную точку цикла по Z 
-        if re.search(".*\s*G72", lines[x], re.I) and not re.search(".*\s*[(]", lines[x], re.I):
-            t_Sz = x
-            while not re.search(".*\s*Z", lines[t_Sz], re.I) and t_Sz > 0:
-                t_Sz -= 1
-            ST_COORDz0 = float(re.search("Z\s*([-0-9.]+)",lines[t_Sz], re.I).group(1))    
-        x+=1
-
-    self.execute("G21 G18 G49 G40 G90 G61 G7 F1000")
-    name_file = "./fgcode.ngc" 
-    fgcode = open(name_file, "w") 
-    string = 'G21 G18 G49 G40 G90 G61 G7 F1000 \n'
-    string += 'T1 M6\n'
-
-    
-    # добавляем в  контур "начальный отрезок"(обязательно), и "конечный"(опционально)
-    for w in lines:
-        if  re.search("^\s*[(]\s*N\d", w.upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 == p :
-                    if re.search("X\s*([-0-9.]+)",w, re.I):
-                        st_cont_X = float(re.search("X\s*([-0-9.]+)",w, re.I).group(1))
-                if num2 >= p and num2 <= q:
-                    #contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                    if re.search("Z\s*([-0-9.]+)",w, re.I):
-                        end_cont_Z = float(re.search("Z\s*([-0-9.]+)",w, re.I).group(1))
-
-    string += 'G1 X-30 Z30\n'
-    string += 'G1 X-25 Z35\n'
-    #string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,ST_COORDz0)
-    #print 'st_cont_X=' ,st_cont_X
-    #string += 'G1 F100 X%f Z%f\n' % (st_cont_X,ST_COORDz0)
-    string += 'G42\n'    
-                     
-    for w in lines:
-        if  re.search("^\s*[(]\s*N\d", w.upper()):
-            if not re.search("[^\(\)\.\-\+NGZXRIK\d\s]", w.upper()):
-                num2 = int(re.findall("^\s*\d*",(re.split('N',w.upper())[1]))[0])
-                if num2 >= p and num2 <= q:
-                    try: 
-                        contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
-                        string += contour
-                        string += '\n'
-                    except InterpreterException,e:
-                        msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                        self.set_errormsg(msg) 
-                        return INTERP_ERROR                             
-    f.close()
-
-    #string += 'G1 F100 X%f Z%f\n' % (ST_COORDx0,end_cont_Z) #"конечный" отрезок
-    string += 'G40\n'
-    self.execute("G40")
-    string += 'M30\n'
-    fgcode.write(string)
-    outfilename  = "./RS274_temp.txt"
-    outfile = open(outfilename, "w")
-    
-    fgcode.close() 
-    p = subprocess.Popen(["sh", "-c", (' '.join(['./rs274','-t',tfile,'-g',name_file,outfilename]))],
-                      stdin=None,
-                      stdout=outfile,
-                      stderr=None )
-    p.wait()                 
-    outfile.close()
-    P = []                      
-    pr = []    
-    f1 = open(outfilename, "r")
-    ln = f1.readlines()
-    old_posX = 0
-    old_posZ = 0 
-    i=-1   
-    for w in ln:
-        if  re.search("STRAIGHT_TRAVERSE", w.upper()):
-            numbers = re.split('\(',w.upper())
-            number = re.split('\,',numbers[1].upper())
-            x1=float(number[0])*2
-            z1=float(number[2])
-            prog(pr,0,x1,z1)
-            i+=1
-            papp(i,0,x1,z1,old_posX,old_posZ,P)
-            old_posX = float(number[0])
-            old_posZ = float(number[2])            
-        elif  re.search("STRAIGHT_FEED", w.upper()):
-            numbers = re.split('\(',w.upper())
-            number = re.split('\,',numbers[1].upper())
-            x1=float(number[0])*2
-            z1=float(number[2])
-            prog(pr,1,x1,z1)
-            i+=1
-            papp(i,1,x1,z1,old_posX,old_posZ,P)
-            old_posX = float(number[0])
-            old_posZ = float(number[2])
-
-        elif  re.search("ARC_FEED", w.upper()):
-            numbers = re.split('\(',w.upper())
-            number = re.split('\,',numbers[1].upper())
-            if float(number[4])>0:
-                g=3
-            elif float(number[4])<0:
-                g=2 
-            x_arc=float(number[1])*2
-            z_arc=float(number[0])
-            arc_I = float(number[3]) - old_posX
-            arc_K = float(number[2]) - old_posZ
-            radius = round(hip(arc_I,arc_K),6)
-            prog(pr,g,x_arc,z_arc,arc_I,arc_K)            
-            i+=1
-            papp(i,g,x_arc,z_arc,old_posX,old_posZ,P,radius,arc_I,arc_K)
-            old_posX = float(number[1])
-            old_posZ = float(number[0])
-
-    # начало контура
-    tmp1=[]
-    tmp2=[] 
-    for p in P: #XXX если дуга - добавлять точку максимума по X
-       tmp1.append(p[1])
-       tmp2.append(p[4])
-                
-    z_minim = min(tmp2)
-    z_maxim = 5
-    print 'z_minim=',z_minim,'z_maxim=',z_maxim
-    A=[]
-    bounce_x = 0.5
-    bounce_z = 0.5
-    #---------------------------------------------------ищем все точки пересечения
-    
-    h1=0
-    while h1>=z_minim :
-        for i in range(len(P)):          
-            if i>2 and P[i][0]==1 :
-                par=in_line_line_G72( P[i][3], P[i][4], P[i][1], P[i][2],   0 ,h1, 1000 ,h1,A)
-            if i>2 and P[i][0]>1 :
-                intersect_vertic(P[i][2],P[i][4],P[i][1],P[i][3],h1,P[i][7],P[i][6],P[i][5],A)    
-        h1 = h1-(1*d)
-        
-    print 'P =', P ,'\n'
-    print 'A =', A ,'\n'
-    
-    explicit = 'ngc/explicit.ngc'
-    expcode = open(explicit, "r")
-    exp_lines = expcode.readlines()
-    exp_string=''
-    if len(exp_lines):
-        for el in exp_lines:
-            exp_string += el
-        es1=exp_string.split('M02')[0]
-        expcode = open(explicit, "w")
-        expcode.write(es1)
-        expcode = open(explicit, "a")
-    else:
-        expcode = open(explicit, "w")
-    expcode.write("G21 G18 G49  G90 G61 G7\n")
-    if words.has_key('f'):    
-        fr = float(words['f'])
-        expcode.write("F%f\n" % fr)
-    
-    self.execute("G1 F1000  X%f Z%f" % (ST_COORDx0,0))
-    expcode.write("G1 F1000  X%f Z%f\n" % (ST_COORDx0,0))
-    for i in range(len(A)) :
-        self.execute("G1 F1000  Z%f" % (A[i][1]))
-        expcode.write("G1 F1000  Z%f\n" % (A[i][1]))
-        
-        self.execute("G1 F1000  X%f Z%f" % (A[i][0],A[i][1])) 
-        expcode.write("G1 F1000  X%f Z%f\n" % (A[i][0],A[i][1])) 
-                       
-        self.execute("G1 F1000  X%f" % (ST_COORDx0))
-        expcode.write("G1 F1000  X%f\n" % (ST_COORDx0))
-        
-    self.execute("G1 F1000  X%f" % (ST_COORDx0)) 
-    expcode.write("G1 F1000  X%f\n" % (ST_COORDx0)) 
+        self.nb.add(self.nb_f1,)
+        self.nb.add(self.nb_f2,)
+        self.nb.add(self.nb_f3,)
+        self.nb.add(self.nb_f4,)
+        self.nb.add(self.nb_f5,)
+        self.nb.add(self.nb_f6,)        
+        self.nb.pack()
        
-    self.execute("G0   Z0")
-    expcode.write("G0   Z0\n")
-    #++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++GO            
-    print 'pr=', pr 
-    for w in range(2,len(pr)):
-        try:  
-            self.execute(pr[w])
-            expcode.write(pr[w])
-            expcode.write("\n")
-        except InterpreterException,e:
-                    msg = "%d: '%s' - %s" % (e.line_number,e.line_text, e.error_message)
-                    self.set_errormsg(msg) 
-                    return INTERP_ERROR 
+        f1=Frame(self.nb_f1,relief = GROOVE,)
+        f1.grid(row=0,column=0,padx=2,pady=2,sticky=N+W+E)
+        f2=Frame(self.nb_f2,relief = GROOVE,)
+        f2.grid(row=1,column=0,padx=2,pady=2,sticky=N+W+E)
+        f3=Frame(self.nb_f3,relief = GROOVE,)
+        f3.grid(row=2,column=0,padx=2,pady=2,sticky=N+W+E)
+        f4=Frame(self.nb_f4,relief = GROOVE,)
+        f4.grid(row=3,column=0,padx=2,pady=2,sticky=N+W+E)        
+        f5=Frame(self.nb_f5,relief = GROOVE,)
+        f5.grid(row=4,column=0,padx=2,pady=2,sticky=N+W+E)  
+        f6=Frame(self.nb_f6,relief = GROOVE,)
+        f6.grid(row=5,column=0,padx=2,pady=2,sticky=N+W+E)       
     
-    self.execute("G1 F1000  X%f " % (ST_COORDx0))
-    expcode.write("G1 F1000  X%f\n " % (ST_COORDx0))    
-    self.execute("G0   Z0")
-    expcode.write("G0   Z0\n") 
-    expcode.write("M02\n")                             
-    expcode.close()   
+        f1.columnconfigure(0,weight=1)
+        f2.columnconfigure(0,weight=1)
+        f3.columnconfigure(0,weight=1)
+        f4.columnconfigure(0,weight=1)        
+        f5.columnconfigure(0,weight=1) 
+        f6.columnconfigure(0,weight=1) 
+        
+        self.f6 = f6
+                        
+        self.var_st_X = DoubleVar()
+        self.var_st_X.set(float(0))
+        self.var_st_Z = DoubleVar()
+        self.var_st_Z.set(float(0))
+        self.var_Ch = DoubleVar()
+        self.var_Ch.set(float(0))                
+
+        self.b_v = Button(f1,command=self.preview_G)
+        self.b_v.grid(row=0)
+
+        self.im = PhotoImage(file='images/07.gif')
+        self.b_v.config(image=self.im)
+        self.b_v.im = self.im
+
+        self.b_g = Button(f1,command=self.preview_V)
+        self.b_g.grid(row=1)
+
+        self.im = PhotoImage(file='images/08.gif')
+        self.b_g.config(image=self.im)
+        self.b_g.im = self.im
+
+        self.b_n = Button(f1,command=self.preview_N)
+        self.b_n.grid(row=2)
+
+        self.im = PhotoImage(file='images/06.gif')
+        self.b_n.config(image=self.im)
+        self.b_n.im = self.im
+        
+        self.b_c = Button(f1,command=self.preview_C)
+        self.b_c.grid(row=3)
+
+        self.im = PhotoImage(file='images/09.gif')
+        self.b_c.config(image=self.im)
+        self.b_c.im = self.im 
+        
+        self.run = Button(f1,command=self.run)
+        self.run.grid(row=4)
+
+        self.im = PhotoImage(file='images/09.gif')
+        self.run.config(image=self.im)
+        self.run.im = self.im               
+ #------------------------------------------------------V                    
+        Label(f3, text="Next point   X")\
+                .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.st_X = Entry(f3,width=7,textvariable=self.var_st_X)
+        self.st_X.grid(row=0,column=1,sticky=N+E)
+
+        Label(f3, text=("Chamfer"))\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.Ch = Entry(f3,width=7,textvariable=self.var_Ch)
+        self.Ch.grid(row=1,column=1,sticky=N+E)
+
+
+        self.var_st_Z = DoubleVar()
+        self.var_st_Z.set(float(0))
+ 
+        self.b_added1 = Button(f3,command=self.draw_line)
+        self.b_added1.grid(row=2,column=2)
+
+        self.im = PhotoImage(file='images/tool_run.gif')
+        self.b_added1.config(image=self.im)
+        self.b_added1.im = self.im   
+        
+        
+        self.abs_inc = IntVar()
+        self.abs_inc.set(0)
+        self.rad1v = Radiobutton(f3,text="abs",variable=self.abs_inc,value=0 )
+        self.rad1v.grid(row=0,column=2)
+        self.rad2v = Radiobutton(f3,text="inc",variable=self.abs_inc,value=1 )
+        self.rad2v.grid(row=1,column=2)
+
+        self.cancelV = Button(f3,command=self.cancel)
+        self.cancelV.grid(row=3,column=2)
+
+        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.cancelV.config(image=self.im)
+        self.cancelV.im = self.im                     
+ #----------------------------------------------------------- G           
+        Label(f2, text="Next point   Z")\
+                .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.st_Z = Entry(f2,width=7,textvariable=self.var_st_Z)
+        self.st_Z.grid(row=0,column=1,sticky=N+E)       
+
+        Label(f2, text=("Chamfer"))\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.Ch2 = Entry(f2,width=7,textvariable=self.var_Ch)
+        self.Ch2.grid(row=1,column=1,sticky=N+E)
+        
+        self.b_added2 = Button(f2,command=self.draw_line)
+        self.b_added2.grid(row=2,column=2)
+
+        self.im = PhotoImage(file='images/tool_run.gif')
+        self.b_added2.config(image=self.im)
+        self.b_added2.im = self.im 
+        
+
+        self.rad1g = Radiobutton(f2,text="abs",variable=self.abs_inc,value=0 )
+        self.rad1g.grid(row=0,column=2)
+        self.rad2g = Radiobutton(f2,text="inc",variable=self.abs_inc,value=1 )
+        self.rad2g.grid(row=1,column=2) 
+        
+        self.cancelG = Button(f2,command=self.cancel)
+        self.cancelG.grid(row=3,column=2)
+
+        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.cancelG.config(image=self.im)
+        self.cancelG.im = self.im                        
+#-------------------------------------------------- N
+        Label(f4, text="Next point  X")\
+                .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.st_X = Entry(f4,width=7,textvariable=self.var_st_X)
+        self.st_X.grid(row=0,column=1,sticky=N+E)
+       
+        Label(f4, text="Next point  Z")\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.st_Z = Entry(f4,width=7,textvariable=self.var_st_Z)
+        self.st_Z.grid(row=1,column=1,sticky=N+E)       
+
+        Label(f4, text=("Chamfer"))\
+                .grid(row=2,column=0,sticky=N+W,padx=4)
+        self.Ch3 = Entry(f4,width=7,textvariable=self.var_Ch)
+        self.Ch3.grid(row=2,column=1,sticky=N+E)
+        
+        self.b_added3 = Button(f4,command=self.draw_line)
+        self.b_added3.grid(row=2,column=2)
+
+        self.im = PhotoImage(file='images/tool_run.gif')
+        self.b_added3.config(image=self.im)
+        self.b_added3.im = self.im
+
+        self.rad1n = Radiobutton(f4,text="abs",variable=self.abs_inc,value=0 )
+        self.rad1n.grid(row=0,column=2)
+        self.rad2n = Radiobutton(f4,text="inc",variable=self.abs_inc,value=1 )
+        self.rad2n.grid(row=1,column=2) 
+        
+        self.cancelN = Button(f4,command=self.cancel)
+        self.cancelN.grid(row=3,column=2)
+
+        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.cancelN.config(image=self.im)
+        self.cancelN.im = self.im 
+          
+#-------------------------------------------------- C
+        Label(f5, text="Next point cX")\
+                .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.st_X = Entry(f5,width=7,textvariable=self.var_st_X)
+        self.st_X.grid(row=0,column=1,sticky=N+E)
+       
+        Label(f5, text="Next point cZ")\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.st_Z = Entry(f5,width=7,textvariable=self.var_st_Z)
+        self.st_Z.grid(row=1,column=1,sticky=N+E)       
+
+        Label(f5, text=("Chamfer"))\
+                .grid(row=2,column=0,sticky=N+W,padx=4)
+        self.Ch3 = Entry(f5,width=7,textvariable=self.var_Ch)
+        self.Ch3.grid(row=2,column=1,sticky=N+E)
+        
+        self.b_added3 = Button(f5,command=self.draw_line)
+        self.b_added3.grid(row=2,column=2)
+
+        self.im = PhotoImage(file='images/tool_run.gif')
+        self.b_added3.config(image=self.im)
+        self.b_added3.im = self.im
+
+        self.rad1n = Radiobutton(f5,text="abs",variable=self.abs_inc,value=0 )
+        self.rad1n.grid(row=0,column=2)
+        self.rad2n = Radiobutton(f5,text="inc",variable=self.abs_inc,value=1 )
+        self.rad2n.grid(row=1,column=2) 
+        
+        self.cancelN = Button(f5,command=self.cancel)
+        self.cancelN.grid(row=3,column=2)
+
+        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.cancelN.config(image=self.im)
+        self.cancelN.im = self.im 
+        
+#--------------------------------------------------                
+        self.canvas=Canvas(self.frame_c,width=650,height=500,bg="red")
+        self.canvas.grid(row=0,column=0,sticky=N+E+S+W)
+        self.canvas.config(background="#D4DDE3",bd=2)
+#------------------------------------------------------------------
+        self.canvas.create_line(25,25,25,475, width=2,)     
+        self.canvas.create_line(25,25,645,25, width=2,)     
+        self.canvas.create_line(645,25,645,475, width=2,) 
+        self.canvas.create_line(25,475,645,475, width=2,) 
+        
+       
+        self.canvas.create_line(325,475,325,480, width=1,)
+        self.canvas.create_line(425,475,425,480, width=1,)
+        self.canvas.create_line(225,475,225,480, width=1,)
+        self.canvas.create_text(322,487,text="0",font="Verdana 7",anchor="w",justify=CENTER,)
+        self.canvas.create_text(211,487,text="-100",font="Verdana 7",anchor="w",justify=CENTER,) 
+        self.canvas.create_text(415,487,text="100",font="Verdana 7",anchor="w",justify=CENTER,) 
+        
+        self.canvas.create_line(25,250,23,250, width=1,)
+        self.canvas.create_line(25,150,23,150, width=1,)
+        self.canvas.create_line(25,350,23,350, width=1,)
+        self.canvas.create_text(12,250,text="0",font="Verdana 7",anchor="w",justify=CENTER,)
+        self.canvas.create_text(1,150,text="-100",font="Verdana 7",anchor="w",justify=CENTER,) 
+        self.canvas.create_text(1,350,text="100",font="Verdana 7",anchor="w",justify=CENTER,) 
+        
+        self.canvas.create_line(35,415,75,415, width=1,arrow=LAST)
+        self.canvas.create_line(35,415,35,455, width=1,arrow=LAST) 
+        self.canvas.create_text(75,416,text="Z",font="Verdana 8",anchor="w",justify=CENTER,) 
+        self.canvas.create_text(32,460,text="X",font="Verdana 8",anchor="w",justify=CENTER,)        
+                              
+        if self.abs_inc.get():
+            self.x = 250
+            self.z = 325 
+        else:
+            self.x = 0
+            self.z = 0               
+        self.x_old = 250
+        self.z_old = 325
+        
+        self.A.append([1,0,20])
+        
+        self.string = 'F1000\n'
+         
+        self.page_make_gcode()
+        
+        self.no_add_lines = 0
+                
+    def run(self):
+        self.nb.hide(0)
+        self.nb.hide(1)
+        self.nb.hide(2)
+        self.nb.hide(3)
+        self.nb.hide(4)
+        ns=1
+        for n in self.A: 
+            self.string +=str('N%s G1 X%s Z%s \n' % (ns,n[2], n[1]))
+            ns += 1
+        #print  'string=',self.string
+            
+    def add(self,A):
+        if self.fset < 2:
+            part=[1,(self.z-325),(self.x-250)]
+            A.append(part)       
+        
+    def cancel(self):
     
+        self.nb.add(self.nb_f1)
+        self.nb.add(self.nb_f2)
+        self.nb.add(self.nb_f3)
+        self.nb.add(self.nb_f4)
+        self.nb.add(self.nb_f5)
+        self.nb.add(self.nb_f6)
+        self.nb.select(self.nb_f1)
+        try:
+            self.canvas.delete(self.pv)
+        except:
+           pass
+        
+    def chamfer(self):
+
+        self.x = self.x_old + float(self.var_Ch.get()) 
+        self.z = self.z_old - float(self.var_Ch.get()) 
+                        
+        self.canvas.create_line(self.z_old,self.x_old,self.z,self.x, width=2,fill="blue",)
+        self.x_old = self.x
+        self.z_old = self.z
+        
+        self.canvas.pack(fill=BOTH, expand=1)
+         
+        self.add(self.A)
+                                
+    def draw_line(self):
+    
+        self.nb.add(self.nb_f1)
+        self.nb.add(self.nb_f2)
+        self.nb.add(self.nb_f3)
+        self.nb.add(self.nb_f4)
+        self.nb.add(self.nb_f5)
+        self.nb.select(self.nb_f1)
+        
+        if self.fset==1: #флаг ,показывает после какой функции выбора сработали
+            self.x = self.x_old
+            if self.abs_inc.get():
+                self.z += float(self.st_Z.get()) 
+            else:           
+                self.z = float(self.st_Z.get()) + 325 
+        elif self.fset==0:
+            self.z = self.z_old
+            if self.abs_inc.get():            
+                self.x += float(self.st_X.get())  
+            else:           
+                self.x = float(self.st_X.get()) + 250
+        elif self.fset==2:
+            if self.abs_inc.get():
+                self.z += float(self.st_Z.get())             
+                self.x += float(self.st_X.get())  
+            else:
+                self.z = float(self.st_Z.get()) + 325            
+                self.x = float(self.st_X.get()) + 250                
+                                        
+        self.canvas.create_line(self.z_old,self.x_old,self.z,self.x, width=2,fill="blue",)
+        self.x_old = self.x
+        self.z_old = self.z
+        
+        self.canvas.pack(fill=BOTH, expand=1)
+        self.canvas.delete(self.pv)
+        
+        self.add(self.A)
+        
+        if float(self.var_Ch.get()):
+            self.chamfer() 
+                     
+    def preview_G(self):
+    
+        self.var_st_Z.set(0.00)
+        self.var_st_X.set(0.00)
+        self.var_Ch.set(0.00)
+                
+        self.nb.hide(0)
+        self.nb.hide(2)
+        self.nb.hide(4)
+        self.x = self.x_old  
+        self.z = self.z_old 
+        self.pv = self.canvas.create_line(0,self.x,650,self.x,width=1,fill="blue",stipple="gray50")        
+
+        self.canvas.pack(fill=BOTH, expand=1)
+
+        self.fset = 1
+        
+    def preview_V(self):
+    
+        self.var_st_X.set(0.00)
+        self.var_st_Z.set(0.00)
+        self.var_Ch.set(0.00)
+        
+        self.nb.hide(1)
+        self.nb.hide(0)
+        self.nb.hide(4)
+        self.x = self.x_old  
+        self.z = self.z_old 
+        self.pv = self.canvas.create_line(self.z,0,self.z,500,width=1,fill="blue",stipple="gray50")        
+
+        self.canvas.pack(fill=BOTH, expand=1)
+
+        self.fset = 0
+        
+    def preview_N(self):
+    
+        self.var_st_X.set(0.00)
+        self.var_st_Z.set(0.00)
+        self.var_Ch.set(0.00)
+            
+        self.nb.hide(1)
+        self.nb.hide(0)
+        self.nb.hide(2)
+        self.nb.hide(4)
+        self.x = self.x_old  
+        self.z = self.z_old 
+        self.pv = self.canvas.create_line(self.z,self.x,0,500,width=1,fill="blue",stipple="gray50")        
+
+        self.canvas.pack(fill=BOTH, expand=1)
+        
+        self.fset = 2
+
+    def preview_C(self):
+    
+        self.var_st_X.set(0.00)
+        self.var_st_Z.set(0.00)
+        self.var_Ch.set(0.00)
+        
+        self.nb.hide(0)            
+        self.nb.hide(1)
+        self.nb.hide(2)
+        self.nb.hide(3)
+        self.nb.hide(5) 
+               
+        self.x = self.x_old  
+        self.z = self.z_old 
+        #self.pv = self.canvas.create_line(self.z,self.x,0,500,width=1,fill="blue",stipple="gray50")        
+        self.pv = self.canvas.create_arc([340,230],[440,330],start=0,extent=180,
+        style=ARC,outline="blue",width=2,fill="red",stipple="gray50")
+
+        self.canvas.pack(fill=BOTH, expand=1)
+        
+        self.fset = 2
+
+    def selection_cycle(self):
+        pass
+    
+    
+    def Write_GCode(self):
+        
+        tempfile_rw = 'tempfile_rw.ngc'         
+        editfile = 'editfilename.ngc'
+        
+        delete_e = open(editfile, "w")
+        delete_e.write("")
+        delete_e.close()       
+        
+        outlog = open(editfile, "a")
+        edit_readline = open(tempfile_rw, "r")
+        for ew in edit_readline:
+            outlog.write(ew )
+            
+        outlog.write("M2")
+        outlog.close()
+        edit_readline.close() 
+        
+        readline = open(tempfile_rw, "r")    
+        for w in readline:
+            ln = re.sub("^\s+|\n|\r|\s+$",'',w ) 
+            print ln       
+        print'M2'
+        readline.close()
+                
+        delete_t = open(tempfile_rw, "w")
+        delete_t.write("")
+        delete_t.close()
+        
+        self.ende()  
+    
+        
+    def page_make_gcode(self):
+       
+        rf1=Frame(self.f6,relief = GROOVE,bd = 2)
+        rf1.grid(row=0,column=0,padx=2,pady=2,sticky=N+W+E)
+        rf2=Frame(self.f6,relief = GROOVE,bd = 2)
+        rf2.grid(row=1,column=0,padx=2,pady=2,sticky=N+W+E)
+        rf3=Frame(self.f6,relief = GROOVE,bd = 2)
+        rf3.grid(row=2,column=0,padx=2,pady=2,sticky=N+W+E)
+        rf4=Frame(self.f6,relief = GROOVE,bd = 2)
+        rf4.grid(row=3,column=0,padx=2,pady=2,sticky=N+W+E)
+        rf5=Frame(self.f6,relief = GROOVE,bd = 2)
+        rf5.grid(row=4,column=0,padx=2,pady=2,sticky=N+W+E) 
+        rf6=Frame(self.f6,relief = GROOVE,bd = 2)
+        rf6.grid(row=5,column=0,padx=2,pady=2,sticky=N+W+E)                
+            
+        rf1.columnconfigure(0,weight=1)
+        rf2.columnconfigure(0,weight=1)
+        rf3.columnconfigure(0,weight=1) 
+        rf4.columnconfigure(0,weight=1)   
+        rf5.columnconfigure(0,weight=1)  
+        rf6.columnconfigure(0,weight=1)               
+#########################################################################################параметры в окне 
+        self.depth_D=DoubleVar()
+        self.depth_D.set(1)
+        
+        self.finishing_depth=DoubleVar()
+        self.finishing_depth.set(0.1)        
+
+        self.quantity_I=DoubleVar()
+        self.quantity_I.set(1)
+        
+        self.feedrate_F=DoubleVar()
+        self.feedrate_F.set(1000)        
+        
+        self.reserve_S=DoubleVar()
+        self.reserve_S.set(500)
+                
+        self.tool_T=DoubleVar()
+        self.tool_T.set(01) 
+        
+        self.reserve_L=DoubleVar()
+        self.reserve_L.set(0)       
+             
+        Label(rf1, text="Depth of cut   [D]")\
+                .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.d_D = Entry(rf1,width=7,textvariable=self.depth_D)
+        self.d_D.grid(row=0,column=1,sticky=N+E)
+             
+        Label(rf1, text="Finishing(depth)      [K]")\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.d_K = Entry(rf1,width=7,textvariable=self.finishing_depth)
+        self.d_K.grid(row=1,column=1,sticky=N+E)        
+
+        Label(rf1, text=("Quantity      [I]" ))\
+                .grid(row=2,column=0,sticky=N+W,padx=4)
+        self.d_I = Entry(rf1,width=7,textvariable=self.quantity_I)
+        self.d_I.grid(row=2,column=1,sticky=N+E)
+        
+
+        Label(rf2, text=("Feedrate   [F]"))\
+                .grid(row=0,column=0,sticky=N+W,padx=4)
+        self.d_F = Entry(rf2,width=7,textvariable=self.feedrate_F)
+        self.d_F.grid(row=0,column=1,sticky=N+E)
+
+        
+        Label(rf2, text=("reserve  [S]" ))\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.d_S = Entry(rf2,width=7,textvariable=self.reserve_S)
+        self.d_S.grid(row=1,column=1,sticky=N+E)
+
+        Label(rf2, text=("Tool  [T]" ))\
+                .grid(row=2,column=0,sticky=N+W,padx=4)
+        self.d_T = Entry(rf2,width=7,textvariable=self.tool_T)
+        self.d_T.grid(row=2,column=1,sticky=N+E)
+
+
+        Label(rf2, text=("reserve  [L]" ))\
+                .grid(row=3,column=0,sticky=N+W,padx=4)
+        self.d_L = Entry(rf2,width=7,textvariable=self.reserve_L)  
+        self.d_L.grid(row=3,column=1,sticky=N+E)
+
+                               
+        self.g71_72=IntVar()
+        self.g71_72.set(0)
+        self.ssp=IntVar()
+        self.ssp.set(0)
+        self.show_blank=IntVar()
+        self.show_blank.set(1)
+        
+        Label(rf3, text=("G71" ))\
+        .grid(row=3,column=0,sticky=N+W,padx=4)
+        self.rad0 = Radiobutton(rf3,text="G71",variable=self.g71_72,value=0 ,command=None)
+        self.rad0.grid(row=3,column=1,sticky=N+E)
+        
+        Label(rf3, text=("G70" ))\
+        .grid(row=4,column=0,sticky=N+W,padx=4)        
+        self.rad1 = Radiobutton(rf3,text="G70",variable=self.g71_72,value=1,command=None)
+        self.rad1.grid(row=4,column=1,sticky=N+E)
+        
+        Label(rf3, text=("G72" ))\
+        .grid(row=5,column=0,sticky=N+W,padx=4)
+        self.rad2 = Radiobutton(rf3,text="G72",variable=self.g71_72,value=2 ,command=None)
+        self.rad2.grid(row=5,column=1,sticky=N+E)
+        
+        Label(rf3, text=("G73" ))\
+        .grid(row=6,column=0,sticky=N+W,padx=4)        
+        self.rad3 = Radiobutton(rf3,text="G73",variable=self.g71_72,value=3,command=None)
+        self.rad3.grid(row=6,column=1,sticky=N+E)
+        
+        self.Igl = StringVar()        
+
+        self.b_D_out=DoubleVar()
+        self.b_D_out.set(40)
+        
+        self.b_L=DoubleVar()
+        self.b_L.set(150)        
+        
+        self.b_D_in=DoubleVar()
+        self.b_D_in.set(0)
+                
+        self.start_X0=DoubleVar()
+        self.start_X0.set(0) 
+        
+        self.start_Z0=DoubleVar()
+        self.start_Z0.set(0) 
+
+        self.rad4 = Radiobutton(rf3,text="MDI",variable=self.g71_72,value=4,command=None)
+        self.rad4.grid(row=7,column=1,sticky=N+E)
+        self.Igl = Entry(rf3,width=16,textvariable=self.Igl)
+        self.Igl.grid(row=7,columnspan=1,sticky=W) 
+
+        Label(rf4, text=("Show blank" ))\
+        .grid(row=0,column=0,sticky=N+W,padx=4)        
+        self.rad3 = Checkbutton(rf4,text="",variable=self.show_blank,onvalue=1,offvalue=0)
+        self.rad3.grid(row=0,column=1,sticky=N+E)        
+        
+        Label(rf4, text="D blank outside")\
+        .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.D_out = Entry(rf4,width=7,textvariable=self.b_D_out)
+        self.D_out.grid(row=1,column=1,sticky=N+E)
+             
+        Label(rf4, text="Lenght blank")\
+        .grid(row=2,column=0,sticky=N+W,padx=4)
+        self.Lg = Entry(rf4,width=7,textvariable=self.b_L)
+        self.Lg.grid(row=2,column=1,sticky=N+E)        
+
+        Label(rf4, text=("d blank  inside" ))\
+        .grid(row=3,column=0,sticky=N+W,padx=4)
+        self.D_in = Entry(rf4,width=7,textvariable=self.b_D_in)
+        self.D_in.grid(row=3,column=1,sticky=N+E)
+        
+
+
+        Label(rf5, text=("Set start point" ))\
+        .grid(row=0,column=0,sticky=N+W,padx=4)        
+        self.rad5 = Checkbutton(rf5,text="",variable=self.ssp,onvalue=1,offvalue=0)
+        self.rad5.grid(row=0,column=1,sticky=N+E)
+                
+        Label(rf5, text=("Start_X [X0] "))\
+                .grid(row=1,column=0,sticky=N+W,padx=4)
+        self.d_X0 = Entry(rf5,width=7,textvariable=self.start_X0)
+        self.d_X0.grid(row=1,column=1,sticky=N+E)
+
+        Label(rf5, text=("Start_Z  [Z0]"))\
+                .grid(row=2,column=0,sticky=N+W,padx=4)
+        self.d_Z0 = Entry(rf5,width=7,textvariable=self.start_Z0)
+        self.d_Z0.grid(row=2,column=1,sticky=N+E)
+
+        
+        self.cancelR = Button(self.f6,command=self.cancel)
+        self.cancelR.grid(row=6,column=0)
+
+        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.cancelR.config(image=self.im)
+        self.cancelR.im = self.im 
+
+
+        self.bt1 = Button(rf6, text="Added",command=self.selection_cycle)
+        self.bt1.grid(row=0,column=0,sticky=W)
+        self.bt2 = Button(rf6, text="Write",command=self.Write_GCode)
+        self.bt2.grid(row=0,column=1,sticky=E)
+
+################################################################################вывод программы
+    def Add_to_File_G71(self):
+        string = self.string
+        save_file = 'tempfile_gcode.ngc'
+        f = open(save_file, "w")
+        f.write(string)
+        f.close()
+        
+        f = open(save_file, "r")  
+        lines = f.readlines()
+        f.close()
+        ch = '' 
+        ch1 = ''
+        program = ''
+        x_max, p, q, d, k, i, f, j, s, l, t = 0, 1, 15, 1.5, 0.3, 1, 433, 0, 0, 1, 0101
+        Dtr, Lng, Prk = 0, 0, 0
+        N_start_end = []
+        Z_start = []
+        for l in lines:
+            if  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                l=str(re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I))
+                ch1 +=l
+                ch1 +='\n'
+            elif  re.search("G\s*([0-3.]+)", l.upper() ,re.I):
+                if not  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                    l=re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I)
+                    ch +='('
+                    ch +=l
+                    ch +=')'
+                    ch +='\n'
+                    p1 = N_start_end.append(int(re.search("N\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                    if x_max_sr > x_max:
+                        x_max = x_max_sr
+                    z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                        
+        p = N_start_end[0]
+        q = N_start_end[-1]
+        z0 = Z_start[0]
+        d = float(self.d_D.get())
+        k = float(self.d_K.get())
+        i = float(self.d_I.get())
+        f = float(self.d_F.get())
+        s = float(self.d_S.get())
+        l = float(self.d_L.get())
+        t = str(self.d_T.get())
+        rb = self.g71_72.get()
+        sx = float(self.d_X0.get())
+        sz = float(self.d_Z0.get())
+
+        Dtr = float(self.D_out.get())
+        Lng = float(self.Lg.get())
+        Prk = float(self.D_in.get())
+        chb_ssp = self.ssp.get()
+        show_blank = self.show_blank.get()
+        code = 'G71'
+        start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
+        if chb_ssp :
+            start_point = str('G1 X%s  Z%s \n' % (sx, sz))           
+        program += ch1
+        blank = str('(AXIS,blank,%s,%s,%s)\n' % (Dtr, Lng, Prk))
+        if show_blank :
+            program += blank
+        program += start_point
+        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s \n' % (code,p,q,d,k,i,f,j,s,l,))
+
+        program += stt
+
+        if self.no_add_lines == 0: #выводим в программу строки контура(один раз)
+            program += ch
+                       
+        tempfile_rw = 'tempfile_rw.ngc'
+        rw = open(tempfile_rw, "a")
+        rw.write(program)
+        rw.close()
+        self.no_add_lines = 1
+        
+    def Add_to_File_G70(self):
+    
+        string = self.string
+        save_file = 'tempfile_gcode.ngc'
+        f = open(save_file, "w")
+        f.write(string)
+        f.close()
+        
+        f = open(save_file, "r")  
+        lines = f.readlines()
+        f.close()
+        ch = '' 
+        ch1 = ''
+        program = ''
+        x_max, p, q, d, k, i, f, j, s, l, t = 0, 1, 15, 1.5, 0.3, 1, 433, 0, 0, 1, 0101
+        Dtr, Lng, Prk = 0, 0, 0
+        N_start_end = []
+        Z_start = []
+        for l in lines:
+            if  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                l=str(re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I))
+                ch1 +=l
+                ch1 +='\n'
+            elif  re.search("G\s*([0-3.]+)", l.upper() ,re.I):
+                if not  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                    l=re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I)
+                    ch +='('
+                    ch +=l
+                    ch +=')'
+                    ch +='\n'
+                    p1 = N_start_end.append(int(re.search("N\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                    if x_max_sr > x_max:
+                        x_max = x_max_sr + 5
+                    z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                    
+        d = float(self.d_D.get())                
+        p = N_start_end[0]
+        q = N_start_end[-1]
+        code = 'G70'
+        s_fin = str('%s P%s Q%s F%s D%s  \n' % (code,p,q,f,d))
+        tempfile_rw = 'tempfile_rw.ngc'
+        rw = open(tempfile_rw, "a")
+        program += s_fin
+        if self.no_add_lines == 0 : #выводим в программу строки контура(один раз)
+            program += ch
+        rw.write(program)        
+        rw.close()
+        self.no_add_lines = 1
+        
+    def Add_to_File_G73(self):
+    
+        string = self.string
+        save_file = 'tempfile_gcode.ngc'
+        f = open(save_file, "w")
+        f.write(string)
+        f.close()
+        
+        f = open(save_file, "r")  
+        lines = f.readlines()
+        f.close()
+        ch = '' 
+        ch1 = ''
+        program = ''
+        x_max, p, q, d, k, i, f, j, s, l, t = 0, 1, 15, 1.5, 0.3, 1, 433, 0, 0, 1, 0101
+        Dtr, Lng, Prk = 0, 0, 0
+        N_start_end = []
+        Z_start = []
+        for l in lines:
+            if  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                l=str(re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I))
+                ch1 +=l
+                ch1 +='\n'
+            elif  re.search("G\s*([0-3.]+)", l.upper() ,re.I):
+                if not  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                    l=re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I)
+                    ch +='('
+                    ch +=l
+                    ch +=')'
+                    ch +='\n'
+                    p1 = N_start_end.append(int(re.search("N\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                    if x_max_sr > x_max:
+                        x_max = x_max_sr + 5
+                    z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                        
+        p = N_start_end[0]
+        q = N_start_end[-1]
+        z0 = Z_start[0]
+        d = float(self.d_D.get())
+        k = float(self.d_K.get())
+        i = float(self.d_I.get())
+        f = float(self.d_F.get())
+        s = float(self.d_S.get())
+        l = float(self.d_L.get())
+        t = str(self.d_T.get())
+        rb = self.g71_72.get()
+
+        Dtr = float(self.D_out.get())
+        Lng = float(self.Lg.get())
+        Prk = float(self.D_in.get())
+        checkbutton = self.ssp.get()
+        show_blank = self.show_blank.get()
+        code = 'G73.3'
+        start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
+        if checkbutton :
+            j = 1           
+        program += ch1
+        blank = str('(AXIS,blank,%s,%s,%s)\n' % (Dtr, Lng, Prk))
+        if show_blank :
+            program += blank
+        program += start_point
+        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s  \n' % (code,p,q,d,k,i,f,j,s,))
+
+        program += stt
+
+        if self.no_add_lines == 0: #выводим в программу строки контура(один раз)
+            program += ch
+                       
+        tempfile_rw = 'tempfile_rw.ngc'
+        rw = open(tempfile_rw, "a")
+        rw.write(program)
+        rw.close()
+        self.no_add_lines = 1           
+
+    def Add_to_File_G72(self):
+        string = self.string
+        save_file = 'tempfile_gcode.ngc'
+        f = open(save_file, "w")
+        f.write(string)
+        f.close()
+        
+        f = open(save_file, "r")  
+        lines = f.readlines()
+        f.close()
+        ch = '' 
+        ch1 = ''
+        program = ''
+        x_max, p, q, d, k, i, f, j, s, l, t = 0, 1, 15, 1.5, 0.3, 1, 433, 0, 0, 1, 0101
+        Dtr, Lng, Prk = 0, 0, 0
+        N_start_end = []
+        Z_start = []
+        for l in lines:
+            if  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                l=str(re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I))
+                ch1 +=l
+                ch1 +='\n'
+            elif  re.search("G\s*([0-3.]+)", l.upper() ,re.I):
+                if not  re.search("[^\(\)\.\-\+NGZXRIK\d\s]",l.upper()):
+                    l=re.sub("^\s+|\n|\r|\s+$", '', l.upper(),re.I)
+                    ch +='('
+                    ch +=l
+                    ch +=')'
+                    ch +='\n'
+                    p1 = N_start_end.append(int(re.search("N\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
+                    x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                    if x_max_sr > x_max:
+                        x_max = x_max_sr
+                    z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
+                        
+        p = N_start_end[0]
+        q = N_start_end[-1]
+        z0 = Z_start[0]
+        d = float(self.d_D.get())
+        k = float(self.d_K.get())
+        i = float(self.d_I.get())
+        f = float(self.d_F.get())
+        s = float(self.d_S.get())
+        l = float(self.d_L.get())
+        t = str(self.d_T.get())
+        rb = self.g71_72.get()
+        sx = float(self.d_X0.get())
+        sz = float(self.d_Z0.get())
+
+        Dtr = float(self.D_out.get())
+        Lng = float(self.Lg.get())
+        Prk = float(self.D_in.get())
+        chb_ssp = self.ssp.get()
+        show_blank = self.show_blank.get()
+        code = 'G72'
+        start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
+        if chb_ssp :
+            start_point = str('G1 X%s  Z%s \n' % (sx, sz))           
+        program += ch1
+        blank = str('(AXIS,blank,%s,%s,%s)\n' % (Dtr, Lng, Prk))
+        if show_blank :
+            program += blank
+        program += start_point
+        stt = str('%s P%s Q%s  D%s K%s I%s F%s J%s S%s L%s \n' % (code,p,q,d,k,i,f,j,s,l,))
+
+        program += stt
+
+        if self.no_add_lines == 0: #выводим в программу строки контура(один раз)
+            program += ch
+                       
+        tempfile_rw = 'tempfile_rw.ngc'
+        rw = open(tempfile_rw, "a")
+        rw.write(program)
+        rw.close()
+        self.no_add_lines = 1
+        
+    def insert_gcode_line(self):
+        tempfile_rw = 'tempfile_rw.ngc'
+        ln = str(self.Igl.get())
+        rw = open(tempfile_rw, "a")
+        program = ''
+        
+        program += ln
+        program += '\n'
+        rw.write(program)        
+        rw.close()        
+                        
+    def selection_cycle(self):
+         rb = self.g71_72.get()
+         if   rb==0:
+             return self.Add_to_File_G71()
+         elif rb==1:
+             return  self.Add_to_File_G70()
+         elif rb==2:
+             return  self.Add_to_File_G72()
+         elif rb==3:
+             return  self.Add_to_File_G73()             
+         elif rb==4:
+             return  self.insert_gcode_line() 
+    def ende(self):
+        self.master.destroy()
+        self.master.quit()        
+################################################################################
+                                
+class TextboxClass:
+    def __init__(self,frame=None,master=None):
+            
+
+        self.master=master
+        self.text = Text(frame,height=5)
+        
+        self.textscr = Scrollbar(frame)
+        self.text.grid(row=0,column=0,pady=4,sticky=E+W)
+        self.textscr.grid(row=0,column=1,pady=4,sticky=N+S)
+        frame.columnconfigure(0,weight=1)
+        frame.columnconfigure(1,weight=0)
+
+def main():  
+    master = Tk()
+    master.title("Contour Editor")
+    ui = UI(master)
+    master.geometry("900x550+200+200")
+    master.mainloop()  
+if __name__ == '__main__':
+    main()  
