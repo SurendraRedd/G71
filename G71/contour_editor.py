@@ -164,7 +164,7 @@ class UI(Frame):
         self.b_added1 = Button(f3,command=self.draw_line)
         self.b_added1.grid(row=5,column=2)
 
-        self.im = PhotoImage(file='images/tool_run.gif')
+        self.im = PhotoImage(file='images/draw_line.gif')
         self.b_added1.config(image=self.im)
         self.b_added1.im = self.im   
         
@@ -187,7 +187,7 @@ class UI(Frame):
         self.cancelV = Button(f3,command=self.cancel)
         self.cancelV.grid(row=6,column=2)
 
-        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.im = PhotoImage(file='images/cancel.gif')
         self.cancelV.config(image=self.im)
         self.cancelV.im = self.im                     
  #----------------------------------------------------------- G           
@@ -209,7 +209,7 @@ class UI(Frame):
         self.b_added2 = Button(f2,command=self.draw_line)
         self.b_added2.grid(row=5,column=2)
 
-        self.im = PhotoImage(file='images/tool_run.gif')
+        self.im = PhotoImage(file='images/draw_line.gif')
         self.b_added2.config(image=self.im)
         self.b_added2.im = self.im 
         
@@ -227,7 +227,7 @@ class UI(Frame):
         self.cancelG = Button(f2,command=self.cancel)
         self.cancelG.grid(row=6,column=2)
 
-        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.im = PhotoImage(file='images/cancel.gif')
         self.cancelG.config(image=self.im)
         self.cancelG.im = self.im                        
 #-------------------------------------------------- N
@@ -249,7 +249,7 @@ class UI(Frame):
         self.b_added3 = Button(f4,command=self.draw_line)
         self.b_added3.grid(row=2,column=2)
 
-        self.im = PhotoImage(file='images/tool_run.gif')
+        self.im = PhotoImage(file='images/draw_line.gif')
         self.b_added3.config(image=self.im)
         self.b_added3.im = self.im
 
@@ -261,7 +261,7 @@ class UI(Frame):
         self.cancelN = Button(f4,command=self.cancel)
         self.cancelN.grid(row=3,column=2)
 
-        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.im = PhotoImage(file='images/cancel.gif')
         self.cancelN.config(image=self.im)
         self.cancelN.im = self.im 
           
@@ -297,6 +297,14 @@ class UI(Frame):
         self.Ch3 = Entry(f5,width=7,textvariable=self.var_Ch)
         self.Ch3.grid(row=5,column=1,sticky=N+E)
 
+        self.alternative = IntVar()
+        self.alternative.set(0)
+        
+        Label(f5, text=("Alternative" ))\
+        .grid(row=6,column=0,sticky=N+W,padx=4)        
+        self.cb1 = Checkbutton(f5,text="",variable=self.alternative,onvalue=1,offvalue=0)
+        self.cb1.grid(row=6,column=2,sticky=N+E)
+
 
         self.rad1c = Radiobutton(f5,text="abs",variable=self.abs_inc,value=0 )
         self.rad1c.grid(row=0,column=2)
@@ -312,16 +320,16 @@ class UI(Frame):
         self.rad4c.grid(row=4,column=2) 
  
         self.b_added4 = Button(f5,command=self.draw_line)
-        self.b_added4.grid(row=6,column=2)
+        self.b_added4.grid(row=8,column=2)
 
-        self.im = PhotoImage(file='images/tool_run.gif')
+        self.im = PhotoImage(file='images/draw_line.gif')
         self.b_added4.config(image=self.im)
         self.b_added4.im = self.im 
         
         self.cancelN = Button(f5,command=self.cancel)
-        self.cancelN.grid(row=7,column=2)
+        self.cancelN.grid(row=9,column=2)
 
-        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.im = PhotoImage(file='images/cancel.gif')
         self.cancelN.config(image=self.im)
         self.cancelN.im = self.im 
 
@@ -340,7 +348,7 @@ class UI(Frame):
         self.b_added5 = Button(f1,command=self.start_point)
         self.b_added5.grid(row=2,column=2)
 
-        self.im = PhotoImage(file='images/tool_run.gif')
+        self.im = PhotoImage(file='images/draw_line.gif')
         self.b_added5.config(image=self.im)
         self.b_added5.im = self.im
         
@@ -374,7 +382,45 @@ class UI(Frame):
         self.canvas.create_text(75,416,text="Z",font="Verdana 8",anchor="w",justify=CENTER,) 
         self.canvas.create_text(32,460,text="X",font="Verdana 8",anchor="w",justify=CENTER,)        
                               
+        '''# This is what enables using the mouse:
+        self.canvas.bind("<ButtonPress-1>", self.move_start)
+        self.canvas.bind("<B1-Motion>", self.move_move)
+
+
+
+        #linux scroll
+        self.canvas.bind("<Button-4>", self.zoomerP)
+        self.canvas.bind("<Button-5>", self.zoomerM)
+        #windows scroll
+        self.canvas.bind("<MouseWheel>",self.zoomer)
+        # Hack to make zoom work on Windows
+        master.bind_all("<MouseWheel>",self.zoomer)
         
+    #move
+    def move_start(self, event):
+        self.canvas.scan_mark(event.x, event.y)
+    def move_move(self, event):
+        self.canvas.scan_dragto(event.x, event.y, gain=1)
+
+       
+
+    #windows zoom
+    def zoomer(self,event):
+        if (event.delta > 0):
+            self.canvas.scale("all", event.x, event.y, 1.1, 1.1)
+        elif (event.delta < 0):
+            self.canvas.scale("all", event.x, event.y, 0.9, 0.9)
+        self.canvas.configure(scrollregion = self.canvas.bbox("all"))
+
+    #linux zoom
+    def zoomerP(self,event):
+        self.canvas.scale("all", event.x, event.y, 1.1, 1.1)
+        self.canvas.configure(scrollregion = self.canvas.bbox("all"))
+    def zoomerM(self,event):
+        self.canvas.scale("all", event.x, event.y, 0.9, 0.9)
+        self.canvas.configure(scrollregion = self.canvas.bbox("all"))'''
+        
+                        
         self.string = 'F1000\n'
          
         self.page_make_gcode()
@@ -393,22 +439,16 @@ class UI(Frame):
 
         self.A.pop()
    
-    def angle(self):
-        self.st_arc = atan2(self.x_old,self.z_old)
-        print 'st_arc = ' , degrees(self.st_arc)
-        return self.st_arc
        
-    def preview(self,kw) :
+    def preview(self,event) :
         try:
-            self.canvas.delete(self.pv)
-            self.canvas.delete(self.pv1)
+            self.canvas.delete(self.cpv)
+            self.canvas.delete(self.cpv1)
         except:
             print 'preview_err'    
         self.k = 1
         if self.arc_g2_g3.get():
             self.k = -1
-
-        #self.angle()#XXX
         
         if self.abs_inc.get():
             self.z += float(self.st_Z.get())             
@@ -419,40 +459,53 @@ class UI(Frame):
  
         self.r = float(self.rad.get()) 
         r=self.r
-
+        
+        if self.alternative.get():
+            self.s1= None
+            self.s2="gray12"
+            self.w1 = 1
+            self.w2 = 2
+        else:
+            self.s2= None
+            self.s1="gray12"
+            self.w2 = 1
+            self.w1 = 2       
+        
         try:
             ix1,iz1,ix2,iz2 = self.insc_arc_arc(self.x_old,self.z_old,self.x,self.z,self.r)
-            print ix1-250, iz1-325, ix2-250, iz2-325
+            #print ix1-250, iz1-325, ix2-250, iz2-325
             
             self.st_arc1 = degrees(atan2(ix1-self.x_old,self.z_old-iz1))
-            print 'st_arc1 = ' , self.st_arc1
+            #print 'st_arc1 = ' , self.st_arc1
 
             self.end_arc1 = degrees(atan2(ix1-self.x,self.z-iz1))
-            print 'end_arc1 = ' , self.end_arc1
+            #print 'end_arc1 = ' , self.end_arc1
             END1 = self.end_arc1 -  self.st_arc1
             
             self.st_arc2 = degrees(atan2(ix2-self.x_old,self.z_old-iz2))
-            print 'st_arc2 = ' , self.st_arc2
+            #print 'st_arc2 = ' , self.st_arc2
 
             self.end_arc2 = degrees(atan2(ix2-self.x,self.z-iz2))
-            print 'end_arc2 = ' , self.end_arc2
+            #print 'end_arc2 = ' , self.end_arc2
             END2 = self.end_arc2 -  self.st_arc2            
                     
-            #self.pv = self.canvas.create_arc([iz1-r,ix1-r],[iz1+r,ix1+r],
-            #style=ARC,outline="blue",width=2,fill="red",start=self.st_arc1,extent=END1*self.k,stipple="gray50")
+            self.cpv = self.canvas.create_arc([iz1-r,ix1-r],[iz1+r,ix1+r],
+            style=ARC,outline="blue",width=self.w1,start=self.st_arc1,extent=END1*self.k,stipple=self.s2)
             
-            #self.pv1 = self.canvas.create_arc([iz2-r,ix2-r],[iz2+r,ix2+r],
-            #style=ARC,outline="blue",width=2,fill="red",start=self.st_arc2,extent=END2*self.k,stipple="gray50")
+            self.cpv1 = self.canvas.create_arc([iz2-r,ix2-r],[iz2+r,ix2+r],
+            style=ARC,outline="blue",width=self.w2,start=self.st_arc2,extent=END2*self.k,stipple=self.s1)
             
-            self.pv = self.canvas.create_arc([iz1-r,ix1-r],[iz1+r,ix1+r],
-            style=ARC,outline="blue",width=2,fill="red",start=0,extent=359,stipple="gray50")
+            #self.pv = self.canvas.create_arc([iz1-r,ix1-r],[iz1+r,ix1+r],    #полная окружность
+            #style=ARC,outline="blue",width=2,fill="red",start=0,extent=359,stipple="gray50")
             
-            self.pv1 = self.canvas.create_arc([iz2-r,ix2-r],[iz2+r,ix2+r],
-            style=ARC,outline="blue",width=2,fill="red",start=0,extent=359,stipple="gray50")            
+            #self.pv1 = self.canvas.create_arc([iz2-r,ix2-r],[iz2+r,ix2+r],    #полная окружность
+            #style=ARC,outline="blue",width=2,fill="red",start=0,extent=359,stipple="gray50")
+                        
+            return self.cpv
             
         except:
            print 'err'
-
+        
                
     def start_point(self):
    
@@ -480,16 +533,28 @@ class UI(Frame):
         self.nb.hide(4)
         self.nb.hide(6)
         ns=1
-        for n in self.A: 
-            self.string +=str('N%s G1 X%s Z%s \n' % (ns,n[2]*2, n[1]))
+        for n in self.A: #TODO для self.fset = 3
+            if n[0]==1:
+                self.string +=str('N%s G1 X%s Z%s \n' % (ns,n[2]*2, n[1]))
+            elif n[0]>1:
+                self.string +=str('N%s G%s X%s Z%s R%s\n' % (ns,n[0],n[2]*2, n[1],n[3]))                
             ns += 1
-        #print  'string=',self.string
+        print  'string=',self.string
             
-    def add(self,A): #TODO для self.fset = 3
+    def add(self,A): 
         if self.fset <= 2:
             part=[1,(self.z-325),(self.x-250)]
             A.append(part)       
-        
+
+    def add_arc(self,A): #TODO для self.fset = 3
+        if self.fset == 3:
+            if self.arc_g2_g3.get():
+                ga=3
+            else:
+                ga=2
+            part=[ga,(self.z-325),(self.x-250),(float(self.rad.get()))]
+            A.append(part) 
+                    
     def cancel(self):
     
         self.nb.add(self.nb_f1)
@@ -510,8 +575,8 @@ class UI(Frame):
 
         self.x = self.x_old + abs(float(self.var_Ch.get()))
         self.z = self.z_old - abs(float(self.var_Ch.get()))
+        
         if self.inverse.get():
-            print 'inverse',self.inverse
             rz1 = self.z 
             rx1 = self.x_old 
             
@@ -521,7 +586,6 @@ class UI(Frame):
             self.pv2 = self.canvas.create_arc([rz1,rx1],[rz2,rx2],
             style=ARC,outline="blue",width=2,fill="red",start=90,extent=90,stipple="gray50")        
         else:
-            print 'elseinverse',self.inverse
             rz1 = self.z - abs(float(self.var_Ch.get()))
             rx1 = self.x_old - abs(float(self.var_Ch.get()))
             
@@ -587,13 +651,20 @@ class UI(Frame):
                 self.z = float(self.st_Z.get()) + 325            
                 self.x = float(self.st_X.get()) + 250 
         elif self.fset==3:
-            pass                                
+            pass
+            print '?? fset==3'                                 
+
+
         
-        if self.fset==3: 
-            pass        
+        if self.fset==3:
+            if self.alternative.get():
+                self.canvas.delete(self.cpv)
+            else:
+                self.canvas.delete(self.cpv1)
+            self.add_arc(self.A)
         else:                               
             self.pvd = self.canvas.create_line(self.z_old,self.x_old,self.z,self.x, width=2,fill="blue",)
-
+            self.add(self.A)
 
         self.mem_x  = self.x_old 
         self.mem_z  = self.z_old           
@@ -602,10 +673,12 @@ class UI(Frame):
         self.z_old = self.z
         
         self.canvas.pack(fill=BOTH, expand=1)
-        self.canvas.delete(self.pv)
         
-        self.add(self.A)
-        
+        try:
+            self.canvas.delete(self.pv)
+        except:
+           pass
+                           
         if float(self.var_Ch.get()):
             if self.cham_rad.get():
                 self.radius()
@@ -689,9 +762,6 @@ class UI(Frame):
                
         self.x = self.x_old  
         self.z = self.z_old 
-        #self.pv = self.canvas.create_line(self.z,self.x,0,500,width=1,fill="blue",stipple="gray50")        
-        #self.pv = self.canvas.create_arc([275,200],[375,300],start=45,extent=90,
-        #style=ARC,outline="blue",width=2,fill="red",stipple="gray50")
 
         self.canvas.pack(fill=BOTH, expand=1)
         
@@ -905,7 +975,7 @@ class UI(Frame):
         self.cancelR = Button(self.f6,command=self.cancel)
         self.cancelR.grid(row=6,column=0)
 
-        self.im = PhotoImage(file='images/tool_estop.gif')
+        self.im = PhotoImage(file='images/cancel.gif')
         self.cancelR.config(image=self.im)
         self.cancelR.im = self.im 
 
@@ -1228,11 +1298,6 @@ class UI(Frame):
 
         r1=r
         r2=r
-        # x0,z0 координаты точки пересечения всех линий
-        # d    расстояние между центрами окружностей
-        # a    расстояние от r1 до точки пересечения всех линий
-        # h    расстояние от точки пересеч окружностей до точки пересеч всех линий
-
         d=sqrt( pow(abs(x1-x2),2) + pow(abs(z1-z2),2))
         if(d > r1+r2): 
             print 'do not intersect'
@@ -1253,11 +1318,7 @@ class UI(Frame):
         ix2= x0 - h*( z2 - z1 ) / d
         iz2= z0 + h*( x2 - x1 ) / d
 
-        print 'Ok'
-        #print ix1, iz1, ix2, iz2
         return ix1, iz1, ix2, iz2
-               
-################################################################################
                                 
 class TextboxClass:
     def __init__(self,frame=None,master=None):
