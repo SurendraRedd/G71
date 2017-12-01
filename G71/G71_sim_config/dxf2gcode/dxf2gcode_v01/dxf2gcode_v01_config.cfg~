@@ -1,0 +1,60 @@
+[Paths]
+load_path = ngc
+save_path = ngc
+tempfile_gcode = ./.temp_dxf.ngc
+tempfile_rw = ./.temp_rw.ngc
+editfilename =  ./ngc/edit_dxf.ngc
+
+
+
+[Import Parameters]
+point_tolerance = 0.01
+fitting_tolerance = 0.01
+
+[Parameters]
+depth_D = 1.5
+start_radius = 0
+feedrate_F = 1401
+ending_block_Q = 1
+finishing_depth = 0
+start_Z0 = 0
+start_X0 = 0
+b_D_out = 142.8
+b_L = 100
+b_D_in = 40
+Igl =  
+
+
+tool_T = 04
+quantity_I = 1
+reserve_S  = 1000
+reserve_L  = 0
+
+
+[Plane Coordinates]
+axis1_start_end = 0
+axis2_start_end = 0
+
+[Depth Coordinates]
+axis3_retract = 0
+axis3_safe_margin = 0
+axis3_mill_depth = 0
+axis3_slice_depth = 0
+
+[Feed Rates]
+f_g1_depth = 1404
+f_g1_plane = 1404
+
+[Axis letters]
+ax1_letter = X
+ax2_letter = Y
+ax3_letter = Z
+
+[Route Optimisation]
+begin art = heurestic
+max. population = 20
+max. iterations = 300
+mutation rate = 0.95
+
+[Debug]
+global_debug_level = 0

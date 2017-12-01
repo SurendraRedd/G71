@@ -1,0 +1,1 @@
+/home/nkp/git/linuxcnc/configs/G71_sim_config/ngc/explicit.ngc
