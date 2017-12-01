@@ -90,11 +90,6 @@ class Erstelle_Fenster:
         self.filemenu.add_separator()
         self.filemenu.add_command(label="Exit", command=self.ende)
 
-        self.exportmenu = Menu(self.menu,tearoff=0)
-        self.menu.add_cascade(label="Export", menu=self.exportmenu)
-        self.exportmenu.add_command(label="Write G-Code", command=self.Write_GCode)
-        self.exportmenu.entryconfig(0,state=DISABLED)
-
         self.viewmenu=Menu(self.menu,tearoff=0)
         self.menu.add_cascade(label="View",menu=self.viewmenu)
         self.viewmenu.add_checkbutton(label="Show workpiece zero",\
@@ -176,8 +171,6 @@ class Erstelle_Fenster:
         self.viewmenu.entryconfig(1,state=NORMAL)
         self.viewmenu.entryconfig(2,state=NORMAL)
         self.viewmenu.entryconfig(4,state=NORMAL)
-
-        self.exportmenu.entryconfig(0,state=NORMAL)
 
         self.optionmenu.entryconfig(2,state=NORMAL)
         self.optionmenu.entryconfig(3,state=NORMAL)        
@@ -430,11 +423,12 @@ class Erstelle_Fenster:
                     if x_max_sr > x_max:
                         x_max = x_max_sr + 5
                     z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
-                        
+                    
+        d = float(self.ExportParas.d_D.get())                
         p = N_start_end[0]
         q = N_start_end[-1]
         code = 'G70'
-        s_fin = str('%s P%s Q%s F%s  \n' % (code,p,q,f))
+        s_fin = str('%s P%s Q%s F%s D%s  \n' % (code,p,q,f,d))
         tempfile_rw = self.config.tempfile_rw
         rw = open(tempfile_rw, "a")
         program += s_fin
@@ -478,7 +472,7 @@ class Erstelle_Fenster:
                     z_st = Z_start.append(float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1)))
                     x_max_sr = float(re.search("X\s*([-0-9.]+)",l.upper(), re.I).group(1))
                     if x_max_sr > x_max:
-                        x_max = x_max_sr + 5
+                        x_max = x_max_sr + 0 #XXX
                     z_max = float(re.search("Z\s*([-0-9.]+)",l.upper(), re.I).group(1))
                         
         p = N_start_end[0]
@@ -492,14 +486,20 @@ class Erstelle_Fenster:
         l = float(self.ExportParas.d_L.get())
         t = str(self.ExportParas.d_T.get())
         rb = self.ExportParas.g71_72.get()
-
+        sx = float(self.ExportParas.d_X0.get())
+        sz = float(self.ExportParas.d_Z0.get())
+        
         Dtr = float(self.ExportParas.D_out.get())
         Lng = float(self.ExportParas.Lg.get())
         Prk = float(self.ExportParas.D_in.get())
         checkbutton = self.ExportParas.ssp.get()
+        chb_ssp = self.ExportParas.ssp.get()        
         show_blank = self.ExportParas.show_blank.get()
         code = 'G73.3'
         start_point = str('G1 X%s  Z%s \n' % (x_max, z0))
+        if chb_ssp :
+            start_point = str('G1 X%s  Z%s \n' % (sx, sz))
+                    
         if checkbutton :
             j = 1           
         program += ch1
@@ -810,8 +810,9 @@ class ExportParasClass:
 
                                
         self.g71_72=IntVar()
-        self.g71_72.set(2)
+        self.g71_72.set(0)
         self.ssp=IntVar()
+        self.ssp.set(1)
         self.show_blank=IntVar()
         self.show_blank.set(1)
         
