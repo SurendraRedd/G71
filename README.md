@@ -28,3 +28,32 @@ sudo apt-get install qcad
 Try the config  G71_sim_config
 =========================================
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
