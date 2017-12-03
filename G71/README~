@@ -63,15 +63,7 @@ j - позволяет "повторить" только чистовые про
 s - резерв 
 
 
-в Axis:
 
-def filter_program(program_filter, infilename, outfilename):
-    try:
-        #clean explicit_file for G70-73 Lathe
-        explicit = 'ngc/explicit.ngc'
-        expcode = open(explicit, "w")
-        expcode.write("")
-        expcode.close()
-    except:
-        print "Unsuccessfully clean explicit_file" 
+
+
 
