@@ -1,0 +1,7 @@
+N1 (File: /home/nkp/linuxcnc/configs/G71_sim_config/ngc/simple_90.dxf)
+N2 G21  G90 G64 P0.01 G18 G40 G49 G7
+N3 T1
+N4 F555
+N5 G1 Z   0.0000000 X  20.0000000
+N6 G1 Z   0.0000000 X  -0.0000000
+N7 
