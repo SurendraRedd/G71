@@ -466,8 +466,11 @@ class UI(Frame):
             pass            
         try:            
             self.canvas.delete(self.ppv1) 
-            self.canvas.delete(self.ppv2)
-            self.canvas.delete(self.ppg1) 
+            self.canvas.delete(self.ppg1)
+        except:
+            pass             
+        try:             
+            self.canvas.delete(self.ppv2) 
             self.canvas.delete(self.ppg2)                       
         except:
             pass
@@ -523,51 +526,37 @@ class UI(Frame):
                        
 
 
-#+++++++++++++++++++++++++++++++++++ ARC1                
-#====================== начальная точка self.x_old self.z_old
-#======================
-                
+#+++++++++++++++++++++++++++++++++++ ARC1 
+               
+#====================== ==================начальная точка self.x_old self.z_old    
             if (ix1>self.x_old):#XXX когда ix1 == self.x_old (и ниже)
                 if (iz1<self.z_old):
-                    print '1s'
                     self.st_arc1  = degrees(atan2(ix1-self.x_old,self.z_old-iz1)) 
                 else:                
-                    print '2s'
                     self.st_arc1  = 180 - degrees(atan2(ix1-self.x_old,iz1-self.z_old))                    
             else:
                 if (iz1<self.z_old):
-                    print '3s'
                     self.st_arc1  = 360-degrees(atan2(self.x_old-ix1,self.z_old-iz1))                    
                 else:
-                    print '4s'
                     self.st_arc1  = degrees(atan2(self.x_old-ix1,iz1-self.z_old))+180 
  
                                      
 #====================== конечная точка self.x self.z
-#======================
             if (ix1>self.x):
                 if (iz1<self.z):
-                    print '1f'
                     self.end_arc1 = -(degrees(atan2(ix1-self.x,self.z-iz1)))
- 
                 else:                
-                    print '2f'
                     self.end_arc1 = degrees(atan2(ix1-self.x,iz1-self.z))+180 
-                   
             else:
                 if (iz1<self.z):
-                    print '3f'
                     self.end_arc1 = degrees(atan2(self.x-ix1,self.z-iz1))
-                   
                 else:
-                    print '4f'
                     self.end_arc1 = 180 - degrees(atan2(self.x-ix1,iz1-self.z))
+                    
                      
 #+++++++++++++++++++++++++++++++++++ ARC2
 
-#====================== начальная точка self.x_old self.z_old
-#======================
-                
+#====================== начальная точка self.x_old self.z_old            
             if (ix2>self.x_old):
                 if (iz2<self.z_old):
                     print '1s'
@@ -585,40 +574,32 @@ class UI(Frame):
  
                                      
 #====================== конечная точка self.x self.z
-#======================
             if (ix2>self.x):
                 if (iz2<self.z):
-                    print '1f'
-                    self.end_arc2 = -(degrees(atan2(ix2-self.x,self.z-iz2)))
- 
+                    self.end_arc2 = -(degrees(atan2(ix2-self.x,self.z-iz2))) 
                 else:                
-                    print '2f'
-                    self.end_arc2 = degrees(atan2(ix2-self.x,iz2-self.z))+180 
-                   
+                    self.end_arc2 = degrees(atan2(ix2-self.x,iz2-self.z))+180                   
             else:
                 if (iz2<self.z):
-                    print '3f'
-                    self.end_arc2 = degrees(atan2(self.x-ix2,self.z-iz2))
-                   
+                    self.end_arc2 = degrees(atan2(self.x-ix2,self.z-iz2))      
                 else:
-                    print '4f'
                     self.end_arc2 = 180 - degrees(atan2(self.x-ix2,iz2-self.z))
                                          
             END1 =   -(self.st_arc1 + self.end_arc1)
             END2 =   -(self.st_arc2 + self.end_arc2)
             
             if self.arc_g2_g3.get():
-                END1 = - self.st_arc1 + 360 - self.end_arc1
-                END2 = - self.st_arc2 + 360 - self.end_arc2
+                END1 = 360 - self.end_arc1 - self.st_arc1
+                END2 = 360 - self.st_arc2  - self.end_arc2
                              
             print '=========================================================='                
-            print 'st_arc1 ='       , self.st_arc1                      
+            print 'st_arc1 ='  , self.st_arc1                      
             print 'end_arc1 =' , self.end_arc1
             print 'END1 =' , END1
             print ''
-            #print 'st_arc2 ='       , self.st_arc2
-            #print 'end_arc2 =' , self.end_arc2
-            #print 'END2 =' , END2
+            print 'st_arc2 ='  , self.st_arc2
+            print 'end_arc2 =' , self.end_arc2
+            print 'END2 =' , END2
             print '=========================================================='
             print '' 
   
@@ -627,17 +608,7 @@ class UI(Frame):
             
             self.cpv1 = self.canvas.create_arc([iz2-r,ix2-r],[iz2+r,ix2+r],
             style=ARC,outline="blue",width=self.w2,start=self.st_arc2,extent=END2,stipple=self.s1)
-            
-            
-            
-            #self.pv = self.canvas.create_arc([iz1-r,ix1-r],[iz1+r,ix1+r],    #полная окружность
-            #style=ARC,outline="blue",width=2,fill="red",start=0,extent=359,stipple="gray50")
-            
-            #self.pv1 = self.canvas.create_arc([iz2-r,ix2-r],[iz2+r,ix2+r],    #полная окружность
-            #style=ARC,outline="blue",width=2,fill="red",start=0,extent=359,stipple="gray50")
-            
-
-                        
+                                    
             return self.cpv
             
         except:
