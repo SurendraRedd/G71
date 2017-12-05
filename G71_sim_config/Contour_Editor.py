@@ -123,7 +123,7 @@ class UI(Frame):
         self.run.config(image=self.im)
         self.run.im = self.im
          
-        self.cenc = Button(f7,command=self.cencel)
+        self.cenc = Button(f7,command=self.back)
         self.cenc.grid(row=5)
 
         self.im = PhotoImage(file='images/11.gif')
@@ -359,17 +359,16 @@ class UI(Frame):
         self.canvas=Canvas(self.frame_c,width=650,height=500,bg="red")
         self.canvas.grid(row=0,column=0,sticky=N+E+S+W)
         self.canvas.config(background="#D4DDE3",bd=2)
-#------------------------------------------------------------------Grid
-
         
-        self.grid()
+        self.c_grid()
         
         self.string = 'F1000\n'
          
         self.page_make_gcode()
         
-        self.no_add_lines = 0 
-              
+        self.no_add_lines = 0
+         
+        self.debug = 1   
                               
         '''# This is what enables using the mouse:
         self.canvas.bind("<ButtonPress-1>", self.move_start)
@@ -380,52 +379,45 @@ class UI(Frame):
         #linux scroll
         #self.canvas.bind("<Button-4>", self.zoomerP)
         #self.canvas.bind("<Button-5>", self.zoomerM)
+
         
-        '''#windows scroll
-        self.canvas.bind("<MouseWheel>",self.zoomer)
-        # Hack to make zoom work on Windows
-        master.bind_all("<MouseWheel>",self.zoomer)
-        
-    #move
+    '''#move
     def move_start(self, event):
         self.canvas.scan_mark(event.x, event.y)
     def move_move(self, event):
-        self.canvas.scan_dragto(event.x, event.y, gain=1)
+        self.canvas.scan_dragto(event.x, event.y, gain=1)'''
 
-       
-
-    #windows zoom
-    def zoomer(self,event):
-        if (event.delta > 0):
-            self.canvas.scale("all", event.x, event.y, 1.1, 1.1)
-        elif (event.delta < 0):
-            self.canvas.scale("all", event.x, event.y, 0.9, 0.9)
-        self.canvas.configure(scrollregion = self.canvas.bbox("all"))'''
-
-    #linux zoom
+    # zoom
     def zoomerP(self,event):
         self.canvas.scale("all", event.x, event.y, 1.1, 1.1)
         self.canvas.configure(scrollregion = self.canvas.bbox("all"))
     def zoomerM(self,event):
         self.canvas.scale("all", event.x, event.y, 0.9, 0.9)
         self.canvas.configure(scrollregion = self.canvas.bbox("all"))
-        
-                        
 
-        #self.canvas.bind('<Return>',self.zoomerP)
+    def back(self):
         
-        
-        
-    def cencel(self):
+        if len(self.All_geo) >1:
+            self.canvas.delete("all")
+            self.All_geo.pop()
 
-        self.canvas.delete(self.pvd)
-        
-        self.x_old = self.mem_x
-        self.z_old = self.mem_z
+            self.A.pop()
+            self.redraw()
+            
+            return
+            
+        if len(self.All_geo) ==1:
+            self.canvas.delete("all")
+            self.All_geo.pop()
 
-        self.A.pop()
-   
-       
+            self.A.pop()
+            self.redraw()            
+            self.nb_add()
+            self.nb.select(self.nb_f1)
+            
+            self.var_st_Z.set(0.00)
+            self.var_st_X.set(0.00)        
+               
     def preview(self,) :
 
 
@@ -492,12 +484,12 @@ class UI(Frame):
                     self.ppg2 = self.canvas.create_line(0,ix1,650,ix1,width=1,fill="red",stipple="gray50") 
                     pass 
 
-            #print 'ix1 =',ix1-250, 'iz1=',iz1-325, 'ix2=',ix2-250, 'iz2=',iz2-325
-            
-            '''print 'self.x =' , self.x                      
-            print 'self.z =' , self.z
-            print 'oldx =' , self.x_old                     
-            print 'oldz =' , self.z_old'''           
+            if self.debug: 
+                print 'ix1 =',ix1-250, 'iz1=',iz1-325, 'ix2=',ix2-250, 'iz2=',iz2-325
+                print 'self.x =' , self.x                      
+                print 'self.z =' , self.z
+                print 'oldx =' , self.x_old                     
+                print 'oldz =' , self.z_old           
                        
 
 
@@ -563,17 +555,18 @@ class UI(Frame):
             if self.arc_g2_g3.get():
                 END1 = 360 - self.end_arc1 - self.st_arc1
                 END2 = 360 - self.st_arc2  - self.end_arc2
-                             
-            print '=========================================================='                
-            print 'st_arc1 ='  , self.st_arc1                      
-            print 'end_arc1 =' , self.end_arc1
-            print 'END1 =' , END1
-            print ''
-            print 'st_arc2 ='  , self.st_arc2
-            print 'end_arc2 =' , self.end_arc2
-            print 'END2 =' , END2
-            print '=========================================================='
-            print '' 
+                
+            if self.debug:                 
+                print '=========================================================='                
+                print 'st_arc1 ='  , self.st_arc1                      
+                print 'end_arc1 =' , self.end_arc1
+                print 'END1 =' , END1
+                print ''
+                print 'st_arc2 ='  , self.st_arc2
+                print 'end_arc2 =' , self.end_arc2
+                print 'END2 =' , END2
+                print '=========================================================='
+                print '' 
   
             self.cpv = self.canvas.create_arc([iz1-r,ix1-r],[iz1+r,ix1+r],
             style=ARC,outline="blue",width=self.w1,start=self.st_arc1,extent=END1,stipple=self.s2)
@@ -598,18 +591,12 @@ class UI(Frame):
         
         self.A.append([1,self.z_old-325,self.x_old-250])
         
-        geo=[0,(self.z_old),(self.x_old)]
+        geo=[0,(self.z_old),(self.x_old),(self.z_old),(self.x_old)]
         self.All_geo.append(geo)
                 
         self.canvas.create_oval([self.z_old-2, self.x_old-2],[self.z_old+2, self.x_old+2],fill="blue")
         
-        self.nb.add(self.nb_f1)
-        self.nb.add(self.nb_f2)
-        self.nb.add(self.nb_f3)
-        self.nb.add(self.nb_f4)
-        self.nb.add(self.nb_f5)
-        self.nb.add(self.nb_f6)
-        self.nb.add(self.nb_f7)
+        self.nb_add()
         self.nb.select(self.nb_f7) 
                  
     def run(self):
@@ -654,13 +641,7 @@ class UI(Frame):
                     
     def cancel(self):
     
-        self.nb.add(self.nb_f1)
-        self.nb.add(self.nb_f2)
-        self.nb.add(self.nb_f3)
-        self.nb.add(self.nb_f4)
-        self.nb.add(self.nb_f5)
-        self.nb.add(self.nb_f6)
-        self.nb.add(self.nb_f7)
+        self.nb_add()
         self.nb.select(self.nb_f7)
         try:
             self.canvas.delete(self.pv)
@@ -729,21 +710,19 @@ class UI(Frame):
                 
         self.canvas.pack(fill=BOTH, expand=1)   
 
-        self.grid()
-        self.x_old = self.x
-        self.z_old = self.z
-                               
+        self.c_grid()
+        if len(self.All_geo):
+            self.x_old = self.All_geo[-1][4]
+            self.z_old = self.All_geo[-1][3]
+
+        
+        
+                              
     def draw_line(self):
     
         self.scale_g = 2
         
-        self.nb.add(self.nb_f1)
-        self.nb.add(self.nb_f2)
-        self.nb.add(self.nb_f3)
-        self.nb.add(self.nb_f4)
-        self.nb.add(self.nb_f5)
-        self.nb.add(self.nb_f6)
-        self.nb.add(self.nb_f7)
+        self.nb_add()
         self.nb.select(self.nb_f7)
         try:
             self.canvas.delete(self.ppv1) 
@@ -911,7 +890,7 @@ class UI(Frame):
 
         self.A=[]  
 
-    def grid(self):
+    def c_grid(self):
         self.canvas.create_line(25,25,25,475, width=2,)     
         self.canvas.create_line(25,25,645,25, width=2,)     
         self.canvas.create_line(645,25,645,475, width=2,) 
@@ -925,7 +904,7 @@ class UI(Frame):
         while h_f<500:
             self.canvas.create_line(25,h_f,22,h_f, width=1,)
             h_f += 25
-                                           
+                                                     
         self.canvas.create_text(322,487,text="0",font="Verdana 7",anchor="w",justify=CENTER,)
         self.canvas.create_text(211,487,text="-100",font="Verdana 7",anchor="w",justify=CENTER,) 
         self.canvas.create_text(415,487,text="100",font="Verdana 7",anchor="w",justify=CENTER,) 
@@ -939,6 +918,15 @@ class UI(Frame):
         self.canvas.create_text(75,416,text="Z",font="Verdana 8",anchor="w",justify=CENTER,) 
         self.canvas.create_text(32,460,text="X",font="Verdana 8",anchor="w",justify=CENTER,) 
         
+
+    def nb_add(self):
+        self.nb.add(self.nb_f1)
+        self.nb.add(self.nb_f2)
+        self.nb.add(self.nb_f3)
+        self.nb.add(self.nb_f4)
+        self.nb.add(self.nb_f5)
+        self.nb.add(self.nb_f6)
+        self.nb.add(self.nb_f7)
           
     def Write_GCode(self):
         
