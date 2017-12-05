@@ -130,7 +130,7 @@ class UI(Frame):
         self.cenc.config(image=self.im)
         self.cenc.im = self.im   
         
-        self.rest = Button(f7,command=self.restart)
+        self.rest = Button(f7,command=self.redraw)
         self.rest .grid(row=6)
         
         self.im = PhotoImage(file='images/11.gif')
@@ -360,33 +360,9 @@ class UI(Frame):
         self.canvas.grid(row=0,column=0,sticky=N+E+S+W)
         self.canvas.config(background="#D4DDE3",bd=2)
 #------------------------------------------------------------------Grid
-        self.canvas.create_line(25,25,25,475, width=2,)     
-        self.canvas.create_line(25,25,645,25, width=2,)     
-        self.canvas.create_line(645,25,645,475, width=2,) 
-        self.canvas.create_line(25,475,645,475, width=2,) 
-        
-        h_f = 0
-        w_f = 0
-        while w_f<650:
-            self.canvas.create_line(w_f,475,w_f,480, width=1,)
-            w_f += 25
-        while h_f<500:
-            self.canvas.create_line(25,h_f,22,h_f, width=1,)
-            h_f += 25
-                                           
-        self.canvas.create_text(322,487,text="0",font="Verdana 7",anchor="w",justify=CENTER,)
-        self.canvas.create_text(211,487,text="-100",font="Verdana 7",anchor="w",justify=CENTER,) 
-        self.canvas.create_text(415,487,text="100",font="Verdana 7",anchor="w",justify=CENTER,) 
 
-        self.canvas.create_text(12,250,text="0",font="Verdana 7",anchor="w",justify=CENTER,)
-        self.canvas.create_text(1,150,text="-100",font="Verdana 7",anchor="w",justify=CENTER,) 
-        self.canvas.create_text(1,350,text="100",font="Verdana 7",anchor="w",justify=CENTER,) 
         
-        self.canvas.create_line(35,415,75,415, width=1,arrow=LAST)
-        self.canvas.create_line(35,415,35,455, width=1,arrow=LAST) 
-        self.canvas.create_text(75,416,text="Z",font="Verdana 8",anchor="w",justify=CENTER,) 
-        self.canvas.create_text(32,460,text="X",font="Verdana 8",anchor="w",justify=CENTER,) 
-        
+        self.grid()
         
         self.string = 'F1000\n'
          
@@ -452,8 +428,7 @@ class UI(Frame):
        
     def preview(self,) :
 
-        self.cb1.config(state="normal")
-        self.b_added4.config(state="normal")
+
         try:
             self.canvas.delete(self.cpv)
             self.canvas.delete(self.cpv1)
@@ -505,7 +480,7 @@ class UI(Frame):
             ix1,iz1,ix2,iz2 = self.insc_arc_arc(self.x_old,self.z_old,self.x,self.z,self.r)
             ixx1,izz1,ixx2,izz2 = ix1,iz1,ix2,iz2
 
-            # отрисуем центры окружностей сс линиями 
+            # отрисуем центры окружностей с линиями 
             if self.fset == 3:           
                 if self.alternative.get(): 
                     self.ca1 = self.canvas.create_oval([izz2 - 2,ixx2 - 2],[izz2 + 2,ixx2 + 2],fill="red")
@@ -526,9 +501,8 @@ class UI(Frame):
                        
 
 
-#+++++++++++++++++++++++++++++++++++ ARC1 
-               
-#====================== ==================начальная точка self.x_old self.z_old    
+            # ARC1 
+            # st.point self.x_old self.z_old    
             if (ix1>self.x_old):#XXX когда ix1 == self.x_old (и ниже)
                 if (iz1<self.z_old):
                     self.st_arc1  = degrees(atan2(ix1-self.x_old,self.z_old-iz1)) 
@@ -541,7 +515,7 @@ class UI(Frame):
                     self.st_arc1  = degrees(atan2(self.x_old-ix1,iz1-self.z_old))+180 
  
                                      
-#====================== конечная точка self.x self.z
+            # end point self.x self.z
             if (ix1>self.x):
                 if (iz1<self.z):
                     self.end_arc1 = -(degrees(atan2(ix1-self.x,self.z-iz1)))
@@ -554,9 +528,8 @@ class UI(Frame):
                     self.end_arc1 = 180 - degrees(atan2(self.x-ix1,iz1-self.z))
                     
                      
-#+++++++++++++++++++++++++++++++++++ ARC2
-
-#====================== начальная точка self.x_old self.z_old            
+            # ARC2
+            # st.point self.x_old self.z_old            
             if (ix2>self.x_old):
                 if (iz2<self.z_old):
                     print '1s'
@@ -571,9 +544,8 @@ class UI(Frame):
                 else:
                     print '4s'
                     self.st_arc2  = degrees(atan2(self.x_old-ix2,iz2-self.z_old))+180 
- 
-                                     
-#====================== конечная точка self.x self.z
+
+            # end point self.x self.z
             if (ix2>self.x):
                 if (iz2<self.z):
                     self.end_arc2 = -(degrees(atan2(ix2-self.x,self.z-iz2))) 
@@ -608,13 +580,16 @@ class UI(Frame):
             
             self.cpv1 = self.canvas.create_arc([iz2-r,ix2-r],[iz2+r,ix2+r],
             style=ARC,outline="blue",width=self.w2,start=self.st_arc2,extent=END2,stipple=self.s1)
-                                    
-            return self.cpv
             
         except:
             self.textbox.prt('\nb_data' )
+            self.cb1.config(state="disabled")
+            self.b_added4.config(state="disabled")
+            return
 
-        
+        self.cb1.config(state="normal")
+        self.b_added4.config(state="normal")
+        self.textbox.prt('\nok' )        
                
     def start_point(self):
    
@@ -623,6 +598,9 @@ class UI(Frame):
         
         self.A.append([1,self.z_old-325,self.x_old-250])
         
+        geo=[0,(self.z_old),(self.x_old)]
+        self.All_geo.append(geo)
+                
         self.canvas.create_oval([self.z_old-2, self.x_old-2],[self.z_old+2, self.x_old+2],fill="blue")
         
         self.nb.add(self.nb_f1)
@@ -635,6 +613,7 @@ class UI(Frame):
         self.nb.select(self.nb_f7) 
                  
     def run(self):
+        print 'All_geo=',self.All_geo
         self.nb.hide(0)
         self.nb.hide(1)
         self.nb.hide(2)
@@ -652,8 +631,14 @@ class UI(Frame):
             
     def add(self,A): 
         if self.fset <= 2:
+        
             part=[1,(self.z-325),(self.x-250)]
-            A.append(part)       
+            A.append(part)
+            
+            geo=[1,(self.z_old),(self.x_old),(self.z),(self.x)]
+            self.All_geo.append(geo)
+            
+                   
 
     def add_arc(self,A): #TODO для self.fset = 3
         if self.fset == 3:
@@ -663,6 +648,9 @@ class UI(Frame):
                 ga=3
             part=[ga,(self.z-325),(self.x-250),(float(self.rad.get()))]
             A.append(part) 
+            
+            geo=[ga,(self.z_old-325),(self.x_old-250),(self.z-325),(self.x-250),(float(self.rad.get()))]
+            self.All_geo.append(geo)            
                     
     def cancel(self):
     
@@ -730,10 +718,21 @@ class UI(Frame):
         self.add(self.A)
         
     def redraw(self,):# с учетом scale
-        pass
+        self.canvas.delete("all")
         for n in self.All_geo:
-            self.pvd = self.canvas.create_line(self.z_old,self.x_old,self.z,self.x, width=2,fill="blue",)
-                                
+            if n[0]==1:
+                self.canvas.create_line(n[1],n[2],n[3],n[4], width=2,fill="blue",)
+            elif n[0]>1:
+                pass
+            elif n[0]==0:
+                self.canvas.create_oval([n[1]-2, n[2]-2],[n[1]+2, n[2]+2],fill="blue")
+                
+        self.canvas.pack(fill=BOTH, expand=1)   
+
+        self.grid()
+        self.x_old = self.x
+        self.z_old = self.z
+                               
     def draw_line(self):
     
         self.scale_g = 2
@@ -779,12 +778,15 @@ class UI(Frame):
 
         
         if self.fset==3:
-            if self.alternative.get():
-                self.canvas.delete(self.cpv)
-                self.canvas.delete(self.ca)
-            else:
-                self.canvas.delete(self.cpv1)
-                self.canvas.delete(self.ca1)
+            try:
+                if self.alternative.get():
+                    self.canvas.delete(self.cpv)
+                    self.canvas.delete(self.ca)
+                else:
+                    self.canvas.delete(self.cpv1)
+                    self.canvas.delete(self.ca1)
+            except:
+                pass    
             self.add_arc(self.A)
         else:                               
             self.pvd = self.canvas.create_line(self.z_old,self.x_old,self.z,self.x, width=2,fill="blue",)
@@ -908,6 +910,34 @@ class UI(Frame):
         self.z_old = 0
 
         self.A=[]  
+
+    def grid(self):
+        self.canvas.create_line(25,25,25,475, width=2,)     
+        self.canvas.create_line(25,25,645,25, width=2,)     
+        self.canvas.create_line(645,25,645,475, width=2,) 
+        self.canvas.create_line(25,475,645,475, width=2,) 
+        
+        h_f = 0
+        w_f = 0
+        while w_f<650:
+            self.canvas.create_line(w_f,475,w_f,480, width=1,)
+            w_f += 25
+        while h_f<500:
+            self.canvas.create_line(25,h_f,22,h_f, width=1,)
+            h_f += 25
+                                           
+        self.canvas.create_text(322,487,text="0",font="Verdana 7",anchor="w",justify=CENTER,)
+        self.canvas.create_text(211,487,text="-100",font="Verdana 7",anchor="w",justify=CENTER,) 
+        self.canvas.create_text(415,487,text="100",font="Verdana 7",anchor="w",justify=CENTER,) 
+
+        self.canvas.create_text(12,250,text="0",font="Verdana 7",anchor="w",justify=CENTER,)
+        self.canvas.create_text(1,150,text="-100",font="Verdana 7",anchor="w",justify=CENTER,) 
+        self.canvas.create_text(1,350,text="100",font="Verdana 7",anchor="w",justify=CENTER,) 
+        
+        self.canvas.create_line(35,415,75,415, width=1,arrow=LAST)
+        self.canvas.create_line(35,415,35,455, width=1,arrow=LAST) 
+        self.canvas.create_text(75,416,text="Z",font="Verdana 8",anchor="w",justify=CENTER,) 
+        self.canvas.create_text(32,460,text="X",font="Verdana 8",anchor="w",justify=CENTER,) 
         
           
     def Write_GCode(self):
