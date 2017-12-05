@@ -502,16 +502,17 @@ class UI(Frame):
             ix1,iz1,ix2,iz2 = self.insc_arc_arc(self.x_old,self.z_old,self.x,self.z,self.r)
             ixx1,izz1,ixx2,izz2 = ix1,iz1,ix2,iz2
 
-            # отрисуем центры окружностей сс линиями            
-            if self.alternative.get(): 
-                self.ca1 = self.canvas.create_oval([izz2 - 2,ixx2 - 2],[izz2 + 2,ixx2 + 2],fill="red")
-                self.ppv1 = self.canvas.create_line(iz2,0,iz2,500,width=1,fill="red",stipple="gray50")
-                self.ppg1 = self.canvas.create_line(0,ix2,650,ix2,width=1,fill="red",stipple="gray50")              
-            else:
-                self.ca = self.canvas.create_oval([izz1 - 2,ixx1 - 2],[izz1 + 2,ixx1 + 2],fill="red")
-                self.ppv2 = self.canvas.create_line(iz1,0,iz1,500,width=1,fill="red",stipple="gray50")
-                self.ppg2 = self.canvas.create_line(0,ix1,650,ix1,width=1,fill="red",stipple="gray50") 
-                pass 
+            # отрисуем центры окружностей сс линиями 
+            if self.fset == 3:           
+                if self.alternative.get(): 
+                    self.ca1 = self.canvas.create_oval([izz2 - 2,ixx2 - 2],[izz2 + 2,ixx2 + 2],fill="red")
+                    self.ppv1 = self.canvas.create_line(iz2,0,iz2,500,width=1,fill="red",stipple="gray50")
+                    self.ppg1 = self.canvas.create_line(0,ix2,650,ix2,width=1,fill="red",stipple="gray50")              
+                else:
+                    self.ca = self.canvas.create_oval([izz1 - 2,ixx1 - 2],[izz1 + 2,ixx1 + 2],fill="red")
+                    self.ppv2 = self.canvas.create_line(iz1,0,iz1,500,width=1,fill="red",stipple="gray50")
+                    self.ppg2 = self.canvas.create_line(0,ix1,650,ix1,width=1,fill="red",stipple="gray50") 
+                    pass 
 
             #print 'ix1 =',ix1-250, 'iz1=',iz1-325, 'ix2=',ix2-250, 'iz2=',iz2-325
             
@@ -519,13 +520,10 @@ class UI(Frame):
             print 'self.z =' , self.z
             print 'oldx =' , self.x_old                     
             print 'oldz =' , self.z_old'''           
-            
-            #self.st_arc1  = degrees(atan2(ix1-self.x_old,self.z_old-iz1))
-            #self.end_arc1 = degrees(atan2(ix1-self.x,self.z-iz1))                        
-            self.st_arc2  = degrees(atan2(ix2-self.x_old,self.z_old-iz2))
-            self.end_arc2 = degrees(atan2(ix2-self.x,self.z-iz2))
+                       
 
-                
+
+#+++++++++++++++++++++++++++++++++++ ARC1                
 #====================== начальная точка self.x_old self.z_old
 #======================
                 
@@ -547,7 +545,7 @@ class UI(Frame):
                                      
 #====================== конечная точка self.x self.z
 #======================
-            if (ix1>self.x):#XXX когда ix1 == self.x (и ниже)
+            if (ix1>self.x):
                 if (iz1<self.z):
                     print '1f'
                     self.end_arc1 = -(degrees(atan2(ix1-self.x,self.z-iz1)))
@@ -563,11 +561,55 @@ class UI(Frame):
                    
                 else:
                     print '4f'
-                    self.end_arc1 = 180 - degrees(atan2(self.x-ix1,iz1-self.z)) 
-                    
+                    self.end_arc1 = 180 - degrees(atan2(self.x-ix1,iz1-self.z))
+                     
+#+++++++++++++++++++++++++++++++++++ ARC2
+
+#====================== начальная точка self.x_old self.z_old
+#======================
+                
+            if (ix2>self.x_old):
+                if (iz2<self.z_old):
+                    print '1s'
+                    self.st_arc2  = degrees(atan2(ix2-self.x_old,self.z_old-iz2)) 
+                else:                
+                    print '2s'
+                    self.st_arc2  = 180 - degrees(atan2(ix2-self.x_old,iz2-self.z_old))                    
+            else:
+                if (iz2<self.z_old):
+                    print '3s'
+                    self.st_arc2  = 360-degrees(atan2(self.x_old-ix2,self.z_old-iz2))                    
+                else:
+                    print '4s'
+                    self.st_arc2  = degrees(atan2(self.x_old-ix2,iz2-self.z_old))+180 
+ 
+                                     
+#====================== конечная точка self.x self.z
+#======================
+            if (ix2>self.x):
+                if (iz2<self.z):
+                    print '1f'
+                    self.end_arc2 = -(degrees(atan2(ix2-self.x,self.z-iz2)))
+ 
+                else:                
+                    print '2f'
+                    self.end_arc2 = degrees(atan2(ix2-self.x,iz2-self.z))+180 
+                   
+            else:
+                if (iz2<self.z):
+                    print '3f'
+                    self.end_arc2 = degrees(atan2(self.x-ix2,self.z-iz2))
+                   
+                else:
+                    print '4f'
+                    self.end_arc2 = 180 - degrees(atan2(self.x-ix2,iz2-self.z))
+                                         
             END1 =   -(self.st_arc1 + self.end_arc1)
-          
-           
+            END2 =   -(self.st_arc2 + self.end_arc2)
+            
+            if self.arc_g2_g3.get():
+                END1 = - self.st_arc1 + 360 - self.end_arc1
+                END2 = - self.st_arc2 + 360 - self.end_arc2
                              
             print '=========================================================='                
             print 'st_arc1 ='       , self.st_arc1                      
@@ -583,8 +625,8 @@ class UI(Frame):
             self.cpv = self.canvas.create_arc([iz1-r,ix1-r],[iz1+r,ix1+r],
             style=ARC,outline="blue",width=self.w1,start=self.st_arc1,extent=END1,stipple=self.s2)
             
-            #self.cpv1 = self.canvas.create_arc([iz2-r,ix2-r],[iz2+r,ix2+r],
-            #style=ARC,outline="blue",width=self.w2,start=self.st_arc2,extent=END2,stipple=self.s1)
+            self.cpv1 = self.canvas.create_arc([iz2-r,ix2-r],[iz2+r,ix2+r],
+            style=ARC,outline="blue",width=self.w2,start=self.st_arc2,extent=END2,stipple=self.s1)
             
             
             
@@ -733,12 +775,13 @@ class UI(Frame):
         self.nb.add(self.nb_f6)
         self.nb.add(self.nb_f7)
         self.nb.select(self.nb_f7)
-        
-        self.canvas.delete(self.ppv1) 
-        self.canvas.delete(self.ppv2)
-        self.canvas.delete(self.ppg1) 
-        self.canvas.delete(self.ppg2)        
-        
+        try:
+            self.canvas.delete(self.ppv1) 
+            self.canvas.delete(self.ppv2)
+            self.canvas.delete(self.ppg1) 
+            self.canvas.delete(self.ppg2)        
+        except:
+           pass        
         if self.fset==1: # флаг ,показывает после какой функции выбора сработали
             self.x = self.x_old
             if self.abs_inc.get():
