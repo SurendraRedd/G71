@@ -211,17 +211,27 @@ def two(Arr,L,l, z_min = -10000):
         
 # сколько точек на следующей линии между z_minL и z_minR
 # ноль , две или более
-def more_than_two(Arr,L,l,fl):
+def more_than_two(Arr,L,l,fl,D):
     try:
         mtt=[]   
         for a in range(len(Arr)):
             if Arr[a][1]==L[int(l)]:
-                if l==0 or fl:
+                if l==0 :
+
                     lz,rz=two(Arr,L,int(l))
+                    #print 'l1=',l,'lz=',lz,'rz=',rz
+                elif l!=0 and fl:
+
+                    lz,rz=two(D,L,int(l-1)) 
+
                 else:
                     lz,rz=two(Arr,L,int(l)-1)
+                    #print 'l2=',l
+                                        
                 if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
-                    mtt.append(Arr[a])       
+                    mtt.append(Arr[a])
+ 
+        #print 'len(mtt)=',len(mtt)          
         if len(mtt) > 2:  return len(mtt)
         if len(mtt) == 2: return len(mtt)
         if len(mtt) == 0: return len(mtt)
@@ -230,7 +240,6 @@ def more_than_two(Arr,L,l,fl):
         return INTERP_ERROR
           
 # находим самые правые две точки на следующей линии 
-
 def two_next(Arr,L,l,D):
     try:
         for a in range(len(Arr)):            
@@ -251,22 +260,30 @@ def num(P,d,h):
             if i>2 and P[i][0]==1 :
                 if P[i][3] == P[i][1] and P[i][3] == round(h,5):                
                     return True                              
-        h = h-(1*d)  
+        h = h-(1*d) 
         
-def go(self,Ar,Lr,D,R,expcode):
-    repeat = 100        
+         
+def sortTwo_next(inputStr):
+    return two_next(Ar,Lr,l,D)[0][0] 
+    
+           
+def go(self,Ar,Lr,D,R,expcode,D1):
+    iterat = 1        
     try:
-        while len(Ar)>0 and repeat:
-            fl=0 
+        while len(Ar)>0 :
             for l in R:
                 fl=1 # флаг первого прохода
-                while more_than_two(Ar,Lr,l,fl) :
-                    if more_than_two(Ar,Lr,l,fl)==2:
+                while more_than_two(Ar,Lr,l,fl,D) :
+                    
+                    if more_than_two(Ar,Lr,l,fl,D)==2:
+                        
                         Cl,Cr = two_next(Ar,Lr,l,D)
-                    elif more_than_two(Ar,Lr,l,fl)>2:
-                        #R.append(l)# запоминаем позицию для "возврата"
-                        R.insert(1,l)# запоминаем позицию для "возврата"
-                        Cl,Cr = two_next(Ar,Lr,l,D) 
+
+                    elif more_than_two(Ar,Lr,l,fl,D)>2:
+                        R.insert(iterat,l)
+
+                        Cl,Cr = two_next(Ar,Lr,l,D)
+                         
                     if  l==0 or fl:
                         old_Cl,old_Cr = Cl,Cr
                         self.execute("G0  X%f " % (Lr[l]+5))
@@ -298,15 +315,29 @@ def go(self,Ar,Lr,D,R,expcode):
                     if a not in D: A1.append(a)
                 Ar=[]
                 for a in A1:
-                    Ar.append(a)                    
-            repeat -= 1               
-    except :
+                    Ar.append(a) 
+
+                iterat += 1
+#=========================================  
+
+                D2 = [] 
+                for sd in D:
+ 
+                    if sd not in D1:
+                        D2.append(sd)
+                D=[]
+
+                for sdd in D2:
+                    D.append(sdd)
+                for ssd in D:
+                    D1.append(ssd)                    
+               
+#=========================================                                                         
+    except Exception :
         if len(Ar):
-            self.execute("(AXIS,notify, %s)" % ("something went wrong"))
+            self.execute("(AXIS,notify, %s)" % ("something went wrong1"))
         return INTERP_ERROR 
-    if repeat==0:        
-        self.execute("(AXIS,notify, %s)" % ("something went wrong!"))
-        return INTERP_ERROR    
+  
                          
 #################################################-----G71.2
 # Fanuc code:
@@ -380,7 +411,9 @@ def g710(self, **words):
                 t_Sz -= 1
             ST_COORDz0 = float(re.search("Z\s*([-0-9.]+)",lines[t_Sz], re.I).group(1))    
         x+=1
-
+        
+    #print 'ST_COORDx0=',ST_COORDx0
+    
     self.execute("G21 G18 G49 G40 G90 G61 G7 ")
     name_file = "./fgcode.ngc" 
     fgcode = open(name_file, "w") 
@@ -436,7 +469,7 @@ def g710(self, **words):
                 contour=re.split('\)',(re.split('\(',w.upper())[1]))[0]
                 string += contour
                 string += '\n'
-            except :
+            except Exception :
                 print 'error_for w in lines'
                 return INTERP_ERROR
         if  re.search("^\s*[(]\s*N\d", w.upper()):
@@ -539,7 +572,7 @@ def g710(self, **words):
                 o=en_line_arc(P[i][0],P[i][2],P[i][4],P[i][1],P[i][3],z_minim,h1,z_maxim,h1,P[i][7],P[i][6],P[i][5],A)    
         h1 = h1-(1*d)
         
-    print 'P =', P ,'\n'
+    #print 'P =', P ,'\n'
     print 'A =', A ,'\n'
     
     explicit = 'ngc/explicit.ngc'
@@ -577,7 +610,7 @@ def g710(self, **words):
                 self.execute(pr[w])
                 expcode.write(pr[w])
                 expcode.write("\n")
-            except: 
+            except Exception: 
                 return INTERP_ERROR 
         self.execute("G0 Z%f" % (ST_COORDz0))
         
@@ -592,25 +625,25 @@ def g710(self, **words):
                 ns=A[a][1]
                 L.append(A[a][1])
                 nn= ns  
-        except:
+        except Exception:
             return INTERP_ERROR
     L.append(0)
+    print 'L=',L
 
-
-
+    D1=[]
     D=[]              
     R=[0]
-    go(self,A,L,D,R,expcode)            
+    go(self,A,L,D,R,expcode,D1)            
     self.execute("G0  X%f" % (max(tmp1)+5))#XXX 
     expcode.write("G0 X%f\n" % (max(tmp1)+5))
                    
-    print 'pr=', pr 
+    #print 'pr=', pr 
     for w in range(2,len(pr)):
         try:  
             self.execute(pr[w])
             expcode.write(pr[w])
             expcode.write("\n")
-        except: 
+        except Exception: 
             return INTERP_ERROR 
     self.execute("G0 X%f " % (max(tmp1)+0))#XXX 
     expcode.write("G0 X%f\n" % (max(tmp1)+0)) 
@@ -673,7 +706,7 @@ def g700(self, **words):
                 self.execute(contour)
                 expcode.write(contour)
                 expcode.write("\n")
-            except :
+            except Exception :
                 print 'G700_error'
                 return INTERP_ERROR
             if re.search("Z\s*([-0-9.]+)",w, re.I):
@@ -1141,4 +1174,3 @@ def g720(self, **words):
     expcode.write("M02\n")                             
     expcode.close()   
     return INTERP_OK 
-
