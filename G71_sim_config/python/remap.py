@@ -181,77 +181,7 @@ def prog(array,G,x,z,i=None,k=None):
         string=ser.join(['G3','X',str(x),'Z',str(z),'I',str(i),'K',str(k)])        
     return array.append(string) 
     
-# находим A[a] двух точек с max Z (самые правые)    
-def two_a(Arr,L,l, z_min = -10000):
-    try: 
-        for a in range(len(Arr)):    
-            if Arr[a][1]==L[int(l)]:
-                if Arr[a][0] > z_min:
-                    z_minL = z_min
-                    a0 = a
-                    a1  = a-1
-        return   a1,a0
-    except:
-        print 'error two_a'
-        return INTERP_ERROR
-        
-# находим Z двух точек с max Z (самые правые)
-def two(Arr,L,l, z_min = -10000):
-    try:    
-        for a in range(len(Arr)):    
-            if Arr[a][1]==L[int(l)]:
-                if Arr[a][0] > z_min:
-                    z_minL = z_min
-                    z_minR = Arr[a][0]
-                    z_min  = z_minR
-        return   z_minL,z_minR
-    except:
-        print 'error two'
-        return INTERP_ERROR
-        
-# сколько точек на следующей линии между z_minL и z_minR
-# ноль , две или более
-def more_than_two(Arr,L,l,fl,D):
-    try:
-        mtt=[]   
-        for a in range(len(Arr)):
-            if Arr[a][1]==L[int(l)]:
-                if l==0 :
-
-                    lz,rz=two(Arr,L,int(l))
-                    #print 'l1=',l,'lz=',lz,'rz=',rz
-                elif l!=0 and fl:
-
-                    lz,rz=two(D,L,int(l-1)) 
-
-                else:
-                    lz,rz=two(Arr,L,int(l)-1)
-                    #print 'l2=',l
-                                        
-                if (Arr[a][0]) >= lz and (Arr[a][0]) <= rz:
-                    mtt.append(Arr[a])
- 
-        #print 'len(mtt)=',len(mtt)          
-        if len(mtt) > 2:  return len(mtt)
-        if len(mtt) == 2: return len(mtt)
-        if len(mtt) == 0: return len(mtt)
-    except:
-        print 'error more_than_two'            
-        return INTERP_ERROR
           
-# находим самые правые две точки на следующей линии 
-def two_next(Arr,L,l,D):
-    try:
-        for a in range(len(Arr)):            
-            if Arr[a][1]==L[int(l)]:
-               a1,a0=two_a(Arr,L,int(l)-0)
-               D.append(Arr[a1]) 
-               D.append(Arr[a0])            
-        return   Arr[a1],Arr[a0]
-    except:
-        print 'two_next' 
-        return INTERP_ERROR
-            
 # "подбираем"  d , что бы линия не совпадала с 
 # горизонтальным отрезком 
 def num(P,d,h):    
@@ -262,83 +192,7 @@ def num(P,d,h):
                     return True                              
         h = h-(1*d) 
         
-         
-def sortTwo_next(inputStr):
-    return two_next(Ar,Lr,l,D)[0][0] 
-    
-           
-def go(self,Ar,Lr,D,R,expcode,D1):
-    iterat = 1        
-    try:
-        while len(Ar)>0 :
-            for l in R:
-                fl=1 # флаг первого прохода
-                while more_than_two(Ar,Lr,l,fl,D) :
-                    
-                    if more_than_two(Ar,Lr,l,fl,D)==2:
-                        
-                        Cl,Cr = two_next(Ar,Lr,l,D)
-
-                    elif more_than_two(Ar,Lr,l,fl,D)>2:
-                        R.insert(iterat,l)
-
-                        Cl,Cr = two_next(Ar,Lr,l,D)
-                         
-                    if  l==0 or fl:
-                        old_Cl,old_Cr = Cl,Cr
-                        self.execute("G0  X%f " % (Lr[l]+5))
-                        expcode.write("G0 X%f\n" % (Lr[l]+5))
-                         
-                        self.execute("G0  Z%f" % (float(Cr[0])))
-                        expcode.write("G0 Z%f\n" % (float(Cr[0])))
-                                         
-                    self.execute("G0   Z%f" % (float(Cr[0])))
-                    expcode.write("G0 Z%f\n" % (float(Cr[0])))
-                    
-                    self.execute("G1   X%f " % (float(Cr[1])))
-                    expcode.write("G1 X%f\n" % (float(Cr[1])))
-                       
-                    self.execute("G1   X%f Z%f" % (float(Cl[1]),float(Cl[0]))) 
-                    expcode.write("G1 X%f Z%f\n" % (float(Cl[1]),float(Cl[0])))  
-                    
-                    if float(Cl[0])+0.5 > float(old_Cr[0]):
-                        self.execute("G0 X%f Z%f" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
-                        expcode.write("G0 X%f Z%f\n" % (float(Cl[1])+0.01,(float(Cl[0])+0.01)))
-                    else:
-                        self.execute("G0   X%f Z%f" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
-                        expcode.write("G0 X%f Z%f\n" % (float(Cl[1])+0.5,float(Cl[0])+0.5)) 
-                    old_Cl,old_Cr = Cl,Cr
-                    l+=1
-                    fl=0      
-                A1=[]
-                for a in Ar: 
-                    if a not in D: A1.append(a)
-                Ar=[]
-                for a in A1:
-                    Ar.append(a) 
-
-                iterat += 1
-#=========================================  
-
-                D2 = [] 
-                for sd in D:
- 
-                    if sd not in D1:
-                        D2.append(sd)
-                D=[]
-
-                for sdd in D2:
-                    D.append(sdd)
-                for ssd in D:
-                    D1.append(ssd)                    
-               
-#=========================================                                                         
-    except Exception :
-        if len(Ar):
-            self.execute("(AXIS,notify, %s)" % ("something went wrong1"))
-        return INTERP_ERROR 
-  
-                         
+                      
 #################################################-----G71.2
 # Fanuc code:
 # Programming
@@ -628,16 +482,56 @@ def g710(self, **words):
         except Exception:
             return INTERP_ERROR
     L.append(0)
-    print 'L=',L
+    #print 'L=',L
 
-    D1=[]
-    D=[]              
-    R=[0]
-    go(self,A,L,D,R,expcode,D1)            
+    
+    
+    
+    
+    B=[]
+    for e in range(len(A)):
+        if e%2:
+            B.append([])
+            B[e//2].append(A[e])
+            B[e//2].append(A[e-1])
+
+    D=[]
+    for d in B:
+        D.append(d)
+        
+    C=[]         
+    while len(B)>0 :
+        right = -10000
+        x_right = 0
+        for b in range(len(B)):
+            if B[b][0][0] >= right:
+                if B[b][0][0] > right:
+                    b_do = b 
+                    right = B[b][0][0]
+                if B[b][0][0] == right:
+                    if B[b][0][1] > x_right:
+                        b_do = b
+                        x_right = B[b][0][1]
+
+
+        C.append(b_do) #XXX 
+
+                          
+        self.execute("G1 X%f Z%f" % (B[b_do][0][1] ,B[b_do][0][0]))
+        self.execute("G1 X%f Z%f" % (B[b_do][1][1] ,B[b_do][1][0]))
+    
+        if 1:
+            self.execute("G0 X%f Z%f\n" % (B[b_do][1][1]+0.5,B[b_do][1][0]+0.5))
+        else:
+            self.execute("G0 X%f Z%f\n" % (B[b_do][1][1]+0.5,B[b_do][1][0]+0.5))
+            
+        B.pop(b_do) 
+    
+              
     self.execute("G0  X%f" % (max(tmp1)+5))#XXX 
     expcode.write("G0 X%f\n" % (max(tmp1)+5))
                    
-    #print 'pr=', pr 
+    print 'pr=', pr 
     for w in range(2,len(pr)):
         try:  
             self.execute(pr[w])
