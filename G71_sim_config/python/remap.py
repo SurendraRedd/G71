@@ -482,24 +482,16 @@ def g710(self, **words):
         except Exception:
             return INTERP_ERROR
     L.append(0)
-    #print 'L=',L
 
-    
-    
-    
-    
     B=[]
     for e in range(len(A)):
         if e%2:
             B.append([])
             B[e//2].append(A[e])
             B[e//2].append(A[e-1])
-
-    D=[]
-    for d in B:
-        D.append(d)
         
-    C=[]         
+    C=[]
+    ir=0         
     while len(B)>0 :
         right = -10000
         x_right = 0
@@ -514,20 +506,29 @@ def g710(self, **words):
                         x_right = B[b][0][1]
 
 
-        C.append(b_do) #XXX 
-
-                          
-        self.execute("G1 X%f Z%f" % (B[b_do][0][1] ,B[b_do][0][0]))
-        self.execute("G1 X%f Z%f" % (B[b_do][1][1] ,B[b_do][1][0]))
-    
-        if 1:
-            self.execute("G0 X%f Z%f\n" % (B[b_do][1][1]+0.5,B[b_do][1][0]+0.5))
-        else:
-            self.execute("G0 X%f Z%f\n" % (B[b_do][1][1]+0.5,B[b_do][1][0]+0.5))
+        C.append([])
+        C[ir].append(B[b_do][0][1])
+        C[ir].append(B[b_do][0][0])
+        C[ir].append(B[b_do][1][1])
+        C[ir].append(B[b_do][1][0])
+        
+        ir+=1
             
         B.pop(b_do) 
     
-              
+    print 'C=', C 
+    
+    for c in range(len(C)):
+        
+        self.execute("G1 X%f Z%f" % (C[c][0] ,C[c][1]))
+        self.execute("G1 X%f Z%f" % (C[c][2] ,C[c][3]))
+        
+        self.execute("G0 X%f Z%f\n" % (C[c][2]+0.5,C[c][3]+0.5))#XXX if
+        try:
+            self.execute("G0  Z%f" % (C[c+1][1]))
+            self.execute("G1  X%f" % (C[c+1][0]))
+        except Exception: 
+            pass                   
     self.execute("G0  X%f" % (max(tmp1)+5))#XXX 
     expcode.write("G0 X%f\n" % (max(tmp1)+5))
                    
