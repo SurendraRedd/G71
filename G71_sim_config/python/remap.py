@@ -516,8 +516,7 @@ def g710(self, **words):
             
         B.pop(b_do) 
     
-    print 'C=', C 
-    
+    #print 'C=', C 
     for c in range(len(C)):
         
         self.execute("G1 X%f Z%f" % (C[c][0] ,C[c][1]))
@@ -525,6 +524,9 @@ def g710(self, **words):
         
         self.execute("G0 X%f Z%f\n" % (C[c][2]+0.5,C[c][3]+0.5))#XXX if
         try:
+            if C[c+1][1] < C[c][3]:
+                self.execute("G0  X%f" % (C[c+1][0]+d*2.5))
+
             self.execute("G0  Z%f" % (C[c+1][1]))
             self.execute("G1  X%f" % (C[c+1][0]))
         except Exception: 
@@ -532,7 +534,7 @@ def g710(self, **words):
     self.execute("G0  X%f" % (max(tmp1)+5))#XXX 
     expcode.write("G0 X%f\n" % (max(tmp1)+5))
                    
-    print 'pr=', pr 
+    #print 'pr=', pr 
     for w in range(2,len(pr)):
         try:  
             self.execute(pr[w])
